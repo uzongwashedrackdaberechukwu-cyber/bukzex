@@ -1,0 +1,750 @@
+/* =========================================================
+   CTA SECTION
+========================================================= */
+
+.cta-section {
+  position: relative;
+
+  padding: 95px 0;
+
+  overflow: hidden;
+
+  background:
+    radial-gradient(
+      circle at 80% 50%,
+      rgba(37, 99, 235, 0.12),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 20% 50%,
+      rgba(212, 167, 44, 0.045),
+      transparent 28%
+    ),
+    var(--primary);
+
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.cta-container {
+  position: relative;
+
+  z-index: 2;
+
+  width: min(1200px, calc(100% - 40px));
+
+  min-height: 360px;
+
+  margin: 0 auto;
+
+  padding: 55px 60px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 45px;
+
+  overflow: hidden;
+
+  border: 1px solid rgba(37, 99, 235, 0.2);
+
+  border-radius: var(--radius-xl);
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(20, 33, 61, 0.97),
+      rgba(8, 15, 28, 0.99)
+    );
+
+  box-shadow:
+    0 30px 70px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+/* =========================================================
+   BACKGROUND GRID
+========================================================= */
+
+.cta-background-grid {
+  position: absolute;
+
+  inset: 0;
+
+  pointer-events: none;
+
+  opacity: 0.22;
+
+  background-image:
+    linear-gradient(
+      rgba(255, 255, 255, 0.025) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.025) 1px,
+      transparent 1px
+    );
+
+  background-size: 45px 45px;
+
+  mask-image:
+    radial-gradient(
+      circle at center,
+      black,
+      transparent 72%
+    );
+}
+
+/* =========================================================
+   CONTENT
+========================================================= */
+
+.cta-content {
+  position: relative;
+
+  z-index: 3;
+
+  max-width: 650px;
+}
+
+.cta-label {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  margin-bottom: 14px;
+
+  color: var(--gold);
+
+  font-size: 9px;
+
+  font-weight: 850;
+
+  letter-spacing: 1.5px;
+}
+
+.cta-label::before {
+  content: "";
+
+  width: 6px;
+  height: 6px;
+
+  border-radius: 50%;
+
+  background: var(--gold);
+
+  box-shadow:
+    0 0 10px rgba(212, 167, 44, 0.7);
+}
+
+.cta-content h2 {
+  margin: 0;
+
+  color: var(--white);
+
+  font-size: clamp(34px, 4vw, 50px);
+
+  line-height: 1.02;
+
+  letter-spacing: -2.5px;
+
+  font-weight: 850;
+}
+
+.cta-content h2 span {
+  color: var(--gold);
+}
+
+.cta-content p {
+  max-width: 530px;
+
+  margin: 17px 0 0;
+
+  color: rgba(255, 255, 255, 0.43);
+
+  font-size: 12px;
+
+  line-height: 1.75;
+}
+
+/* =========================================================
+   ACTIONS
+========================================================= */
+
+.cta-actions {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  margin-top: 27px;
+}
+
+.cta-primary,
+.cta-secondary {
+  min-height: 45px;
+
+  padding: 0 18px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 8px;
+
+  border-radius: 999px;
+
+  font-size: 10px;
+
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.25s ease,
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.cta-primary {
+  border: 1px solid var(--accent);
+
+  background: var(--accent);
+
+  color: var(--white);
+
+  box-shadow:
+    0 10px 25px rgba(37, 99, 235, 0.22);
+}
+
+.cta-primary span {
+  width: 25px;
+  height: 25px;
+
+  display: grid;
+
+  place-items: center;
+
+  border-radius: 50%;
+
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.cta-primary:hover {
+  background: #1d4ed8;
+
+  border-color: #1d4ed8;
+
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 13px 30px rgba(37, 99, 235, 0.32);
+}
+
+.cta-secondary {
+  border: 1px solid rgba(255, 255, 255, 0.13);
+
+  background: rgba(255, 255, 255, 0.025);
+
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.cta-secondary:hover {
+  border-color: rgba(212, 167, 44, 0.55);
+
+  background: rgba(212, 167, 44, 0.06);
+
+  color: var(--gold);
+
+  transform: translateY(-2px);
+}
+
+/* =========================================================
+   SERVICE CONSTELLATION
+========================================================= */
+
+.cta-decoration {
+  position: relative;
+
+  width: 300px;
+  height: 300px;
+
+  flex-shrink: 0;
+
+  display: grid;
+
+  place-items: center;
+}
+
+.cta-ring {
+  position: absolute;
+
+  border-radius: 50%;
+
+  pointer-events: none;
+}
+
+.cta-ring-one {
+  width: 270px;
+  height: 270px;
+
+  border: 1px solid rgba(37, 99, 235, 0.16);
+
+  animation: ctaRingPulse 5s ease-in-out infinite;
+}
+
+.cta-ring-two {
+  width: 205px;
+  height: 205px;
+
+  border: 1px solid rgba(212, 167, 44, 0.17);
+
+  animation: ctaRingPulse 5s ease-in-out infinite 0.7s;
+}
+
+.cta-ring-three {
+  width: 135px;
+  height: 135px;
+
+  border: 1px dashed rgba(37, 99, 235, 0.22);
+
+  animation: ctaRingRotate 18s linear infinite;
+}
+
+.cta-center-glow {
+  position: absolute;
+
+  width: 90px;
+  height: 90px;
+
+  border-radius: 50%;
+
+  background: rgba(37, 99, 235, 0.18);
+
+  filter: blur(28px);
+
+  animation: ctaGlow 4s ease-in-out infinite;
+}
+
+.cta-center-mark {
+  position: relative;
+
+  z-index: 5;
+
+  width: 57px;
+  height: 57px;
+
+  display: grid;
+
+  place-items: center;
+
+  border: 1px solid rgba(212, 167, 44, 0.6);
+
+  border-radius: 17px;
+
+  background: var(--gold);
+
+  color: var(--primary);
+
+  box-shadow:
+    0 12px 30px rgba(212, 167, 44, 0.2);
+}
+
+.cta-center-mark span {
+  font-size: 26px;
+
+  font-weight: 900;
+}
+
+/* =========================================================
+   ICONS
+========================================================= */
+
+.cta-service-orbit {
+  position: absolute;
+
+  inset: 0;
+
+  animation: ctaOrbit 18s linear infinite;
+}
+
+.cta-service-icon {
+  position: absolute;
+
+  width: 39px;
+  height: 39px;
+
+  display: grid;
+
+  place-items: center;
+
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  border-radius: 13px;
+
+  background:
+    rgba(20, 33, 61, 0.88);
+
+  backdrop-filter: blur(10px);
+
+  color: #93c5fd;
+
+  box-shadow:
+    0 8px 22px rgba(0, 0, 0, 0.25),
+    0 0 20px rgba(37, 99, 235, 0.06);
+
+  animation:
+    ctaIconCounter 18s linear infinite,
+    ctaIconFloat 3.5s ease-in-out infinite;
+}
+
+.cta-service-icon::after {
+  content: "";
+
+  position: absolute;
+
+  inset: -4px;
+
+  border-radius: 16px;
+
+  border: 1px solid rgba(37, 99, 235, 0.07);
+
+  pointer-events: none;
+}
+
+.cta-service-one {
+  top: 12px;
+  left: 50%;
+
+  transform: translateX(-50%);
+}
+
+.cta-service-two {
+  top: 70px;
+  right: 16px;
+}
+
+.cta-service-three {
+  bottom: 70px;
+  right: 16px;
+}
+
+.cta-service-four {
+  bottom: 12px;
+  left: 50%;
+
+  transform: translateX(-50%);
+}
+
+.cta-service-five {
+  bottom: 70px;
+  left: 16px;
+}
+
+.cta-service-six {
+  top: 70px;
+  left: 16px;
+}
+
+/* =========================================================
+   ANIMATIONS
+========================================================= */
+
+@keyframes ctaRingPulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.98);
+  }
+
+  50% {
+    opacity: 0.9;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes ctaRingRotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ctaGlow {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.9);
+  }
+
+  50% {
+    opacity: 0.9;
+    transform: scale(1.12);
+  }
+}
+
+@keyframes ctaOrbit {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ctaIconCounter {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes ctaIconFloat {
+  0%,
+  100% {
+    margin-top: 0;
+  }
+
+  50% {
+    margin-top: -4px;
+  }
+}
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 800px) {
+  .cta-section {
+    padding: 75px 0;
+  }
+
+  .cta-container {
+    min-height: 380px;
+
+    padding: 45px;
+
+    flex-direction: column;
+
+    align-items: flex-start;
+
+    gap: 25px;
+  }
+
+  .cta-decoration {
+    position: absolute;
+
+    width: 230px;
+    height: 230px;
+
+    right: -40px;
+    bottom: -55px;
+
+    opacity: 0.55;
+  }
+
+  .cta-ring-one {
+    width: 220px;
+    height: 220px;
+  }
+
+  .cta-ring-two {
+    width: 165px;
+    height: 165px;
+  }
+
+  .cta-ring-three {
+    width: 110px;
+    height: 110px;
+  }
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 520px) {
+  .cta-section {
+    padding: 65px 0 75px;
+  }
+
+  .cta-container {
+    width: calc(100% - 30px);
+
+    min-height: 0;
+
+    padding: 38px 22px 28px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: stretch;
+
+    gap: 0;
+
+    border-radius: 20px;
+
+    overflow: hidden;
+  }
+
+  .cta-content {
+    width: 100%;
+  }
+
+  .cta-content h2 {
+    font-size: 32px;
+
+    line-height: 1.04;
+
+    letter-spacing: -1.7px;
+  }
+
+  .cta-content p {
+    font-size: 11px;
+
+    line-height: 1.75;
+  }
+
+  .cta-actions {
+    width: 100%;
+
+    margin-top: 25px;
+
+    flex-direction: column;
+
+    align-items: stretch;
+
+    gap: 10px;
+  }
+
+  .cta-primary,
+  .cta-secondary {
+    width: 100%;
+
+    min-height: 48px;
+  }
+
+  /*
+     MOBILE CONSTELLATION
+
+     Keep it inside the normal document flow.
+     This prevents the service icons from being
+     cut off by the CTA container.
+  */
+
+  .cta-decoration {
+    position: relative;
+
+    width: 230px;
+    height: 230px;
+
+    right: auto;
+    bottom: auto;
+
+    margin: 18px auto -18px;
+
+    transform: none;
+
+    flex-shrink: 0;
+
+    opacity: 1;
+  }
+
+  .cta-ring-one {
+    width: 225px;
+    height: 225px;
+  }
+
+  .cta-ring-two {
+    width: 172px;
+    height: 172px;
+  }
+
+  .cta-ring-three {
+    width: 116px;
+    height: 116px;
+  }
+
+  .cta-center-glow {
+    width: 75px;
+    height: 75px;
+  }
+
+  .cta-center-mark {
+    width: 52px;
+    height: 52px;
+
+    border-radius: 15px;
+  }
+
+  .cta-center-mark span {
+    font-size: 23px;
+  }
+
+  .cta-service-icon {
+    width: 38px;
+    height: 38px;
+
+    border-radius: 11px;
+
+    opacity: 1;
+  }
+
+  .cta-service-one {
+    top: 2px;
+  }
+
+  .cta-service-two {
+    top: 57px;
+    right: 5px;
+  }
+
+  .cta-service-three {
+    bottom: 57px;
+    right: 5px;
+  }
+
+  .cta-service-four {
+    bottom: 2px;
+  }
+
+  .cta-service-five {
+    bottom: 57px;
+    left: 5px;
+  }
+
+  .cta-service-six {
+    top: 57px;
+    left: 5px;
+  }
+}
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .cta-ring,
+  .cta-center-glow,
+  .cta-service-orbit,
+  .cta-service-icon {
+    animation: none;
+  }
+}

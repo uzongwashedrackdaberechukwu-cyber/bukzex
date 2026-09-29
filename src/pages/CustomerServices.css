@@ -1,0 +1,557 @@
+/* =========================================================
+   CUSTOMER SERVICES
+========================================================= */
+
+.customer-services-page {
+  width: 100%;
+  min-height: 100%;
+  padding: 8px 0 40px;
+  color: var(--white);
+}
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.customer-services-header {
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.customer-services-eyebrow {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--gold);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.customer-services-header h1 {
+  margin: 0 0 7px;
+  color: var(--white);
+  font-size: clamp(24px, 3vw, 30px);
+  line-height: 1.15;
+  font-weight: 700;
+}
+
+.customer-services-header p {
+  margin: 0;
+  max-width: 520px;
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.customer-services-wallet {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--white);
+  font-size: 12px;
+  font-weight: 700;
+  transition: background 0.2s ease;
+}
+
+.customer-services-wallet:hover {
+  background: #1d4ed8;
+}
+
+/* =========================================================
+   SERVICE GRID
+========================================================= */
+
+.customer-services-grid {
+  width: 100%;
+  display: grid;
+
+  /* 3 equal cards */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  gap: 18px;
+}
+
+/* =========================================================
+   SERVICE CARD
+========================================================= */
+
+.customer-service-card {
+  position: relative;
+
+  width: 100%;
+  min-width: 0;
+  min-height: 230px;
+
+  display: flex;
+  flex-direction: column;
+
+  padding: 22px;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #14213d 0%,
+      #101a2d 100%
+    );
+
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.14);
+
+  overflow: hidden;
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.customer-service-card::after {
+  content: "";
+
+  position: absolute;
+  width: 120px;
+  height: 120px;
+
+  right: -55px;
+  bottom: -55px;
+
+  border-radius: 50%;
+
+  background: rgba(37, 99, 235, 0.07);
+
+  pointer-events: none;
+}
+
+.customer-service-card:hover {
+  transform: translateY(-3px);
+
+  border-color: rgba(37, 99, 235, 0.35);
+
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.2);
+}
+
+/* =========================================================
+   ICON
+========================================================= */
+
+.customer-service-icon {
+  position: relative;
+  z-index: 1;
+
+  width: 48px;
+  height: 48px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 13px;
+
+  background: rgba(37, 99, 235, 0.14);
+
+  color: #60a5fa;
+
+  border: 1px solid rgba(96, 165, 250, 0.1);
+}
+
+/* =========================================================
+   CARD CONTENT
+========================================================= */
+
+.customer-service-content {
+  position: relative;
+  z-index: 1;
+
+  display: flex;
+  flex-direction: column;
+
+  flex: 1;
+
+  margin-top: 20px;
+}
+
+.customer-service-content h2 {
+  margin: 0 0 8px;
+
+  color: var(--white);
+
+  font-size: 17px;
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.customer-service-content p {
+  margin: 0;
+
+  color: #94a3b8;
+
+  font-size: 13px;
+  line-height: 1.6;
+
+  /* keeps cards aligned */
+  max-width: 300px;
+}
+
+/* =========================================================
+   CONTINUE BUTTON
+========================================================= */
+
+.customer-service-button {
+  width: fit-content;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+
+  margin-top: auto;
+  padding-top: 20px;
+
+  border: 0;
+  background: transparent;
+
+  color: #60a5fa;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    color 0.2s ease,
+    gap 0.2s ease;
+}
+
+.customer-service-button:hover {
+  color: var(--white);
+  gap: 10px;
+}
+
+.customer-service-button svg {
+  flex-shrink: 0;
+}
+
+/* =========================================================
+   MODAL
+========================================================= */
+
+.customer-service-overlay {
+  position: fixed;
+  inset: 0;
+
+  z-index: 1000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  background: rgba(2, 6, 23, 0.76);
+
+  backdrop-filter: blur(3px);
+}
+
+.customer-service-modal {
+  position: relative;
+
+  width: min(440px, 100%);
+
+  padding: 28px;
+
+  border: 1px solid var(--border);
+  border-radius: 16px;
+
+  background: var(--white);
+
+  box-shadow: var(--shadow-lg);
+
+  color: var(--text);
+}
+
+.customer-service-close {
+  position: absolute;
+
+  top: 12px;
+  right: 12px;
+
+  width: 32px;
+  height: 32px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 0;
+  border-radius: 50%;
+
+  background: #f1f5f9;
+
+  color: #475569;
+
+  font-size: 21px;
+
+  cursor: pointer;
+}
+
+.customer-service-modal-icon {
+  width: 50px;
+  height: 50px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 16px;
+
+  border-radius: 12px;
+
+  background: #eff6ff;
+  color: var(--accent);
+}
+
+.customer-service-modal h2 {
+  margin: 0 0 9px;
+
+  color: #111827;
+
+  font-size: 21px;
+}
+
+.customer-service-modal p {
+  margin: 0;
+
+  color: #64748b;
+
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.customer-service-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.customer-service-fund,
+.customer-service-cancel {
+  flex: 1;
+
+  min-height: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.customer-service-fund {
+  background: var(--accent);
+  color: var(--white);
+}
+
+.customer-service-cancel {
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: #475569;
+}
+
+/* =========================================================
+   LARGE TABLETS / SMALL LAPTOPS
+========================================================= */
+
+@media (max-width: 1050px) {
+  .customer-services-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .customer-service-card {
+    min-height: 220px;
+  }
+}
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 760px) {
+  .customer-services-page {
+    padding-top: 4px;
+  }
+
+  .customer-services-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .customer-services-wallet {
+    width: 100%;
+  }
+
+  .customer-services-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .customer-service-card {
+    min-height: 215px;
+    padding: 18px;
+    border-radius: 14px;
+  }
+
+  .customer-service-content {
+    margin-top: 17px;
+  }
+
+  .customer-service-content h2 {
+    font-size: 16px;
+  }
+
+  .customer-service-content p {
+    font-size: 12px;
+  }
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 540px) {
+  .customer-services-header {
+    margin-bottom: 20px;
+  }
+
+  .customer-services-header h1 {
+    font-size: 24px;
+  }
+
+  .customer-services-header p {
+    font-size: 12px;
+  }
+
+  .customer-services-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .customer-service-card {
+    min-height: auto;
+
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr);
+    column-gap: 14px;
+
+    padding: 17px;
+  }
+
+  .customer-service-icon {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .customer-service-content {
+    grid-column: 2;
+    grid-row: 1;
+
+    margin-top: 0;
+  }
+
+  .customer-service-content h2 {
+    margin-bottom: 5px;
+  }
+
+  .customer-service-content p {
+    max-width: none;
+  }
+
+  .customer-service-button {
+    margin-top: 13px;
+    padding-top: 0;
+  }
+
+  .customer-service-card::after {
+    width: 90px;
+    height: 90px;
+    right: -40px;
+    bottom: -40px;
+  }
+
+  .customer-service-overlay {
+    padding: 14px;
+  }
+
+  .customer-service-modal {
+    padding: 22px;
+    border-radius: 14px;
+  }
+
+  .customer-service-modal-actions {
+    flex-direction: column;
+  }
+
+  .customer-service-fund,
+  .customer-service-cancel {
+    width: 100%;
+  }
+}
+
+/* =========================================================
+   VERY SMALL PHONES
+========================================================= */
+
+@media (max-width: 360px) {
+  .customer-service-card {
+    grid-template-columns: 42px minmax(0, 1fr);
+    column-gap: 12px;
+    padding: 14px;
+  }
+
+  .customer-service-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+  }
+
+  .customer-service-content h2 {
+    font-size: 15px;
+  }
+
+  .customer-service-content p {
+    font-size: 11px;
+  }
+
+  .customer-service-button {
+    font-size: 12px;
+  }
+}
+
+.customer-services-wallet {
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .customer-services-wallet {
+    width: 100%;
+  }
+}

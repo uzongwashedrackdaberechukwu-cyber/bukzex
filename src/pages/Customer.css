@@ -1,0 +1,2723 @@
+.customer-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+
+  display: flex;
+
+  background:
+    radial-gradient(
+      circle at 75% 15%,
+      rgba(37, 99, 235, 0.07),
+      transparent 28%
+    ),
+    var(--primary);
+
+  color: var(--white);
+
+  overflow: hidden;
+}
+
+/* =========================================================
+   SIDEBAR
+========================================================= */
+
+.customer-sidebar {
+  position: relative;
+  z-index: 20;
+
+  width: 255px;
+  min-width: 255px;
+  height: 100vh;
+  height: 100dvh;
+
+  display: flex;
+  flex-direction: column;
+
+  padding: 25px 17px 18px;
+
+  border-right: 1px solid
+    rgba(255, 255, 255, 0.07);
+
+  background:
+    linear-gradient(
+      180deg,
+      #0d1729 0%,
+      #0a1220 100%
+    );
+}
+
+/* =========================================================
+   LOGO
+========================================================= */
+
+.customer-sidebar-top {
+  display: flex;
+  align-items: center;
+
+  justify-content: space-between;
+
+  margin-bottom: 38px;
+}
+
+.customer-logo {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  color: var(--white);
+}
+
+.customer-logo-mark {
+  width: 39px;
+  height: 39px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 11px;
+
+  background:
+    linear-gradient(
+      145deg,
+      var(--gold),
+      #b88716
+    );
+
+  color: var(--primary);
+
+  font-size: 17px;
+  font-weight: 900;
+
+  box-shadow:
+    0 10px 25px
+    rgba(212, 167, 44, 0.14);
+}
+
+.customer-logo-name {
+  font-size: 20px;
+  font-weight: 850;
+
+  letter-spacing: -0.7px;
+}
+
+.customer-logo-name span {
+  color: var(--gold);
+}
+
+.customer-sidebar-close {
+  display: none;
+
+  width: 34px;
+  height: 34px;
+
+  place-items: center;
+
+  border: 0;
+  border-radius: 9px;
+
+  background:
+    rgba(255, 255, 255, 0.05);
+
+  color: rgba(255, 255, 255, 0.65);
+
+  cursor: pointer;
+}
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
+
+.customer-sidebar-label {
+  margin: 0 10px 10px;
+
+  color:
+    rgba(255, 255, 255, 0.25);
+
+  font-size: 8px;
+  font-weight: 800;
+
+  letter-spacing: 1.4px;
+}
+
+.customer-navigation {
+  display: flex;
+  flex-direction: column;
+
+  gap: 5px;
+}
+
+.customer-nav-item {
+  min-height: 45px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 0 11px;
+
+  border: 1px solid transparent;
+  border-radius: 11px;
+
+  color:
+    rgba(255, 255, 255, 0.42);
+
+  font-size: 10px;
+  font-weight: 650;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.customer-nav-icon {
+  width: 31px;
+  height: 31px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 9px;
+
+  color:
+    rgba(255, 255, 255, 0.38);
+
+  transition: color 0.2s ease,
+    background 0.2s ease;
+}
+
+.customer-nav-item:hover {
+  color: rgba(255, 255, 255, 0.82);
+
+  background:
+    rgba(255, 255, 255, 0.035);
+}
+
+.customer-nav-item:hover .customer-nav-icon {
+  color: var(--gold);
+}
+
+.customer-nav-item.active {
+  color: var(--white);
+
+  border-color:
+    rgba(37, 99, 235, 0.18);
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(37, 99, 235, 0.16),
+      rgba(37, 99, 235, 0.055)
+    );
+}
+
+.customer-nav-item.active .customer-nav-icon {
+  color: #93c5fd;
+
+  background:
+    rgba(37, 99, 235, 0.13);
+}
+
+.customer-sidebar-divider {
+  height: 1px;
+
+  margin: 25px 10px;
+
+  background:
+    rgba(255, 255, 255, 0.06);
+}
+
+/* =========================================================
+   SIDEBAR BALANCE
+========================================================= */
+
+.customer-sidebar-balance {
+  margin-top: auto;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 11px;
+
+  padding: 13px;
+
+  border: 1px solid
+    rgba(212, 167, 44, 0.12);
+
+  border-radius: 13px;
+
+  background:
+    rgba(212, 167, 44, 0.045);
+}
+
+.customer-balance-icon {
+  width: 35px;
+  height: 35px;
+
+  display: grid;
+  place-items: center;
+
+  flex-shrink: 0;
+
+  border-radius: 10px;
+
+  color: var(--gold);
+
+  background:
+    rgba(212, 167, 44, 0.09);
+}
+
+.customer-sidebar-balance span {
+  display: block;
+
+  color:
+    rgba(255, 255, 255, 0.3);
+
+  font-size: 7px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+}
+
+.customer-sidebar-balance strong {
+  display: block;
+
+  margin-top: 4px;
+
+  color:
+    rgba(255, 255, 255, 0.9);
+
+  font-size: 13px;
+}
+
+/* =========================================================
+   LOGOUT
+========================================================= */
+
+.customer-sidebar-footer {
+  margin-top: 14px;
+}
+
+.customer-logout {
+  width: 100%;
+
+  height: 42px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 11px;
+
+  padding: 0 12px;
+
+  border: 0;
+  border-radius: 10px;
+
+  background: transparent;
+
+  color:
+    rgba(255, 255, 255, 0.32);
+
+  font-size: 9px;
+  font-weight: 650;
+
+  cursor: pointer;
+}
+
+.customer-logout:hover {
+  color: #fca5a5;
+
+  background:
+    rgba(239, 68, 68, 0.055);
+}
+
+/* =========================================================
+   MAIN
+========================================================= */
+
+.customer-main {
+  min-width: 0;
+  flex: 1;
+
+  height: 100vh;
+  height: 100dvh;
+
+  overflow-y: auto;
+}
+
+/* =========================================================
+   TOPBAR
+========================================================= */
+
+.customer-topbar {
+  height: 78px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  padding: 0 35px;
+
+  border-bottom: 1px solid
+    rgba(255, 255, 255, 0.06);
+
+  background:
+    rgba(11, 18, 32, 0.78);
+
+  backdrop-filter: blur(18px);
+}
+
+.customer-topbar-left,
+.customer-topbar-right {
+  display: flex;
+  align-items: center;
+}
+
+.customer-topbar-right {
+  gap: 18px;
+}
+
+.customer-menu-button {
+  display: none;
+
+  width: 38px;
+  height: 38px;
+
+  margin-right: 12px;
+
+  place-items: center;
+
+  border: 1px solid
+    rgba(255, 255, 255, 0.08);
+
+  border-radius: 10px;
+
+  background:
+    rgba(255, 255, 255, 0.035);
+
+  color: white;
+
+  cursor: pointer;
+}
+
+.customer-page-title span {
+  color: var(--gold);
+
+  font-size: 7px;
+  font-weight: 850;
+
+  letter-spacing: 1.4px;
+}
+
+.customer-page-title h1 {
+  margin: 4px 0 0;
+
+  color: white;
+
+  font-size: 18px;
+  font-weight: 800;
+
+  letter-spacing: -0.5px;
+}
+
+/* =========================================================
+   NOTIFICATION
+========================================================= */
+
+.customer-notification {
+  position: relative;
+
+  width: 38px;
+  height: 38px;
+
+  display: grid;
+  place-items: center;
+
+  border: 1px solid
+    rgba(255, 255, 255, 0.07);
+
+  border-radius: 10px;
+
+  background:
+    rgba(255, 255, 255, 0.025);
+
+  color:
+    rgba(255, 255, 255, 0.55);
+
+  cursor: pointer;
+}
+
+.customer-notification:hover {
+  color: white;
+
+  border-color:
+    rgba(37, 99, 235, 0.3);
+}
+
+.customer-notification-dot {
+  position: absolute;
+
+  top: 8px;
+  right: 8px;
+
+  width: 6px;
+  height: 6px;
+
+  border-radius: 50%;
+
+  background: #ef4444;
+
+  box-shadow:
+    0 0 0 3px var(--primary);
+}
+
+/* =========================================================
+   USER
+========================================================= */
+
+.customer-user {
+  display: flex;
+
+  align-items: center;
+
+  gap: 9px;
+}
+
+.customer-user-avatar {
+  width: 35px;
+  height: 35px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 10px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #2563eb,
+      #173b91
+    );
+
+  color: white;
+
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.customer-user-info strong {
+  display: block;
+
+  color:
+    rgba(255, 255, 255, 0.78);
+
+  font-size: 9px;
+}
+
+.customer-user-info span {
+  display: block;
+
+  margin-top: 2px;
+
+  color:
+    rgba(255, 255, 255, 0.28);
+
+  font-size: 7px;
+}
+
+.customer-user-chevron {
+  margin-left: 3px;
+
+  color:
+    rgba(255, 255, 255, 0.28);
+}
+
+/* =========================================================
+   CONTENT
+========================================================= */
+
+.customer-content {
+  max-width: 1250px;
+
+  margin: 0 auto;
+
+  padding: 35px;
+}
+
+/* =========================================================
+   WELCOME
+========================================================= */
+
+.customer-welcome-card {
+  position: relative;
+
+  min-height: 245px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  overflow: hidden;
+
+  padding: 40px 48px;
+
+  border: 1px solid
+    rgba(37, 99, 235, 0.16);
+
+  border-radius: 22px;
+
+  background:
+    radial-gradient(
+      circle at 85% 50%,
+      rgba(37, 99, 235, 0.14),
+      transparent 35%
+    ),
+    linear-gradient(
+      135deg,
+      #111e35,
+      #0b1425
+    );
+
+  box-shadow:
+    0 25px 60px
+    rgba(0, 0, 0, 0.18);
+}
+
+.customer-welcome-content {
+  position: relative;
+  z-index: 2;
+}
+
+.customer-welcome-label {
+  color: #93c5fd;
+
+  font-size: 8px;
+  font-weight: 850;
+
+  letter-spacing: 1.6px;
+}
+
+.customer-welcome-card h2 {
+  max-width: 600px;
+
+  margin: 13px 0 0;
+
+  color: white;
+
+  font-size: clamp(30px, 4vw, 47px);
+
+  line-height: 1.02;
+
+  letter-spacing: -2px;
+
+  font-weight: 850;
+}
+
+.customer-welcome-card h2 span {
+  color: var(--gold);
+}
+
+.customer-welcome-card p {
+  max-width: 510px;
+
+  margin: 17px 0 0;
+
+  color:
+    rgba(255, 255, 255, 0.38);
+
+  font-size: 10px;
+
+  line-height: 1.8;
+}
+
+.customer-welcome-orb {
+  position: absolute;
+
+  right: 65px;
+
+  width: 190px;
+  height: 190px;
+
+  display: grid;
+  place-items: center;
+
+  border: 1px solid
+    rgba(212, 167, 44, 0.12);
+
+  border-radius: 50%;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(212, 167, 44, 0.09),
+      transparent 68%
+    );
+}
+
+.customer-welcome-orb::before,
+.customer-welcome-orb::after {
+  content: "";
+
+  position: absolute;
+
+  border: 1px solid
+    rgba(37, 99, 235, 0.13);
+
+  border-radius: 50%;
+}
+
+.customer-welcome-orb::before {
+  inset: -28px;
+}
+
+.customer-welcome-orb::after {
+  inset: 28px;
+}
+
+.customer-welcome-mark {
+  width: 65px;
+  height: 65px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 20px;
+
+  background:
+    linear-gradient(
+      145deg,
+      var(--gold),
+      #b88716
+    );
+
+  color: var(--primary);
+
+  font-size: 28px;
+  font-weight: 900;
+
+  box-shadow:
+    0 20px 50px
+    rgba(212, 167, 44, 0.18);
+}
+
+/* =========================================================
+   STAT PLACEHOLDERS
+========================================================= */
+
+.customer-coming-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, 1fr);
+
+  gap: 16px;
+
+  margin-top: 20px;
+}
+
+.customer-coming-card {
+  min-height: 105px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 14px;
+
+  padding: 20px;
+
+  border: 1px solid
+    rgba(255, 255, 255, 0.065);
+
+  border-radius: 16px;
+
+  background:
+    rgba(20, 33, 61, 0.48);
+}
+
+.customer-coming-icon {
+  width: 42px;
+  height: 42px;
+
+  display: grid;
+  place-items: center;
+
+  flex-shrink: 0;
+
+  border-radius: 12px;
+
+  color: #93c5fd;
+
+  background:
+    rgba(37, 99, 235, 0.09);
+}
+
+.customer-coming-card span {
+  display: block;
+
+  color:
+    rgba(255, 255, 255, 0.25);
+
+  font-size: 7px;
+  font-weight: 800;
+
+  letter-spacing: 0.9px;
+}
+
+.customer-coming-card strong {
+  display: block;
+
+  margin-top: 5px;
+
+  color:
+    rgba(255, 255, 255, 0.8);
+
+  font-size: 17px;
+}
+
+/* =========================================================
+   OVERLAY
+========================================================= */
+
+.customer-sidebar-overlay {
+  display: none;
+}
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 900px) {
+
+  .customer-sidebar {
+    position: fixed;
+
+    left: 0;
+    top: 0;
+
+    transform: translateX(-100%);
+
+    transition:
+      transform 0.25s ease;
+
+    box-shadow:
+      20px 0 60px
+      rgba(0, 0, 0, 0.35);
+  }
+
+  .customer-sidebar.customer-sidebar-open {
+    transform: translateX(0);
+  }
+
+  .customer-sidebar-close {
+    display: grid;
+  }
+
+  .customer-sidebar-overlay {
+    position: fixed;
+
+    z-index: 15;
+
+    inset: 0;
+
+    display: block;
+
+    border: 0;
+
+    background:
+      rgba(0, 0, 0, 0.55);
+
+    backdrop-filter: blur(3px);
+  }
+
+  .customer-menu-button {
+    display: grid;
+  }
+
+  .customer-topbar {
+    padding: 0 25px;
+  }
+
+  .customer-content {
+    padding: 25px;
+  }
+
+  .customer-welcome-orb {
+    right: 35px;
+
+    transform: scale(0.8);
+  }
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 600px) {
+
+  .customer-topbar {
+    height: 68px;
+
+    padding: 0 15px;
+  }
+
+  .customer-page-title h1 {
+    font-size: 16px;
+  }
+
+  .customer-topbar-right {
+    gap: 8px;
+  }
+
+  .customer-user-info,
+  .customer-user-chevron {
+    display: none;
+  }
+
+  .customer-user-avatar {
+    width: 34px;
+    height: 34px;
+  }
+
+  .customer-notification {
+    width: 35px;
+    height: 35px;
+  }
+
+  .customer-content {
+    padding: 16px;
+  }
+
+  .customer-welcome-card {
+    min-height: 330px;
+
+    align-items: flex-start;
+
+    padding: 28px 23px;
+  }
+
+  .customer-welcome-card h2 {
+    font-size: 31px;
+
+    letter-spacing: -1.5px;
+  }
+
+  .customer-welcome-card p {
+    font-size: 9px;
+  }
+
+  .customer-welcome-orb {
+    right: 20px;
+    bottom: -65px;
+
+    transform: scale(0.65);
+  }
+
+  .customer-coming-grid {
+    grid-template-columns: 1fr;
+
+    gap: 10px;
+  }
+
+  .customer-coming-card {
+    min-height: 88px;
+  }
+}
+
+/* =========================================================
+   SMALL PHONES
+========================================================= */
+
+@media (max-width: 360px) {
+
+  .customer-content {
+    padding: 12px;
+  }
+
+  .customer-welcome-card {
+    padding: 25px 20px;
+  }
+
+  .customer-welcome-card h2 {
+    font-size: 28px;
+  }
+}
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .customer-page *,
+  .customer-page *::before,
+  .customer-page *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* =========================================================
+   FUND WALLET
+========================================================= */
+
+.fund-wallet-content {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 10px 0 40px;
+}
+
+.fund-back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 0;
+  margin-bottom: 22px;
+  transition: color 0.2s ease;
+}
+
+.fund-back-button:hover {
+  color: var(--accent);
+}
+
+.fund-heading {
+  margin-bottom: 24px;
+}
+
+.fund-heading h1 {
+  margin: 0 0 8px;
+  color: var(--white);
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.fund-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Main funding card */
+
+.fund-wallet-content > .fund-account,
+.fund-wallet-content > .fund-form,
+.fund-wallet-content > .fund-status,
+.fund-wallet-content > .fund-message,
+.fund-wallet-content > .fund-error {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Bank account */
+
+.fund-account {
+  padding: 24px;
+  margin-bottom: 18px;
+}
+
+.fund-account h2 {
+  margin: 0 0 18px;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.fund-account-details {
+  display: grid;
+  gap: 12px;
+}
+
+.fund-account-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.fund-account-row span:first-child {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.fund-account-row strong {
+  color: var(--text);
+  font-size: 14px;
+  text-align: right;
+}
+
+.fund-copy-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fund-copy-button:hover {
+  background: #eff6ff;
+}
+
+/* Transfer instruction */
+
+.fund-instruction {
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* Reference form */
+
+.fund-form {
+  padding: 24px;
+}
+
+.fund-form h2 {
+  margin: 0 0 8px;
+  color: var(--text);
+  font-size: 18px;
+}
+
+.fund-form-description {
+  margin: 0 0 20px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.fund-form label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.fund-form input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  outline: none;
+  background: var(--white);
+  color: var(--text);
+  font-size: 14px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.fund-form input::placeholder {
+  color: #94a3b8;
+}
+
+.fund-form input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.fund-submit-button {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 16px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.fund-submit-button:hover {
+  background: #1d4ed8;
+}
+
+.fund-submit-button:active {
+  transform: translateY(1px);
+}
+
+.fund-submit-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Status */
+
+.fund-status {
+  padding: 28px;
+  text-align: center;
+}
+
+.fund-status-icon {
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #eff6ff;
+  color: var(--accent);
+}
+
+.fund-status h2 {
+  margin: 0 0 8px;
+  color: var(--text);
+  font-size: 20px;
+}
+
+.fund-status p {
+  margin: 0 auto;
+  max-width: 520px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.fund-status.pending .fund-status-icon {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.fund-status.success .fund-status-icon {
+  background: #ecfdf5;
+  color: var(--success);
+}
+
+.fund-status.failed .fund-status-icon {
+  background: #fef2f2;
+  color: var(--danger);
+}
+
+/* Messages */
+
+.fund-message,
+.fund-error {
+  margin-top: 16px;
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.fund-message {
+  color: #166534;
+  background: #f0fdf4 !important;
+  border-color: #bbf7d0 !important;
+}
+
+.fund-error {
+  color: #b91c1c;
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+}
+
+/* Spinner */
+
+.fund-spinner {
+  animation: fund-spin 1s linear infinite;
+}
+
+@keyframes fund-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================================================
+   FUND WALLET MOBILE
+========================================================= */
+
+@media (max-width: 768px) {
+  .fund-wallet-content {
+    padding: 4px 0 30px;
+  }
+
+  .fund-heading h1 {
+    font-size: 24px;
+  }
+
+  .fund-heading p {
+    font-size: 13px;
+  }
+
+  .fund-account,
+  .fund-form,
+  .fund-status {
+    padding: 18px;
+  }
+
+  .fund-account-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .fund-account-row strong {
+    text-align: left;
+  }
+
+  .fund-copy-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .fund-heading {
+    margin-bottom: 18px;
+  }
+
+  .fund-heading h1 {
+    font-size: 22px;
+  }
+
+  .fund-account,
+  .fund-form,
+  .fund-status {
+    padding: 16px;
+    border-radius: var(--radius-md);
+  }
+
+  .fund-account-row {
+    padding: 12px;
+  }
+
+  .fund-form input,
+  .fund-submit-button {
+    min-height: 44px;
+  }
+}
+
+/* =========================================================
+   FUND WALLET
+========================================================= */
+
+.fund-wallet-content {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 10px 0 40px;
+}
+
+.fund-back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 0;
+  margin-bottom: 22px;
+  transition: color 0.2s ease;
+}
+
+.fund-back-button:hover {
+  color: var(--accent);
+}
+
+.fund-heading {
+  margin-bottom: 24px;
+}
+
+.fund-heading h1 {
+  margin: 0 0 8px;
+  color: var(--white);
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.fund-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Main funding card */
+
+.fund-wallet-content > .fund-account,
+.fund-wallet-content > .fund-form,
+.fund-wallet-content > .fund-status,
+.fund-wallet-content > .fund-message,
+.fund-wallet-content > .fund-error {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Bank account */
+
+.fund-account {
+  padding: 24px;
+  margin-bottom: 18px;
+}
+
+.fund-account h2 {
+  margin: 0 0 18px;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.fund-account-details {
+  display: grid;
+  gap: 12px;
+}
+
+.fund-account-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.fund-account-row span:first-child {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.fund-account-row strong {
+  color: var(--text);
+  font-size: 14px;
+  text-align: right;
+}
+
+.fund-copy-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fund-copy-button:hover {
+  background: #eff6ff;
+}
+
+/* Transfer instruction */
+
+.fund-instruction {
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* Reference form */
+
+.fund-form {
+  padding: 24px;
+}
+
+.fund-form h2 {
+  margin: 0 0 8px;
+  color: var(--text);
+  font-size: 18px;
+}
+
+.fund-form-description {
+  margin: 0 0 20px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.fund-form label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.fund-form input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  outline: none;
+  background: var(--white);
+  color: var(--text);
+  font-size: 14px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.fund-form input::placeholder {
+  color: #94a3b8;
+}
+
+.fund-form input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.fund-submit-button {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 16px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.fund-submit-button:hover {
+  background: #1d4ed8;
+}
+
+.fund-submit-button:active {
+  transform: translateY(1px);
+}
+
+.fund-submit-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Status */
+
+.fund-status {
+  padding: 28px;
+  text-align: center;
+}
+
+.fund-status-icon {
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #eff6ff;
+  color: var(--accent);
+}
+
+.fund-status h2 {
+  margin: 0 0 8px;
+  color: var(--text);
+  font-size: 20px;
+}
+
+.fund-status p {
+  margin: 0 auto;
+  max-width: 520px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.fund-status.pending .fund-status-icon {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.fund-status.success .fund-status-icon {
+  background: #ecfdf5;
+  color: var(--success);
+}
+
+.fund-status.failed .fund-status-icon {
+  background: #fef2f2;
+  color: var(--danger);
+}
+
+/* Messages */
+
+.fund-message,
+.fund-error {
+  margin-top: 16px;
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.fund-message {
+  color: #166534;
+  background: #f0fdf4 !important;
+  border-color: #bbf7d0 !important;
+}
+
+.fund-error {
+  color: #b91c1c;
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+}
+
+/* Spinner */
+
+.fund-spinner {
+  animation: fund-spin 1s linear infinite;
+}
+
+@keyframes fund-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================================================
+   FUND WALLET MOBILE
+========================================================= */
+
+@media (max-width: 768px) {
+  .fund-wallet-content {
+    padding: 4px 0 30px;
+  }
+
+  .fund-heading h1 {
+    font-size: 24px;
+  }
+
+  .fund-heading p {
+    font-size: 13px;
+  }
+
+  .fund-account,
+  .fund-form,
+  .fund-status {
+    padding: 18px;
+  }
+
+  .fund-account-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .fund-account-row strong {
+    text-align: left;
+  }
+
+  .fund-copy-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .fund-heading {
+    margin-bottom: 18px;
+  }
+
+  .fund-heading h1 {
+    font-size: 22px;
+  }
+
+  .fund-account,
+  .fund-form,
+  .fund-status {
+    padding: 16px;
+    border-radius: var(--radius-md);
+  }
+
+  .fund-account-row {
+    padding: 12px;
+  }
+
+  .fund-form input,
+  .fund-submit-button {
+    min-height: 44px;
+  }
+}
+
+/* =========================================================
+   FUND WALLET — TEXT / COLOR FIX
+========================================================= */
+
+.fund-wallet-content {
+  color: var(--text);
+}
+
+/* White cards must use dark text */
+.fund-account,
+.fund-form,
+.fund-status {
+  color: var(--text);
+}
+
+/* Force all normal text inside the white funding cards
+   to remain visible */
+.fund-account *,
+.fund-form *,
+.fund-status * {
+  color: var(--text);
+}
+
+/* Headings */
+.fund-account h1,
+.fund-account h2,
+.fund-account h3,
+.fund-form h1,
+.fund-form h2,
+.fund-form h3,
+.fund-status h1,
+.fund-status h2,
+.fund-status h3 {
+  color: #111827;
+}
+
+/* Descriptions */
+.fund-account p,
+.fund-form p,
+.fund-status p {
+  color: #64748B;
+}
+
+/* Labels */
+.fund-account label,
+.fund-form label {
+  color: #111827;
+}
+
+/* Account information */
+.fund-account strong,
+.fund-account b {
+  color: #111827;
+}
+
+/* Account detail rows */
+.fund-account-row {
+  color: #111827;
+}
+
+.fund-account-row span {
+  color: #64748B;
+}
+
+.fund-account-row strong {
+  color: #111827;
+}
+
+/* Copy button */
+.fund-copy-button {
+  color: #2563EB !important;
+  background: #FFFFFF;
+}
+
+.fund-copy-button svg {
+  color: #2563EB !important;
+}
+
+/* Input */
+.fund-form input {
+  color: #111827 !important;
+  background: #FFFFFF;
+}
+
+.fund-form input::placeholder {
+  color: #94A3B8 !important;
+}
+
+/* Submit button */
+.fund-submit-button {
+  color: #FFFFFF !important;
+  background: #2563EB;
+}
+
+.fund-submit-button svg {
+  color: #FFFFFF !important;
+}
+
+/* Back button */
+.fund-back-button {
+  color: #64748B;
+}
+
+.fund-back-button svg {
+  color: #64748B;
+}
+
+.fund-back-button:hover {
+  color: #2563EB;
+}
+
+/* Instruction box */
+.fund-instruction {
+  color: #1E40AF !important;
+}
+
+.fund-instruction * {
+  color: #1E40AF !important;
+}
+
+/* Status icons should retain their colors */
+.fund-status-icon {
+  color: #2563EB !important;
+}
+
+.fund-status-icon svg {
+  color: inherit !important;
+}
+
+/* Error */
+.fund-error {
+  color: #B91C1C !important;
+}
+
+.fund-error * {
+  color: #B91C1C !important;
+}
+
+/* Success message */
+.fund-message {
+  color: #166534 !important;
+}
+
+.fund-message * {
+  color: #166534 !important;
+}
+
+/* =========================================================
+   FINAL CUSTOMER DASHBOARD
+========================================================= */
+
+.customer-main {
+  min-width: 0;
+}
+
+.customer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Welcome */
+
+.customer-welcome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 28px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    135deg,
+    #14213d,
+    #0f1a2f
+  );
+}
+
+.customer-welcome span {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--gold);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+}
+
+.customer-welcome h1 {
+  margin: 0 0 8px;
+  color: var(--white);
+  font-size: 27px;
+}
+
+.customer-welcome p {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.customer-primary-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 43px;
+  padding: 0 16px;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: var(--white);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Dashboard cards */
+
+.customer-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.customer-dashboard-card {
+  min-height: 155px;
+  padding: 20px;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: var(--radius-lg);
+  background: #111b30;
+}
+
+.customer-dashboard-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 17px;
+}
+
+.customer-dashboard-card-top span {
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .1em;
+}
+
+.customer-dashboard-card-icon {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(37,99,235,.13);
+  color: #60a5fa;
+}
+
+.customer-dashboard-card > strong {
+  display: block;
+  margin-bottom: 15px;
+  color: var(--white);
+  font-size: 24px;
+}
+
+.customer-dashboard-card > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #60a5fa;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.customer-dashboard-card > a:hover {
+  color: var(--white);
+}
+
+/* Errors */
+
+.customer-dashboard-error {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-md);
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 13px;
+}
+
+/* Recent orders */
+
+.customer-recent-section {
+  padding: 22px;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: var(--radius-lg);
+  background: #111b30;
+}
+
+.customer-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 18px;
+}
+
+.customer-section-heading h2 {
+  margin: 0 0 5px;
+  color: var(--white);
+  font-size: 17px;
+}
+
+.customer-section-heading p {
+  margin: 0;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.customer-section-heading > a {
+  color: #60a5fa;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.customer-recent-list {
+  display: grid;
+  gap: 8px;
+}
+
+.customer-recent-order {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 65px;
+  padding: 11px 13px;
+  border: 1px solid rgba(255,255,255,.05);
+  border-radius: 10px;
+  background: #0d1729;
+}
+
+.customer-recent-order-icon {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: rgba(37,99,235,.1);
+  color: #60a5fa;
+}
+
+.customer-recent-order-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.customer-recent-order-info strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #e2e8f0;
+  font-size: 12px;
+}
+
+.customer-recent-order-info small {
+  color: #64748b;
+  font-size: 10px;
+}
+
+.customer-recent-amount {
+  color: #e2e8f0;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.customer-recent-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.customer-recent-status.pending {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.customer-recent-status.success {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.customer-recent-status.failed {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.customer-recent-empty {
+  padding: 38px 15px;
+  text-align: center;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.customer-recent-empty svg {
+  color: #60a5fa;
+}
+
+.customer-recent-empty h3 {
+  margin: 10px 0 5px;
+  color: #e2e8f0;
+  font-size: 15px;
+}
+
+.customer-recent-empty p {
+  margin: 0 0 15px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.customer-recent-empty a {
+  color: #60a5fa;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Mobile */
+
+@media (max-width: 800px) {
+  .customer-welcome {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .customer-primary-action {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .customer-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .customer-content {
+    padding: 0;
+  }
+
+  .customer-welcome {
+    padding: 20px;
+  }
+
+  .customer-welcome h1 {
+    font-size: 23px;
+  }
+
+  .customer-recent-section {
+    padding: 17px;
+  }
+
+  .customer-recent-order {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .customer-recent-order-info {
+    min-width: calc(100% - 50px);
+  }
+
+  .customer-recent-amount {
+    margin-left: 48px;
+  }
+
+  .customer-recent-status {
+    margin-left: auto;
+  }
+}
+
+/* =========================================================
+   CUSTOMER FUND WALLET
+========================================================= */
+
+.customer-dashboard-card > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #60a5fa;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.customer-dashboard-card > button:hover {
+  color: var(--white);
+}
+
+.customer-funding-section {
+  margin-bottom: 30px;
+  padding: 22px;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: var(--radius-lg);
+  background: #111b30;
+}
+
+.customer-funding-account {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.customer-funding-account > div {
+  padding: 14px;
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 10px;
+  background: #0d1729;
+}
+
+.customer-funding-account small {
+  display: block;
+  margin-bottom: 6px;
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+
+.customer-funding-account strong {
+  display: block;
+  color: #e2e8f0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.customer-funding-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.customer-funding-form > div {
+  min-width: 0;
+}
+
+.customer-funding-form label {
+  display: block;
+  margin-bottom: 7px;
+  color: #cbd5e1;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.customer-funding-form input {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 9px;
+  outline: none;
+  background: #0d1729;
+  color: #fff;
+  font-size: 13px;
+}
+
+.customer-funding-form input::placeholder {
+  color: #64748b;
+}
+
+.customer-funding-form input:focus {
+  border-color: #2563eb;
+}
+
+.customer-funding-form input:disabled {
+  opacity: .55;
+}
+
+.customer-funding-submit {
+  grid-column: 1 / -1;
+  height: 44px;
+  border: 0;
+  border-radius: 9px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.customer-funding-submit:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.customer-funding-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 10px;
+}
+
+.customer-funding-status.pending {
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.customer-funding-status.confirmed {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.customer-funding-status > div {
+  flex: 1;
+}
+
+.customer-funding-status strong {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 12px;
+}
+
+.customer-funding-status p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.customer-funding-status button {
+  min-height: 36px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 8px;
+  background: #ea580c;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.customer-funding-status button:disabled {
+  opacity: .6;
+}
+
+.customer-funding-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 11px 13px;
+  border: 1px solid #fecaca;
+  border-radius: 9px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 12px;
+}
+
+.customer-funding-note {
+  margin-top: 14px;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+@media (max-width: 700px) {
+  .customer-funding-account {
+    grid-template-columns: 1fr;
+  }
+
+  .customer-funding-form {
+    grid-template-columns: 1fr;
+  }
+
+  .customer-funding-submit {
+    grid-column: auto;
+  }
+
+  .customer-funding-status {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .customer-funding-status button {
+    width: 100%;
+  }
+}
+
+/* =========================================================
+   CURRENT CUSTOMER SIDEBAR — FINAL OVERRIDES
+   ========================================================= */
+
+.customer-sidebar {
+  flex-shrink: 0;
+}
+
+.customer-sidebar-top {
+  display: block;
+  position: relative;
+  margin-bottom: 0;
+}
+
+.customer-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--white);
+}
+
+.customer-logo > span:last-child {
+  font-size: 20px;
+  font-weight: 850;
+  letter-spacing: -0.7px;
+}
+
+.customer-logo > span:last-child span {
+  color: var(--gold);
+}
+
+.customer-mobile-close {
+  display: none;
+}
+
+.customer-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  margin-top: 38px;
+}
+
+.customer-nav-section {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.customer-nav-section small {
+  display: block;
+  margin: 0 10px 9px;
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+}
+
+.customer-nav-link {
+  width: 100%;
+  min-height: 45px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 11px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 10px;
+  font-weight: 650;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.customer-nav-link svg {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.customer-nav-link:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.customer-nav-link:hover svg {
+  color: var(--gold);
+}
+
+.customer-nav-link.active {
+  color: var(--white);
+  border-color: rgba(37, 99, 235, 0.18);
+  background: linear-gradient(
+    90deg,
+    rgba(37, 99, 235, 0.16),
+    rgba(37, 99, 235, 0.055)
+  );
+}
+
+.customer-nav-link.active svg {
+  color: #93c5fd;
+}
+
+.customer-sidebar-bottom {
+  margin-top: auto;
+  padding-top: 25px;
+}
+
+.customer-sidebar-wallet {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 13px;
+  border: 1px solid rgba(212, 167, 44, 0.12);
+  border-radius: 13px;
+  background: rgba(212, 167, 44, 0.045);
+}
+
+.customer-sidebar-wallet-icon {
+  width: 35px;
+  height: 35px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 10px;
+  color: var(--gold);
+  background: rgba(212, 167, 44, 0.09);
+}
+
+.customer-sidebar-wallet small {
+  display: block;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+}
+
+.customer-sidebar-wallet strong {
+  display: block;
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+}
+
+.customer-sidebar-bottom .customer-logout {
+  margin-top: 14px;
+}
+
+
+/* =========================================================
+   MOBILE SIDEBAR
+   ========================================================= */
+
+.customer-mobile-overlay {
+  display: none;
+}
+
+@media (max-width: 768px) {
+
+  .customer-page {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .customer-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 1000;
+
+    width: 280px;
+    min-width: 280px;
+    height: 100dvh;
+
+    padding: 22px 17px 18px;
+
+    transform: translateX(-105%);
+    transition: transform 0.25s ease;
+
+    box-shadow: 18px 0 45px rgba(0, 0, 0, 0.4);
+
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .customer-sidebar.customer-sidebar-open {
+    transform: translateX(0);
+  }
+
+  .customer-sidebar-top {
+    width: 100%;
+    display: block;
+    position: relative;
+  }
+
+  .customer-logo {
+    min-height: 42px;
+    padding-right: 45px;
+  }
+
+  .customer-logo-mark {
+    width: 42px;
+    height: 42px;
+  }
+
+  .customer-logo > span:last-child {
+    font-size: 20px;
+  }
+
+  .customer-mobile-close {
+    position: absolute;
+    top: 2px;
+    right: 0;
+
+    width: 38px;
+    height: 38px;
+
+    display: grid;
+    place-items: center;
+
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.75);
+
+    cursor: pointer;
+  }
+
+  .customer-mobile-close:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.09);
+  }
+
+  .customer-nav {
+    width: 100%;
+    margin-top: 38px;
+    gap: 27px;
+  }
+
+  .customer-nav-section {
+    width: 100%;
+  }
+
+  .customer-nav-section small {
+    margin-bottom: 10px;
+  }
+
+  .customer-nav-link {
+    min-height: 48px;
+    padding: 0 12px;
+    font-size: 12px;
+    gap: 13px;
+  }
+
+  .customer-nav-link svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .customer-sidebar-bottom {
+    margin-top: 30px;
+    padding-top: 20px;
+  }
+
+  .customer-sidebar-wallet {
+    padding: 13px;
+  }
+
+  .customer-logout {
+    height: 46px;
+    font-size: 11px;
+  }
+
+  .customer-mobile-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+
+    display: block;
+
+    border: 0;
+    padding: 0;
+
+    background: rgba(0, 0, 0, 0.58);
+
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+
+  .customer-main {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .customer-topbar {
+    height: 68px;
+    padding: 0 16px;
+  }
+
+  .customer-menu-button {
+    display: grid;
+  }
+
+}
+
+@media (max-width: 380px) {
+
+  .customer-sidebar {
+    width: 270px;
+    min-width: 270px;
+  }
+
+  .customer-topbar {
+    padding: 0 12px;
+  }
+
+  .customer-menu-button {
+    margin-right: 8px;
+  }
+
+}

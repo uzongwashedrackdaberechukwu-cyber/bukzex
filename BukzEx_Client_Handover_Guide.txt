@@ -1,0 +1,889 @@
+BUKZEX — PROJECT HANDOVER / CLIENT IMPLEMENTATION GUIDE
+=============================================================
+
+Purpose
+-------
+This document explains what has been completed on the BukzEx website, how the current system works, what is still required from the client, and how the project should be taken from the current frontend/demo stage to a fully operational production platform.
+
+The project is intentionally kept simple and professional so that the final API/backend integration can be added without unnecessary complexity.
+
+
+1. WHAT BUKZEX IS
+-----------------
+
+BukzEx is a multi-service digital platform with these six services:
+
+1. VTU
+2. Marketplace
+3. Virtual SMS / OTP
+4. Social Media Boost
+5. Gift Cards
+6. Crypto
+
+The public website introduces the platform and its services.
+
+Customers can create an account, log in, fund their wallet, purchase services, view orders, manage their profile and access settings.
+
+Administrators have a separate administration panel using the same login page. The system automatically sends the user to the correct dashboard based on their role.
+
+
+2. WHAT HAS BEEN COMPLETED
+--------------------------
+
+PUBLIC WEBSITE
+--------------
+
+The public landing page has been built with:
+
+- Professional BukzEx branding
+- Responsive navigation
+- Hero section
+- Services section
+- How It Works section
+- Why Choose Us section
+- Testimonials section
+- FAQ section
+- Call-to-action section
+- Footer
+- Responsive/mobile layouts
+- Login and Signup navigation
+- Responsive preview page
+
+The six official BukzEx services are represented throughout the current application.
+
+
+CUSTOMER AUTHENTICATION
+-----------------------
+
+The frontend currently has a working demo authentication system.
+
+Customer signup includes:
+
+- First name
+- Last name
+- Email
+- Phone number
+- Password
+- Confirm password
+- Terms acceptance
+- Password visibility controls
+
+Customer login works from:
+
+/login
+
+After a normal customer logs in, the system sends the customer to:
+
+/customer
+
+The system prevents a customer from entering the admin dashboard.
+
+There is also role-based login.
+
+Admin login uses the same:
+
+/login
+
+Demo administrator credentials currently configured in the frontend:
+
+Email:
+admin@bukzex.com
+
+Password:
+admin123
+
+IMPORTANT:
+These are demo/frontend credentials only. Before production launch, the real backend authentication system must replace this demo authentication.
+
+
+CUSTOMER DASHBOARD
+------------------
+
+The customer dashboard includes:
+
+- Wallet balance
+- Dashboard
+- Services
+- My Orders
+- Profile
+- Settings
+- Logout
+- Mobile sidebar/navigation
+
+The customer can currently submit a wallet deposit.
+
+
+FUND WALLET FLOW
+----------------
+
+The current demo wallet flow is:
+
+1. Customer logs in.
+2. Customer opens Fund Wallet.
+3. Customer sees the configured bank transfer information.
+4. Customer enters the amount.
+5. Customer completes the transfer through the bank/payment provider.
+6. Customer enters the transfer reference.
+7. Customer submits the deposit.
+8. Deposit is stored as pending.
+9. Admin can see the pending deposit.
+10. In demo mode, the admin can confirm the deposit.
+11. The demo wallet is then credited.
+
+Current deposit account information configured in the customer flow:
+
+Bank:
+OPay
+
+Account Number:
+640 249 3498
+
+Account Name:
+MATTHEW CHUKWUEBUKA AGU
+
+IMPORTANT:
+The current confirmation button is DEMO ONLY.
+
+In the real system, the backend/API must verify the actual transfer before crediting the customer's wallet. The frontend must never be trusted as the authority for successful payment verification.
+
+
+TRANSFER REFERENCE
+------------------
+
+The transfer reference is the transaction identifier supplied by the bank/payment provider after the customer makes the transfer.
+
+The customer should not invent a reference.
+
+In the production system, the backend should receive the reference and verify it against the payment provider/bank system where supported.
+
+
+CUSTOMER SERVICES
+-----------------
+
+Customers can access the six services through the customer dashboard.
+
+The current demo service system supports:
+
+- Service selection
+- Amount entry where applicable
+- Wallet balance checking
+- Insufficient balance checking
+- Demo order creation
+- Order status storage
+
+
+CUSTOMER ORDERS
+---------------
+
+Customers have an Orders page where submitted service purchases can be displayed.
+
+Orders are currently stored locally in demo mode.
+
+The production API should become the authoritative source for:
+
+- Order creation
+- Order status
+- Service fulfillment
+- Order history
+
+
+CUSTOMER PROFILE
+----------------
+
+The customer profile page is available and uses the current logged-in session information.
+
+Customer settings are also available.
+
+
+3. ADMIN PANEL
+--------------
+
+The admin panel is fully structured with:
+
+- Overview
+- Customers
+- Deposits
+- Orders
+- Services
+- Transactions
+- Settings
+- Logout
+
+It is responsive and includes mobile navigation.
+
+
+ADMIN OVERVIEW
+--------------
+
+The Overview now uses actual local/demo application data instead of hardcoded demo statistics.
+
+It displays:
+
+- Total customers
+- Pending deposits
+- Total orders
+- Transaction volume
+- Recent deposits
+- Recent orders
+- Quick access to management sections
+
+
+ADMIN CUSTOMERS
+---------------
+
+The Customers module allows the administrator to:
+
+- View registered customers
+- Search customers
+- View customer information
+- See customer email
+- See customer phone
+- See customer role
+- View customer details
+
+
+ADMIN DEPOSITS
+--------------
+
+The Deposits module allows the administrator to:
+
+- View deposits
+- Search deposits
+- Filter pending/confirmed deposits
+- View deposit details
+- See transfer reference
+- See amount
+- See customer information
+- See deposit date
+- Confirm a deposit in demo mode
+
+Again, the demo confirmation must be replaced with server-side payment verification in production.
+
+
+ADMIN ORDERS
+------------
+
+The Orders module allows the administrator to:
+
+- View customer orders
+- Search orders
+- Filter orders
+- View order amount
+- View service
+- View customer
+- View order status
+- View order details
+- Refresh the order list
+
+
+ADMIN SERVICES
+--------------
+
+The Services module currently displays:
+
+- VTU
+- Marketplace
+- Virtual SMS / OTP
+- Social Media Boost
+- Gift Cards
+- Crypto
+
+It shows whether each service is available.
+
+The production API should eventually control service availability and service configuration.
+
+
+ADMIN TRANSACTIONS
+------------------
+
+The Transactions module combines available demo activity into a transaction view.
+
+It currently handles:
+
+- Wallet deposits
+- Service purchases
+- Search
+- Filtering
+- Transaction details
+- Amounts
+- Status
+- Customer
+- Reference
+- Date
+
+
+ADMIN SETTINGS
+--------------
+
+The Settings page currently displays:
+
+- Administrator account information
+- Administrator role
+- Application information
+- API mode
+- Environment
+- Information about the current demo/API configuration
+
+It is intentionally simple.
+
+
+4. CURRENT DATA ARCHITECTURE
+----------------------------
+
+The current application has a demo/local data layer.
+
+The main frontend service files are:
+
+src/services/auth.js
+src/services/api.js
+src/services/demoStore.js
+
+Authentication and demo data currently use browser localStorage.
+
+This is useful for demonstrating the frontend before the client's backend/API is connected.
+
+It is NOT a replacement for a production backend.
+
+
+5. WHAT THE CLIENT NEEDS TO PROVIDE
+-----------------------------------
+
+Before the platform can become fully operational, the client needs to provide the backend/API or API documentation.
+
+The client should provide:
+
+A. API BASE URL
+----------------
+
+Example:
+
+https://api.example.com
+
+The actual production API URL must be supplied by the client/backend developer.
+
+
+B. AUTHENTICATION API
+---------------------
+
+The backend should provide endpoints for:
+
+- Customer registration
+- Customer login
+- Logout/session handling
+- Password reset
+- Email verification
+- User profile
+- Role/permission checking
+
+The frontend should not permanently store passwords in localStorage.
+
+
+C. WALLET API
+-------------
+
+The backend should provide:
+
+- Wallet balance
+- Deposit creation
+- Deposit status
+- Deposit verification
+- Wallet credit
+- Wallet debit
+- Transaction history
+
+The backend must be responsible for deciding whether money was actually received.
+
+
+D. PAYMENT / TRANSFER VERIFICATION
+----------------------------------
+
+The client needs to explain how OPay/bank transfer verification will work.
+
+Required information includes:
+
+- Payment provider/API
+- Merchant/business account
+- API credentials
+- Webhook configuration
+- Verification endpoint
+- Required reference/transaction fields
+- Callback/webhook URL requirements
+- How duplicate transactions are prevented
+
+The backend should prevent the same transfer from being credited more than once.
+
+
+E. SERVICE APIs
+---------------
+
+The client needs API documentation for each service:
+
+VTU
+- Airtime
+- Data
+- Network/provider
+- Pricing
+- Transaction status
+
+Marketplace
+- Product list
+- Product details
+- Inventory
+- Pricing
+- Orders
+- Delivery/fulfillment
+
+Virtual SMS / OTP
+- Available services
+- Pricing
+- Number/session management
+- Status
+- Expiration/cancellation
+- Provider API
+
+Social Media Boost
+- Supported platforms
+- Services
+- Pricing
+- Order creation
+- Order status
+- Provider API
+
+Gift Cards
+- Supported cards
+- Rates
+- Buy/sell flow if applicable
+- Order status
+- Delivery
+- Provider API
+
+Crypto
+- Supported assets
+- Rates
+- Deposit/withdrawal functionality if offered
+- Transaction status
+- Wallet/address handling
+- Compliance requirements
+
+The client/backend developer should provide the actual API documentation rather than expecting the frontend to guess endpoint names.
+
+
+6. ENVIRONMENT VARIABLES
+------------------------
+
+When the production API is ready, the frontend will use an environment variable similar to:
+
+VITE_API_BASE_URL=https://YOUR-API-DOMAIN.com
+
+This should be configured in the hosting provider's environment-variable settings.
+
+Do not put private backend secrets in the React frontend.
+
+Anything beginning with VITE_ is exposed to the browser after the application is built.
+
+Therefore:
+
+SAFE FOR FRONTEND:
+- Public API base URL
+- Public configuration values
+
+DO NOT PUT IN FRONTEND:
+- API secret keys
+- Payment secret keys
+- Database passwords
+- Private service-provider credentials
+- JWT signing secrets
+- Supabase service-role keys
+- Private encryption keys
+
+
+7. PRODUCTION BACKEND RESPONSIBILITIES
+--------------------------------------
+
+The backend must be authoritative for:
+
+- Authentication
+- Authorization
+- User roles
+- Wallet balances
+- Payment verification
+- Deposits
+- Transactions
+- Service purchases
+- Order status
+- Provider/API credentials
+- Pricing
+- Fraud/duplicate protection
+- Audit records
+
+The frontend should only display information supplied by the backend and request permitted actions.
+
+
+8. SECURITY REQUIREMENTS
+------------------------
+
+Before production launch:
+
+- Replace demo authentication.
+- Hash passwords on the backend.
+- Use secure session/token handling.
+- Never trust wallet balances sent by the browser.
+- Never trust payment confirmation from the browser.
+- Verify payment server-side.
+- Validate all amounts server-side.
+- Validate service purchases server-side.
+- Prevent duplicate transaction processing.
+- Protect admin endpoints with server-side authorization.
+- Keep API secrets on the server.
+- Configure HTTPS.
+- Configure proper CORS.
+- Add rate limiting where appropriate.
+- Log important financial operations.
+- Use database transactions for wallet operations.
+
+
+9. CURRENT DEMO MODE
+--------------------
+
+When VITE_API_BASE_URL is not configured, the frontend operates in demo mode.
+
+This allows the client to demonstrate the interface without the production API.
+
+Demo data is stored in browser localStorage.
+
+This means:
+
+- Data belongs to the current browser/device.
+- Data is not a shared production database.
+- Clearing browser storage can remove demo data.
+- Another device will not automatically see the same demo data.
+- Demo wallet confirmation is not real payment verification.
+
+This distinction must be understood before showing the platform as a live financial/service platform.
+
+
+10. HOW TO TEST THE CURRENT VERSION
+-----------------------------------
+
+CUSTOMER TEST
+
+1. Open /login.
+2. Create a customer account through Signup.
+3. Log in.
+4. Open Customer Dashboard.
+5. Open Fund Wallet.
+6. Enter a demo amount.
+7. Enter the actual transfer reference if testing the UI flow.
+8. Submit the deposit.
+9. Confirm that it becomes pending.
+10. Log out.
+
+
+ADMIN TEST
+
+1. Open /login.
+2. Enter:
+
+Email: admin@bukzex.com
+Password: admin123
+
+3. Open Admin Dashboard.
+4. Check Overview.
+5. Open Customers.
+6. Open Deposits.
+7. Find the pending deposit.
+8. Open its details.
+9. Use demo confirmation only for testing.
+10. Check Orders.
+11. Check Services.
+12. Check Transactions.
+13. Check Settings.
+
+
+SERVICE TEST
+
+After demo wallet credit:
+
+1. Return to customer account.
+2. Open Services.
+3. Select a service.
+4. Enter a valid demo amount.
+5. Submit the order.
+6. Confirm the wallet balance is reduced.
+7. Confirm the order appears in My Orders.
+8. Return to admin.
+9. Confirm the order appears in Orders.
+10. Confirm the activity appears in Transactions.
+
+
+11. BUILDING THE PROJECT
+------------------------
+
+The project uses Vite.
+
+Development:
+
+npm run dev
+
+Production build:
+
+npm run build
+
+The production build output is generated in:
+
+dist/
+
+
+12. DEPLOYMENT
+--------------
+
+The frontend can be deployed to Vercel.
+
+Recommended deployment flow:
+
+1. Push the project to GitHub.
+2. Import the GitHub repository into Vercel.
+3. Set the production environment variable:
+
+VITE_API_BASE_URL
+
+4. Deploy.
+5. Test the deployed /login page.
+6. Test customer authentication.
+7. Test admin authentication.
+8. Test API calls.
+9. Check browser console and network requests.
+10. Confirm the backend allows the deployed domain.
+
+
+13. IMPORTANT API INTEGRATION NOTE
+---------------------------------
+
+The current frontend already has a service abstraction in:
+
+src/services/api.js
+
+This is intentional.
+
+Instead of putting API calls directly throughout every React component, the application can be connected to the client's backend mainly through this service layer.
+
+The future process should therefore be:
+
+Frontend UI
+    ↓
+src/services/api.js
+    ↓
+Production API
+    ↓
+Database / payment provider / service providers
+
+
+This keeps the UI easier to maintain.
+
+
+14. WHAT SHOULD HAPPEN WHEN THE CLIENT PROVIDES THE API
+--------------------------------------------------------
+
+Once the client provides the API documentation:
+
+STEP 1
+------
+
+Configure the API base URL.
+
+STEP 2
+------
+
+Replace demo authentication with the real authentication endpoints.
+
+STEP 3
+------
+
+Connect wallet balance to the backend.
+
+STEP 4
+------
+
+Connect deposit submission.
+
+STEP 5
+------
+
+Connect real payment verification.
+
+STEP 6
+------
+
+Connect wallet crediting.
+
+STEP 7
+------
+
+Connect all six service APIs.
+
+STEP 8
+------
+
+Connect real order creation and status tracking.
+
+STEP 9
+------
+
+Connect real transaction history.
+
+STEP 10
+-------
+
+Connect admin customer/deposit/order/service/transaction data to the backend.
+
+STEP 11
+-------
+
+Add proper backend authorization for admin actions.
+
+STEP 12
+-------
+
+Run full production testing.
+
+
+15. WHAT THE CLIENT SHOULD NOT DO
+---------------------------------
+
+The client should not:
+
+- Edit the frontend code randomly.
+- Put secret API keys inside React components.
+- Put payment secret keys in VITE_ variables.
+- Manually credit customer wallets in production.
+- Trust a browser confirmation button for payments.
+- Treat localStorage as the production database.
+- Use the demo admin password in production.
+- Assume a successful frontend response means a real transaction succeeded.
+
+
+16. CURRENT PROJECT STATUS
+--------------------------
+
+Frontend/UI:
+COMPLETED
+
+Customer dashboard:
+COMPLETED
+
+Customer navigation:
+COMPLETED
+
+Demo authentication:
+COMPLETED
+
+Role-based admin/customer login:
+COMPLETED
+
+Wallet demo flow:
+COMPLETED
+
+Admin dashboard:
+COMPLETED
+
+Admin customers:
+COMPLETED
+
+Admin deposits:
+COMPLETED
+
+Admin orders:
+COMPLETED
+
+Admin services:
+COMPLETED
+
+Admin transactions:
+COMPLETED
+
+Admin settings:
+COMPLETED
+
+Responsive/mobile layouts:
+COMPLETED
+
+Production build:
+PASSING
+
+
+17. WHAT IS STILL REQUIRED
+--------------------------
+
+The main remaining work is NOT basic UI development.
+
+The major remaining work is backend/API integration.
+
+Required from the client/backend side:
+
+1. Production API.
+2. API documentation.
+3. Authentication endpoints.
+4. Wallet endpoints.
+5. Payment verification method.
+6. Deposit/webhook implementation.
+7. Service provider APIs.
+8. Order endpoints.
+9. Transaction endpoints.
+10. Admin endpoints.
+11. Production database.
+12. Production secrets/configuration.
+13. Payment/service-provider credentials.
+14. Domain/hosting configuration.
+
+
+18. HANDOVER SUMMARY
+--------------------
+
+The BukzEx frontend is currently a functional, responsive application with a complete customer-facing flow and a structured administration panel.
+
+The current system intentionally runs in demo mode when no production API is configured.
+
+The next phase is backend/API integration.
+
+The frontend should NOT be considered a live financial transaction system until:
+
+- Authentication is moved to the backend.
+- Wallet operations are server-controlled.
+- Deposits are actually verified.
+- Payment/webhook processing is implemented.
+- Service provider APIs are connected.
+- Orders are stored in the production database.
+- Admin authorization is enforced server-side.
+- Production secrets are secured.
+
+Once those pieces are supplied, the existing frontend service layer can be connected to the real backend and the demo/local data layer can be removed or disabled.
+
+
+FINAL CHECKLIST FOR CLIENT
+--------------------------
+
+[ ] Provide production API base URL
+[ ] Provide API documentation
+[ ] Provide authentication endpoints
+[ ] Provide wallet endpoints
+[ ] Provide payment verification/API details
+[ ] Provide webhook details
+[ ] Provide service provider APIs
+[ ] Provide service pricing rules
+[ ] Provide order endpoints
+[ ] Provide transaction endpoints
+[ ] Provide admin endpoints
+[ ] Provide production database/backend
+[ ] Provide required server-side credentials
+[ ] Configure production environment variables
+[ ] Connect deployed frontend to backend
+[ ] Test payments
+[ ] Test wallet credit/debit
+[ ] Test all six services
+[ ] Test admin operations
+[ ] Complete security review
+[ ] Launch production version
+
+
+END OF HANDOVER DOCUMENT
+========================

@@ -1,0 +1,258 @@
+.navbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+
+  width: 100%;
+  padding: 22px 0;
+}
+
+.navbar-container {
+  width: min(1200px, calc(100% - 40px));
+  min-height: 42px;
+
+  margin: 0 auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 30px;
+}
+
+/* =========================
+   BRAND
+========================= */
+
+.navbar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+
+  flex-shrink: 0;
+
+  color: var(--white);
+}
+
+.brand-mark {
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 9px;
+
+  background: var(--gold);
+  color: var(--primary);
+
+  font-size: 17px;
+  font-weight: 900;
+
+  box-shadow: 0 5px 18px rgba(212, 167, 44, 0.2);
+}
+
+.brand-text {
+  color: var(--white);
+
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.brand-text span {
+  color: var(--gold);
+}
+
+/* =========================
+   NAV LINKS
+========================= */
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 28px;
+
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.navbar-links a {
+  position: relative;
+
+  color: rgba(255, 255, 255, 0.62);
+
+  font-size: 12px;
+  font-weight: 600;
+
+  white-space: nowrap;
+
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.navbar-links a:hover {
+  color: var(--white);
+  transform: translateY(-1px);
+}
+
+.navbar-links a.active {
+  color: var(--gold);
+}
+
+.navbar-links a.active::after {
+  content: "";
+
+  position: absolute;
+
+  left: 50%;
+  bottom: -8px;
+
+  width: 18px;
+  height: 2px;
+
+  transform: translateX(-50%);
+
+  border-radius: 999px;
+
+  background: var(--gold);
+}
+
+/* =========================
+   ACTIONS
+========================= */
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  flex-shrink: 0;
+}
+
+.navbar-login,
+.navbar-signup {
+  height: 38px;
+
+  padding: 0 17px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 999px;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.navbar-login {
+  border: 1px solid rgba(212, 167, 44, 0.3);
+
+  background: transparent;
+  color: var(--white);
+}
+
+.navbar-login:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  transform: translateY(-1px);
+}
+
+.navbar-signup {
+  border: 1px solid var(--accent);
+
+  background: var(--accent);
+  color: var(--white);
+
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.2);
+}
+
+.navbar-signup:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+
+  transform: translateY(-1px);
+
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.3);
+}
+
+/* =========================
+   TABLET
+========================= */
+
+@media (max-width: 900px) {
+  .navbar-container {
+    width: calc(100% - 30px);
+    gap: 18px;
+  }
+
+  .navbar-links {
+    gap: 17px;
+  }
+
+  .navbar-links a {
+    font-size: 11px;
+  }
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 760px) {
+  .navbar-links {
+    display: none;
+  }
+
+  .navbar-container {
+    width: calc(100% - 30px);
+  }
+
+  .navbar-actions {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar {
+    padding: 16px 0;
+  }
+
+  .navbar-container {
+    width: calc(100% - 24px);
+  }
+
+  .brand-mark {
+    width: 32px;
+    height: 32px;
+    font-size: 15px;
+  }
+
+  .brand-text {
+    font-size: 17px;
+  }
+
+  .navbar-login {
+    display: none;
+  }
+
+  .navbar-signup {
+    height: 35px;
+    padding: 0 14px;
+    font-size: 10px;
+  }
+}
