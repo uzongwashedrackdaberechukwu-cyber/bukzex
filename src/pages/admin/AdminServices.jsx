@@ -98,11 +98,11 @@ export default function AdminServices() {
         <div className="admin-services-grid">
           {services.map((service) => {
             const Icon =
-              icons[service.id] || Store;
+              icons[service.service_key] || Store;
 
             const available =
               String(service.status || "")
-                .toLowerCase() === "available";
+                .toLowerCase() === "active";
 
             return (
               <article
@@ -128,8 +128,10 @@ export default function AdminServices() {
                     )}
 
                     {available
-                      ? "Available"
-                      : "Unavailable"}
+                      ? "Active"
+                      : service.status === "setup_required"
+                        ? "Setup required"
+                        : "Paused"}
                   </span>
                 </div>
 
@@ -137,13 +139,15 @@ export default function AdminServices() {
 
                 <p>
                   {available
-                    ? "Customers can currently access this service."
-                    : "This service is currently unavailable."}
+                    ? "Customers can submit requests for this service."
+                    : service.status === "setup_required"
+                      ? "Connect a provider and configure pricing before enabling this service."
+                      : "This service is currently paused."}
                 </p>
 
                 <div className="admin-service-id">
                   Service ID:{" "}
-                  <strong>{service.id}</strong>
+                  <strong>{service.service_key}</strong>
                 </div>
               </article>
             );

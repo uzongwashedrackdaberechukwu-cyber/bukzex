@@ -9,7 +9,7 @@ import {
   X,
 } from "lucide-react";
 
-import { getOrders } from "../../services/api";
+import { getOrders, updateOrder } from "../../services/api";
 import "./AdminOrders.css";
 
 function formatMoney(value) {
@@ -36,6 +36,7 @@ export default function AdminOrders() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [updating, setUpdating] = useState(false);
 
   async function loadOrders() {
     try {
@@ -54,6 +55,21 @@ export default function AdminOrders() {
   useEffect(() => {
     loadOrders();
   }, []);
+
+  async function handleStatusChange(status) {
+    if (!selectedOrder) return;
+    try {
+      setUpdating(true);
+      setError("");
+      await updateOrder(selectedOrder.id, status);
+      setSelectedOrder(null);
+      await loadOrders();
+    } catch (err) {
+      setError(err.message || "Unable to update this order.");
+    } finally {
+      setUpdating(false);
+    }
+  }
 
   const filteredOrders = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -395,6 +411,17 @@ export default function AdminOrders() {
                 </strong>
               </div>
             </div>
+            {selectedOrder.status === "pending" && (
+              <div className="admin-order-modal-actions">
+                <button type="button" disabled={updating} onClick={() => handleStatusChange("processing")}>Mark Processing</button>
+                <button type="button" disabled={updating} onClick={() => handleStatusChange("rejected")}>Reject</button>
+              </div>
+            )}
+            {selectedOrder.status === "processing" && (
+              <div className="admin-order-modal-actions">
+                <button type="button" disabled={updating} onClick={() => handleStatusChange("completed")}>Mark Completed</button>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -128,7 +128,7 @@ function Status({ status }) {
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const session = getSession();
+  const [session, setSession] = useState(null);
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeSection, setActiveSection] =
@@ -144,14 +144,15 @@ export default function AdminDashboard() {
     try {
       setOverviewLoading(true);
 
-      const [depositResult, orderResult] =
+      const [depositResult, orderResult, customerResult] =
         await Promise.all([
           getDeposits(),
           getOrders(),
+          getRegisteredUsers(),
         ]);
 
       setCustomers(
-        getRegisteredUsers().filter(
+        customerResult.filter(
           (user) => user.role !== "admin"
         )
       );
@@ -173,22 +174,19 @@ export default function AdminDashboard() {
         error
       );
 
-      setCustomers(
-        getRegisteredUsers().filter(
-          (user) => user.role !== "admin"
-        )
-      );
+      setCustomers([]);
     } finally {
       setOverviewLoading(false);
     }
   }
 
   useEffect(() => {
+    getSession().then(setSession).catch(() => setSession(null));
     loadOverview();
   }, []);
 
-  function handleLogout() {
-    logoutUser();
+  async function handleLogout() {
+    await logoutUser();
     navigate("/login", { replace: true });
   }
 

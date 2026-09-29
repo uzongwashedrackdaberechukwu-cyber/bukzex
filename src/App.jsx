@@ -16,6 +16,7 @@ import Footer from "./components/Footer";
 
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import ResetPassword from "./pages/ResetPassword";
 
 import ResponsivePreview from "./components/ResponsivePreview";
 
@@ -57,6 +58,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route
           path="/preview"
           element={<ResponsivePreview />}

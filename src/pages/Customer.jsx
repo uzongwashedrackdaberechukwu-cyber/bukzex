@@ -24,7 +24,6 @@ import {
   getOrders,
   createDeposit,
   getDepositStatus,
-  confirmDemoDeposit,
 } from "../services/api";
 import { getSession, logoutUser } from "../services/auth";
 
@@ -122,7 +121,9 @@ export default function Customer() {
   const [depositMessage, setDepositMessage] = useState("");
 
   useEffect(() => {
-    setSession(getSession());
+    getSession().then(setSession).catch((err) => {
+      setError(err?.message || "Unable to load your account.");
+    });
 
     async function loadDashboard() {
       try {
@@ -165,6 +166,31 @@ export default function Customer() {
 
     loadDashboard();
   }, []);
+
+  useEffect(() => {
+    if (!depositId || depositStatus !== "pending") return undefined;
+    let active = true;
+    const checkDeposit = async () => {
+      try {
+        const result = await getDepositStatus(depositId);
+        if (!active) return;
+        if (result.status === "confirmed") {
+          setDepositStatus("confirmed");
+          setDepositMessage("Your deposit was reviewed and your wallet has been credited.");
+          const wallet = await getWalletBalance();
+          if (active) setWalletBalance(Number(wallet.balance || 0));
+        } else if (result.status === "rejected") {
+          setDepositStatus("rejected");
+          setDepositMessage("The deposit could not be confirmed. Please contact support.");
+        }
+      } catch {
+        // Keep the request pending while the network is unavailable.
+      }
+    };
+    checkDeposit();
+    const timer = setInterval(checkDeposit, 30000);
+    return () => { active = false; clearInterval(timer); };
+  }, [depositId, depositStatus]);
 
   async function handleDepositSubmit(event) {
     event.preventDefault();
@@ -209,36 +235,8 @@ export default function Customer() {
     }
   }
 
-  async function handleDemoConfirmation() {
-    if (!depositId) return;
-
-    try {
-      setFunding(true);
-      setError("");
-
-      const result =
-        await confirmDemoDeposit(depositId);
-
-      setDepositStatus("confirmed");
-      setDepositMessage(
-        "Demo deposit confirmed. Your wallet has been credited."
-      );
-
-      if (result?.balance !== undefined) {
-        setWalletBalance(Number(result.balance));
-      }
-    } catch (err) {
-      setError(
-        err?.message ||
-          "Unable to confirm the demo deposit."
-      );
-    } finally {
-      setFunding(false);
-    }
-  }
-
-  function handleLogout() {
-    logoutUser();
+  async function handleLogout() {
+    await logoutUser();
     navigate("/login", { replace: true });
   }
 
@@ -598,15 +596,7 @@ export default function Customer() {
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleDemoConfirmation}
-                  disabled={funding}
-                >
-                  {funding
-                    ? "Confirming..."
-                    : "Demo: Confirm Deposit"}
-                </button>
+                <span>Awaiting administrator review</span>
               </div>
             )}
 
@@ -623,6 +613,16 @@ export default function Customer() {
               </div>
             )}
 
+            {depositStatus === "rejected" && (
+              <div className="customer-funding-status pending" role="status">
+                <AlertCircle size={18} />
+                <div>
+                  <strong>Deposit Not Confirmed</strong>
+                  <p>{depositMessage}</p>
+                </div>
+              </div>
+            )}
+
             {error && (
               <div className="customer-funding-error">
                 <AlertCircle size={17} />
@@ -632,8 +632,7 @@ export default function Customer() {
 
             {!depositStatus && !error && (
               <div className="customer-funding-note">
-                Demo mode: real bank-transfer verification will be
-                handled by the backend API.
+                Deposits remain pending until an administrator verifies the transfer and confirms it.
               </div>
             )}
           </section>

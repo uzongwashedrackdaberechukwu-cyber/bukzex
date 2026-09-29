@@ -21,6 +21,7 @@ const BANK_DETAILS = {
 };
 
 export default function FundWallet({ onBack }) {
+  const [amount, setAmount] = useState("");
   const [reference, setReference] = useState("");
   const [depositId, setDepositId] = useState(null);
   const [status, setStatus] = useState("idle");
@@ -54,6 +55,11 @@ export default function FundWallet({ onBack }) {
               "The deposit could not be confirmed."
           );
         }
+
+        if (result.status === "rejected") {
+          setStatus("failed");
+          setMessage("The deposit was not confirmed. Please contact support.");
+        }
       } catch {
         // The API may not be connected yet.
         // Leave the deposit in pending state.
@@ -80,7 +86,7 @@ export default function FundWallet({ onBack }) {
       );
 
       setMessage("Account number copied.");
-    } catch {
+    } catch (err) {
       setMessage(
         "Copy the account number manually."
       );
@@ -91,6 +97,13 @@ export default function FundWallet({ onBack }) {
     event.preventDefault();
 
     const cleanReference = reference.trim();
+    const numericAmount = Number(amount);
+
+    if (!numericAmount || numericAmount <= 0) {
+      setStatus("error");
+      setMessage("Enter the amount you transferred.");
+      return;
+    }
 
     if (!cleanReference) {
       setStatus("error");
@@ -105,7 +118,7 @@ export default function FundWallet({ onBack }) {
 
     try {
       const result =
-        await createDeposit(cleanReference);
+        await createDeposit(cleanReference, numericAmount);
 
       setDepositId(result.depositId || result.id);
       setStatus("pending");
@@ -121,9 +134,7 @@ export default function FundWallet({ onBack }) {
        */
       setStatus("error");
 
-      setMessage(
-        "Deposit submission is currently unavailable. Connect the BukzEx payment API to enable confirmation."
-      );
+        setMessage(err?.message || "Unable to submit this deposit request.");
     }
   };
 
@@ -188,8 +199,7 @@ export default function FundWallet({ onBack }) {
           <h2>Deposit Pending</h2>
 
           <p>
-            Pending deposits usually takes up to
-            1 minute for confirmation.
+            The administrator will review your transfer and update its status.
           </p>
 
           <div className="fund-reference">
@@ -199,7 +209,7 @@ export default function FundWallet({ onBack }) {
 
           <div className="fund-checking">
             <LoaderCircle size={15} />
-            Waiting for confirmation
+            Waiting for administrator review
           </div>
 
         </div>
@@ -266,6 +276,24 @@ export default function FundWallet({ onBack }) {
         className="fund-form"
         onSubmit={handleSubmit}
       >
+
+        <label htmlFor="deposit-amount">
+          Transfer Amount
+        </label>
+
+        <input
+          id="deposit-amount"
+          type="number"
+          min="1"
+          value={amount}
+          onChange={(event) => {
+            setAmount(event.target.value);
+            setStatus("idle");
+            setMessage("");
+          }}
+          placeholder="Enter amount"
+          autoComplete="off"
+        />
 
         <label htmlFor="deposit-reference">
           Transfer Reference

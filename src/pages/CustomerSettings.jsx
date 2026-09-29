@@ -5,17 +5,36 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import "./CustomerSettings.css";
+import { getSession, updateSession } from "../services/auth";
 
 export default function CustomerSettings() {
   const [notifications, setNotifications] = useState(true);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  function handleSave() {
-    setMessage("Settings saved.");
+  useEffect(() => {
+    getSession()
+      .then((profile) => setNotifications(profile?.notificationsEnabled ?? true))
+      .catch((err) => setError(err.message || "Unable to load settings."));
+  }, []);
+
+  async function handleSave() {
+    setSaving(true);
+    setError("");
+    setMessage("");
+    try {
+      await updateSession({ notificationsEnabled: notifications });
+      setMessage("Settings saved.");
+    } catch (err) {
+      setError(err.message || "Unable to save settings.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -93,13 +112,15 @@ export default function CustomerSettings() {
               {message}
             </div>
           )}
+          {error && <div className="customer-settings-message" role="alert">{error}</div>}
 
           <button
             type="button"
             className="customer-settings-save"
             onClick={handleSave}
+            disabled={saving}
           >
-            Save Settings
+            {saving ? "Saving..." : "Save Settings"}
           </button>
 
         </section>

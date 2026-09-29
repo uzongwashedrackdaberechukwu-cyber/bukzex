@@ -20,7 +20,7 @@ export default function AdminLogin() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     setError("");
 
@@ -32,7 +32,7 @@ export default function AdminLogin() {
     try {
       setLoading(true);
 
-      loginAdmin(email, password);
+      await loginAdmin(email, password);
 
       navigate("/admin", { replace: true });
     } catch (err) {
@@ -167,12 +167,6 @@ export default function AdminLogin() {
           </button>
         </form>
 
-        <div className="admin-login-demo">
-          <span>Demo admin</span>
-
-          <code>admin@bukzex.com</code>
-          <code>admin123</code>
-        </div>
       </section>
     </main>
   );

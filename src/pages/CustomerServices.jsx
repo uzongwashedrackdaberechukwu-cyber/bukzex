@@ -8,8 +8,9 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { getServices } from "../services/api";
 
 import "./CustomerServices.css";
 
@@ -54,6 +55,28 @@ const services = [
 
 export default function CustomerServices() {
   const [selectedService, setSelectedService] = useState(null);
+  const [enabledServices, setEnabledServices] = useState(null);
+  const [serviceError, setServiceError] = useState("");
+
+  useEffect(() => {
+    getServices()
+      .then((result) => {
+        const active = new Set(
+          (result.services || [])
+            .filter((service) => service.status === "active")
+            .map((service) => service.service_key)
+        );
+        setEnabledServices(active);
+      })
+      .catch((err) => {
+        setServiceError(err.message || "Service information is not available yet.");
+        setEnabledServices(new Set());
+      });
+  }, []);
+
+  const activeServices = services.filter((service) =>
+    enabledServices?.has(service.id)
+  );
 
   return (
     <main className="customer-services-page">
@@ -75,8 +98,20 @@ export default function CustomerServices() {
         </Link>
       </div>
 
+      {serviceError && <p role="status">{serviceError}</p>}
+
+      {enabledServices && activeServices.length === 0 ? (
+        <section className="customer-services-grid">
+          <article className="customer-service-card">
+            <div className="customer-service-content">
+              <h2>Services are being connected</h2>
+              <p>Available services will appear here after their provider and prices are set up.</p>
+            </div>
+          </article>
+        </section>
+      ) : (
       <section className="customer-services-grid">
-        {services.map((service) => {
+        {activeServices.map((service) => {
           const Icon = service.icon;
 
           return (
@@ -106,6 +141,7 @@ export default function CustomerServices() {
           );
         })}
       </section>
+      )}
 
       {selectedService && (
         <div className="customer-service-overlay">

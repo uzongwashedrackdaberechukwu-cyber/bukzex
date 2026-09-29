@@ -122,13 +122,6 @@ export default function ServicePurchase() {
       return;
     }
 
-    if (numericAmount > walletBalance) {
-      setError(
-        "Insufficient wallet balance. Please fund your wallet before purchasing."
-      );
-      return;
-    }
-
     if (!details.trim()) {
       setError("Please enter the required service details.");
       return;
@@ -150,8 +143,6 @@ export default function ServicePurchase() {
 
       if (result?.balance !== undefined) {
         setWalletBalance(Number(result.balance));
-      } else {
-        setWalletBalance((current) => current - numericAmount);
       }
 
       setAmount("");
@@ -215,10 +206,9 @@ export default function ServicePurchase() {
           onSubmit={handlePurchase}
         >
           <div className="service-form-heading">
-            <h2>Purchase Service</h2>
+            <h2>Request a Service</h2>
             <p>
-              Enter the information required to process your
-              purchase.
+              Send your request for administrator review. The amount is a requested budget; no wallet money is taken until provider pricing and fulfillment are connected.
             </p>
           </div>
 
@@ -281,7 +271,7 @@ export default function ServicePurchase() {
                 Processing...
               </>
             ) : (
-              "Submit Purchase"
+              "Send Service Request"
             )}
           </button>
         </form>

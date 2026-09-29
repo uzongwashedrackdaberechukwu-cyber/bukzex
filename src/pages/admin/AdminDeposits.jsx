@@ -12,7 +12,7 @@ import {
 
 import {
   getDeposits,
-  confirmDemoDeposit,
+  confirmDeposit,
 } from "../../services/api";
 
 import "./AdminDeposits.css";
@@ -132,14 +132,14 @@ export default function AdminDeposits() {
     0
   );
 
-  async function handleDemoConfirm(deposit) {
+  async function handleConfirm(deposit) {
     if (!deposit?.id) return;
 
     try {
       setProcessing(true);
       setError("");
 
-      await confirmDemoDeposit(deposit.id);
+      await confirmDeposit(deposit.id);
 
       setSelectedDeposit(null);
 
@@ -496,7 +496,7 @@ export default function AdminDeposits() {
                 className="admin-confirm-deposit"
                 disabled={processing}
                 onClick={() =>
-                  handleDemoConfirm(
+                  handleConfirm(
                     selectedDeposit
                   )
                 }
@@ -505,7 +505,7 @@ export default function AdminDeposits() {
 
                 {processing
                   ? "Confirming..."
-                  : "Confirm Deposit (Demo)"}
+                  : "Confirm Verified Deposit"}
               </button>
             )}
 
@@ -513,9 +513,7 @@ export default function AdminDeposits() {
               <ShieldCheck size={15} />
 
               <span>
-                Demo confirmation is temporary.
-                The live API will verify the actual
-                transfer before crediting the wallet.
+                Confirm only after you have checked the transfer in your bank or payment account. Confirmation credits the customer’s wallet.
               </span>
             </div>
           </section>

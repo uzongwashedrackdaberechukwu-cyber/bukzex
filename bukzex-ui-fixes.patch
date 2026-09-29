@@ -1,0 +1,574 @@
+From d5029fd02e3381cae4b7a16ef5a01e1eaa6f7b24 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Tue, 29 Sep 2026 19:19:32 +0300
+Subject: [PATCH] Wire landing page actions and clarify demo-only flows
+
+---
+ src/components/CTA.jsx            | 11 +++++-
+ src/components/Footer.css         | 26 +++++++++++++
+ src/components/Footer.jsx         | 65 +++++++++++++------------------
+ src/components/Hero.jsx           | 11 +++++-
+ src/components/ProtectedRoute.jsx |  6 ++-
+ src/components/Services.jsx       |  8 +++-
+ src/components/WhyChooseUs.jsx    |  8 +++-
+ src/pages/Login.css               | 16 ++++++--
+ src/pages/Login.jsx               | 22 ++++++++---
+ src/pages/Signup.css              | 29 +++++++++++++-
+ src/pages/Signup.jsx              | 16 ++++++--
+ 11 files changed, 157 insertions(+), 61 deletions(-)
+
+diff --git a/src/components/CTA.jsx b/src/components/CTA.jsx
+index 49edf20..682d13f 100644
+--- a/src/components/CTA.jsx
++++ b/src/components/CTA.jsx
+@@ -7,6 +7,7 @@ import {
+   Bitcoin,
+   ArrowRight,
+ } from "lucide-react";
++import { useNavigate } from "react-router-dom";
+ 
+ import "./CTA.css";
+ 
+@@ -20,6 +21,12 @@ const ctaServices = [
+ ];
+ 
+ export default function CTA() {
++  const navigate = useNavigate();
++
++  const goToServices = () => {
++    document.getElementById("services")?.scrollIntoView({ behavior: "smooth" });
++  };
++
+   return (
+     <section className="cta-section">
+       <div className="cta-background-grid"></div>
+@@ -42,14 +49,14 @@ export default function CTA() {
+           </p>
+ 
+           <div className="cta-actions">
+-            <button className="cta-primary">
++            <button className="cta-primary" onClick={() => navigate("/signup")}>
+               Create Free Account
+               <span>
+                 <ArrowRight size={15} />
+               </span>
+             </button>
+ 
+-            <button className="cta-secondary">
++            <button className="cta-secondary" onClick={goToServices}>
+               Explore Services
+             </button>
+           </div>
+diff --git a/src/components/Footer.css b/src/components/Footer.css
+index 0215612..d4fa4ac 100644
+--- a/src/components/Footer.css
++++ b/src/components/Footer.css
+@@ -218,6 +218,32 @@
+     transform 0.2s ease;
+ }
+ 
++.footer-column button {
++  display: block;
++  padding: 0;
++  border: 0;
++  background: transparent;
++  color: inherit;
++  font: inherit;
++  text-align: left;
++  cursor: pointer;
++}
++
++.footer-column button:hover {
++  color: var(--gold);
++}
++
++.footer-socials span,
++.footer-notice {
++  color: rgba(255, 255, 255, 0.62);
++  font-size: 12px;
++  line-height: 1.5;
++}
++
++.footer-notice {
++  margin: 10px 0 0;
++}
++
+ .footer-column a:hover {
+   color: var(--gold);
+ 
+diff --git a/src/components/Footer.jsx b/src/components/Footer.jsx
+index dc39fb8..6d4bea1 100644
+--- a/src/components/Footer.jsx
++++ b/src/components/Footer.jsx
+@@ -8,13 +8,7 @@ import {
+   Bitcoin,
+   Mail,
+ } from "lucide-react";
+-
+-import {
+-  FaFacebookF,
+-  FaInstagram,
+-  FaWhatsapp,
+-  FaXTwitter,
+-} from "react-icons/fa6";
++import { useState } from "react";
+ 
+ import "./Footer.css";
+ 
+@@ -28,19 +22,19 @@ const serviceLinks = [
+ ];
+ 
+ const companyLinks = [
+-  "About Us",
+-  "How It Works",
+-  "Contact Us",
+-  "FAQ",
++  { name: "About Us", href: "#about" },
++  { name: "How It Works", href: "#how-it-works" },
++  { name: "Contact Us", href: "#faq" },
++  { name: "FAQ", href: "#faq" },
+ ];
+ 
+ const supportLinks = [
+-  "Help Center",
+-  "Terms of Service",
+-  "Privacy Policy",
++  { name: "Help Center", href: "#faq" },
+ ];
+ 
+ export default function Footer() {
++  const [notice, setNotice] = useState("");
++
+   return (
+     <footer className="footer">
+ 
+@@ -68,23 +62,7 @@ export default function Footer() {
+             </p>
+ 
+             <div className="footer-socials">
+-
+-              <a href="#" aria-label="Facebook">
+-                <FaFacebookF />
+-              </a>
+-
+-              <a href="#" aria-label="Instagram">
+-                <FaInstagram />
+-              </a>
+-
+-              <a href="#" aria-label="X">
+-                <FaXTwitter />
+-              </a>
+-
+-              <a href="#" aria-label="WhatsApp">
+-                <FaWhatsapp />
+-              </a>
+-
++              <span>Social channels will be linked here soon.</span>
+             </div>
+ 
+           </div>
+@@ -123,8 +101,8 @@ export default function Footer() {
+             <h3>Company</h3>
+ 
+             {companyLinks.map((link) => (
+-              <a href="#" key={link}>
+-                {link}
++              <a href={link.href} key={link.name}>
++                {link.name}
+               </a>
+             ))}
+ 
+@@ -137,10 +115,12 @@ export default function Footer() {
+             <h3>Support</h3>
+ 
+             {supportLinks.map((link) => (
+-              <a href="#" key={link}>
+-                {link}
++              <a href={link.href} key={link.name}>
++                {link.name}
+               </a>
+             ))}
++            <button type="button" onClick={() => setNotice("Terms of Service will be published before account services launch.")}>Terms of Service</button>
++            <button type="button" onClick={() => setNotice("Privacy Policy will be published before account services launch.")}>Privacy Policy</button>
+ 
+           </div>
+ 
+@@ -161,7 +141,13 @@ export default function Footer() {
+               announcements and new service information.
+             </p>
+ 
+-            <form className="newsletter-form">
++            <form
++              className="newsletter-form"
++              onSubmit={(event) => {
++                event.preventDefault();
++                setNotice("Email updates are not connected yet.");
++              }}
++            >
+ 
+               <div className="newsletter-input-icon">
+                 <Mail size={13} />
+@@ -170,6 +156,8 @@ export default function Footer() {
+               <input
+                 type="email"
+                 placeholder="Your email address"
++                aria-label="Your email address"
++                required
+               />
+ 
+               <button type="submit" aria-label="Subscribe">
+@@ -177,6 +165,7 @@ export default function Footer() {
+               </button>
+ 
+             </form>
++            {notice && <p role="status" className="footer-notice">{notice}</p>}
+ 
+           </div>
+ 
+@@ -190,9 +179,9 @@ export default function Footer() {
+           </span>
+ 
+           <div className="footer-bottom-links">
+-            <a href="#">Privacy</a>
++            <span>Privacy</span>
+             <span>•</span>
+-            <a href="#">Terms</a>
++            <span>Terms</span>
+           </div>
+ 
+           <span className="footer-made">
+diff --git a/src/components/Hero.jsx b/src/components/Hero.jsx
+index 871cfd2..a404e97 100644
+--- a/src/components/Hero.jsx
++++ b/src/components/Hero.jsx
+@@ -11,6 +11,7 @@ import {
+   Headphones,
+   Sparkles,
+ } from "lucide-react";
++import { useNavigate } from "react-router-dom";
+ 
+ import "./Hero.css";
+ 
+@@ -48,6 +49,12 @@ const orbitServices = [
+ ];
+ 
+ export default function Hero() {
++  const navigate = useNavigate();
++
++  const goToServices = () => {
++    document.getElementById("services")?.scrollIntoView({ behavior: "smooth" });
++  };
++
+   return (
+     <section className="hero" id="home">
+ 
+@@ -81,14 +88,14 @@ export default function Hero() {
+ 
+           <div className="hero-buttons">
+ 
+-            <button className="hero-primary-btn">
++            <button className="hero-primary-btn" onClick={() => navigate("/signup")}>
+               Create an Account
+               <span>
+                 <ArrowRight size={18} />
+               </span>
+             </button>
+ 
+-            <button className="hero-secondary-btn">
++            <button className="hero-secondary-btn" onClick={goToServices}>
+               View Services
+             </button>
+ 
+diff --git a/src/components/ProtectedRoute.jsx b/src/components/ProtectedRoute.jsx
+index d5b1f53..8c290e5 100644
+--- a/src/components/ProtectedRoute.jsx
++++ b/src/components/ProtectedRoute.jsx
+@@ -1,12 +1,14 @@
+-import { Navigate, Outlet } from "react-router-dom";
++import { Navigate, Outlet, useLocation } from "react-router-dom";
+ import {
+   getSession,
+   isAuthenticated,
+ } from "../services/auth";
+ 
+ export default function ProtectedRoute() {
++  const location = useLocation();
++
+   if (!isAuthenticated()) {
+-    return <Navigate to="/login" replace />;
++    return <Navigate to="/login" replace state={{ from: location }} />;
+   }
+ 
+   const session = getSession();
+diff --git a/src/components/Services.jsx b/src/components/Services.jsx
+index b363814..f5be657 100644
+--- a/src/components/Services.jsx
++++ b/src/components/Services.jsx
+@@ -1,4 +1,5 @@
+ import { useRef } from "react";
++import { useNavigate } from "react-router-dom";
+ import {
+   Smartphone,
+   Store,
+@@ -74,6 +75,7 @@ const services = [
+ 
+ export default function Services() {
+   const servicesRef = useRef(null);
++  const navigate = useNavigate();
+ 
+   const scrollServices = (direction) => {
+     if (!servicesRef.current) return;
+@@ -200,7 +202,11 @@ export default function Services() {
+                     {service.description}
+                   </p>
+ 
+-                  <button className="service-link">
++                  <button
++                    type="button"
++                    className="service-link"
++                    onClick={() => navigate("/customer/services")}
++                  >
+                     <span className="service-link-text">
+                       {service.action}
+                     </span>
+diff --git a/src/components/WhyChooseUs.jsx b/src/components/WhyChooseUs.jsx
+index d5646b7..c75ae97 100644
+--- a/src/components/WhyChooseUs.jsx
++++ b/src/components/WhyChooseUs.jsx
+@@ -8,6 +8,7 @@ import {
+   Sparkles,
+   CheckCircle2,
+ } from "lucide-react";
++import { useNavigate } from "react-router-dom";
+ 
+ import "./WhyChooseUs.css";
+ 
+@@ -45,6 +46,8 @@ const benefits = [
+ ];
+ 
+ export default function WhyChooseUs() {
++  const navigate = useNavigate();
++
+   return (
+     <section className="why-choose" id="about">
+ 
+@@ -81,7 +84,10 @@ export default function WhyChooseUs() {
+             your experience simple, fast and reliable.
+           </p>
+ 
+-          <button className="why-choose-button">
++          <button
++            className="why-choose-button"
++            onClick={() => navigate("/#services")}
++          >
+             Learn More
+             <ArrowRight size={15} />
+           </button>
+diff --git a/src/pages/Login.css b/src/pages/Login.css
+index f905e11..25dad37 100644
+--- a/src/pages/Login.css
++++ b/src/pages/Login.css
+@@ -368,14 +368,21 @@
+   margin-bottom: 9px;
+ }
+ 
+-.login-label-row a {
++.login-label-row a,
++.login-forgot-button {
+   color: #93c5fd;
+-
+   font-size: 9px;
+-
+   font-weight: 700;
+ }
+ 
++.login-forgot-button {
++  padding: 0;
++  border: 0;
++  background: transparent;
++  font-family: inherit;
++  cursor: pointer;
++}
++
+ .login-field > label {
+   display: block;
+ 
+@@ -805,7 +812,8 @@
+     font-size: 9px;
+   }
+ 
+-  .login-label-row a {
++  .login-label-row a,
++  .login-forgot-button {
+     font-size: 8px;
+   }
+ 
+diff --git a/src/pages/Login.jsx b/src/pages/Login.jsx
+index e748690..e7c40ec 100644
+--- a/src/pages/Login.jsx
++++ b/src/pages/Login.jsx
+@@ -1,5 +1,5 @@
+ import { useState } from "react";
+-import { useNavigate } from "react-router-dom";
++import { useLocation, useNavigate } from "react-router-dom";
+ import { loginUser } from "../services/auth";
+ 
+ import {
+@@ -15,6 +15,7 @@ import "./Login.css";
+ 
+ export default function Login() {
+   const navigate = useNavigate();
++  const location = useLocation();
+ 
+   const [showPassword, setShowPassword] =
+     useState(false);
+@@ -24,6 +25,7 @@ export default function Login() {
+ 
+   const [error, setError] = useState("");
+   const [loading, setLoading] = useState(false);
++  const [resetNotice, setResetNotice] = useState(false);
+ 
+   function handleSubmit(event) {
+     event.preventDefault();
+@@ -48,11 +50,11 @@ export default function Login() {
+       );
+ 
+       if (user.role === "admin") {
+-        navigate("/admin", {
++        navigate(location.state?.from?.pathname || "/admin", {
+           replace: true,
+         });
+       } else {
+-        navigate("/customer", {
++        navigate(location.state?.from?.pathname || "/customer", {
+           replace: true,
+         });
+       }
+@@ -134,9 +136,13 @@ export default function Login() {
+                   Password
+                 </label>
+ 
+-                <a href="/login">
++                <button
++                  type="button"
++                  className="login-forgot-button"
++                  onClick={() => setResetNotice(true)}
++                >
+                   Forgot password?
+-                </a>
++                </button>
+               </div>
+ 
+               <div className="login-password-wrapper">
+@@ -179,6 +185,12 @@ export default function Login() {
+               </div>
+             </div>
+ 
++            {resetNotice && (
++              <div className="login-error" role="status">
++                Password reset is not set up yet. Account recovery will be available when BukzEx connects its account service.
++              </div>
++            )}
++
+             {error && (
+               <div className="login-error">
+                 {error}
+diff --git a/src/pages/Signup.css b/src/pages/Signup.css
+index cd2574a..64dc88c 100644
+--- a/src/pages/Signup.css
++++ b/src/pages/Signup.css
+@@ -583,12 +583,26 @@
+   border-color: var(--accent);
+ }
+ 
+-.signup-terms a {
++.signup-terms a,
++.signup-legal-link {
+   color: #93c5fd;
+-
+   font-weight: 700;
+ }
+ 
++.signup-legal-link {
++  padding: 0;
++  border: 0;
++  background: transparent;
++  font: inherit;
++  cursor: pointer;
++}
++
++.signup-legal-notice {
++  margin: -10px 0 14px;
++  color: rgba(255, 255, 255, 0.75);
++  font-size: 11px;
++}
++
+ /* =========================================================
+    SUBMIT
+ ========================================================= */
+@@ -920,3 +934,14 @@
+   font-size: 13px;
+   line-height: 1.4;
+ }
++
++.signup-demo-notice {
++  margin: 0 0 16px;
++  padding: 12px 14px;
++  border: 1px solid rgba(234, 179, 8, 0.35);
++  border-radius: 10px;
++  background: rgba(234, 179, 8, 0.08);
++  color: rgba(255, 255, 255, 0.82);
++  font-size: 12px;
++  line-height: 1.5;
++}
+diff --git a/src/pages/Signup.jsx b/src/pages/Signup.jsx
+index 3010e41..b588195 100644
+--- a/src/pages/Signup.jsx
++++ b/src/pages/Signup.jsx
+@@ -31,6 +31,7 @@ export default function Signup() {
+   const [showConfirmPassword, setShowConfirmPassword] =
+     useState(false);
+   const [agreeTerms, setAgreeTerms] = useState(false);
++  const [legalNotice, setLegalNotice] = useState("");
+ 
+   return (
+     <main className="signup-page">
+@@ -184,6 +185,12 @@ export default function Signup() {
+           }}
+         >
+ 
++            <p className="signup-demo-notice" role="note">
++              Demo mode: account information is stored only in this browser. Do not use a real password until secure account services are connected.
++            </p>
++
++            {error && <div className="signup-error" role="alert">{error}</div>}
++
+             {/* NAME ROW */}
+ 
+             <div className="signup-name-row">
+@@ -400,17 +407,18 @@ export default function Signup() {
+ 
+               <span>
+                 I agree to the{" "}
+-                <a href="#">
++                <button type="button" className="signup-legal-link" onClick={() => setLegalNotice("Terms of Service have not been published yet.")}>
+                   Terms of Service
+-                </a>{" "}
++                </button>{" "}
+                 and{" "}
+-                <a href="#">
++                <button type="button" className="signup-legal-link" onClick={() => setLegalNotice("The Privacy Policy has not been published yet.")}>
+                   Privacy Policy
+-                </a>
++                </button>
+                 .
+               </span>
+ 
+             </label>
++            {legalNotice && <p className="signup-legal-notice" role="status">{legalNotice}</p>}
+ 
+             {/* SUBMIT */}
+ 
+-- 
+2.51.1
+

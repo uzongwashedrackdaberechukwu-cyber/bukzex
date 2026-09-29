@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { registerUser } from "../services/auth";
+import { isSupabaseConfigured } from "../lib/supabase";
 import {
   Eye,
   EyeOff,
@@ -32,6 +33,7 @@ export default function Signup() {
     useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [legalNotice, setLegalNotice] = useState("");
+  const [success, setSuccess] = useState("");
 
   return (
     <main className="signup-page">
@@ -144,9 +146,10 @@ export default function Signup() {
 
           <form
           className="signup-form"
-          onSubmit={(event) => {
+          onSubmit={async (event) => {
             event.preventDefault();
             setError("");
+            setSuccess("");
 
             if (
               !firstName.trim() ||
@@ -165,10 +168,15 @@ export default function Signup() {
               return;
             }
 
+            if (!agreeTerms) {
+              setError("Please agree to the Terms of Service and Privacy Policy.");
+              return;
+            }
+
             try {
               setLoading(true);
 
-              registerUser({
+              const result = await registerUser({
                 firstName: firstName.trim(),
                 lastName: lastName.trim(),
                 email: email.trim(),
@@ -176,7 +184,11 @@ export default function Signup() {
                 password,
               });
 
-              navigate("/customer", { replace: true });
+              if (result?.needsEmailConfirmation) {
+                setSuccess("Check your email and confirm your account before signing in.");
+              } else {
+                navigate("/customer", { replace: true });
+              }
             } catch (err) {
               setError(err.message);
             } finally {
@@ -185,11 +197,14 @@ export default function Signup() {
           }}
         >
 
-            <p className="signup-demo-notice" role="note">
-              Demo mode: account information is stored only in this browser. Do not use a real password until secure account services are connected.
-            </p>
+            {!isSupabaseConfigured && (
+              <p className="signup-demo-notice" role="status">
+                BukzEx account services are being connected. Registration will be available after setup.
+              </p>
+            )}
 
             {error && <div className="signup-error" role="alert">{error}</div>}
+            {success && <div className="signup-legal-notice" role="status">{success}</div>}
 
             {/* NAME ROW */}
 
@@ -425,6 +440,7 @@ export default function Signup() {
             <button
               type="submit"
               className="signup-submit"
+              disabled={loading || !isSupabaseConfigured}
             >
               <span>{loading ? "Creating Account..." : "Create Account"}</span>
 

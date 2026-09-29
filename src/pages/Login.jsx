@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { loginUser } from "../services/auth";
+import { loginUser, requestPasswordReset } from "../services/auth";
+import { isSupabaseConfigured } from "../lib/supabase";
 
 import {
   Eye,
@@ -25,9 +26,28 @@ export default function Login() {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [resetNotice, setResetNotice] = useState(false);
+  const [resetNotice, setResetNotice] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
 
-  function handleSubmit(event) {
+  async function handlePasswordReset() {
+    setError("");
+    setResetNotice("");
+    if (!email.trim()) {
+      setError("Enter your email address first, then choose Forgot password.");
+      return;
+    }
+    try {
+      setResetLoading(true);
+      await requestPasswordReset(email);
+      setResetNotice("If an account uses that email, a password reset link has been sent.");
+    } catch (err) {
+      setError(err?.message || "Unable to send a reset link.");
+    } finally {
+      setResetLoading(false);
+    }
+  }
+
+  async function handleSubmit(event) {
     event.preventDefault();
 
     setError("");
@@ -44,7 +64,7 @@ export default function Login() {
     try {
       setLoading(true);
 
-      const user = loginUser(
+      const user = await loginUser(
         cleanEmail,
         password
       );
@@ -139,9 +159,10 @@ export default function Login() {
                 <button
                   type="button"
                   className="login-forgot-button"
-                  onClick={() => setResetNotice(true)}
+                  onClick={handlePasswordReset}
+                  disabled={resetLoading || !isSupabaseConfigured}
                 >
-                  Forgot password?
+                  {resetLoading ? "Sending..." : "Forgot password?"}
                 </button>
               </div>
 
@@ -187,7 +208,13 @@ export default function Login() {
 
             {resetNotice && (
               <div className="login-error" role="status">
-                Password reset is not set up yet. Account recovery will be available when BukzEx connects its account service.
+                {resetNotice}
+              </div>
+            )}
+
+            {!isSupabaseConfigured && (
+              <div className="login-error" role="status">
+                BukzEx account services are being connected. Sign-in will be available when setup is complete.
               </div>
             )}
 
@@ -212,7 +239,7 @@ export default function Login() {
             <button
               type="submit"
               className="login-submit"
-              disabled={loading}
+              disabled={loading || !isSupabaseConfigured}
             >
               <span>
                 {loading

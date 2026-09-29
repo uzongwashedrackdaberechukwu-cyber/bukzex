@@ -6,15 +6,19 @@ import {
   Info,
 } from "lucide-react";
 
+import { useEffect, useState } from "react";
 import { getSession } from "../../services/auth";
+import { isSupabaseConfigured } from "../../lib/supabase";
 import "./AdminSettings.css";
 
 export default function AdminSettings() {
-  const session = getSession();
+  const [session, setSession] = useState(null);
 
-  const apiMode = import.meta.env.VITE_API_BASE_URL
-    ? "Live API"
-    : "Demo Mode";
+  useEffect(() => {
+    getSession().then(setSession).catch(() => setSession(null));
+  }, []);
+
+  const apiMode = isSupabaseConfigured ? "Supabase" : "Not connected";
 
   return (
     <section className="admin-settings">
@@ -134,12 +138,9 @@ export default function AdminSettings() {
               <strong>Live API integration</strong>
 
               <p>
-                BukzEx is currently using demo/local
-                data when no API base URL is configured.
-                Once the client API is provided, wallet
-                deposits, orders, services and other
-                platform data can be connected to the
-                backend.
+                {isSupabaseConfigured
+                  ? "BukzEx is connected to Supabase for accounts and database-backed records. Payment-provider and service-fulfillment connections still need setup."
+                  : "Supabase project details have not been added to the production build yet. Add the project URL and publishable key to enable account and database services."}
               </p>
             </div>
           </div>

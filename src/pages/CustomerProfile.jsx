@@ -4,8 +4,9 @@ import {
   Save,
 } from "lucide-react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { getSession, updateSession } from "../services/auth";
 
 import "./CustomerProfile.css";
 
@@ -18,6 +19,16 @@ export default function CustomerProfile() {
   });
 
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    getSession()
+      .then((user) => {
+        if (user) setProfile(user);
+      })
+      .catch((err) => setError(err.message || "Unable to load your profile."));
+  }, []);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -30,10 +41,20 @@ export default function CustomerProfile() {
     setMessage("");
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
-
-    setMessage("Profile changes are ready to be connected to the API.");
+    setSaving(true);
+    setMessage("");
+    setError("");
+    try {
+      const updated = await updateSession(profile);
+      setProfile(updated);
+      setMessage("Your profile has been updated.");
+    } catch (err) {
+      setError(err.message || "Unable to save your profile.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -104,9 +125,11 @@ export default function CustomerProfile() {
                 name="email"
                 type="email"
                 value={profile.email}
-                onChange={handleChange}
                 placeholder="Email address"
+                readOnly
+                aria-describedby="profile-email-help"
               />
+              <small id="profile-email-help">Email changes are managed through account security.</small>
             </div>
 
             <div className="customer-profile-field">
@@ -131,13 +154,15 @@ export default function CustomerProfile() {
               {message}
             </div>
           )}
+          {error && <div className="customer-profile-message" role="alert">{error}</div>}
 
           <button
             type="submit"
             className="customer-profile-save"
+            disabled={saving}
           >
             <Save size={16} />
-            Save Changes
+            {saving ? "Saving..." : "Save Changes"}
           </button>
         </form>
 

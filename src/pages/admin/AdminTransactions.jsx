@@ -9,8 +9,7 @@ import {
 } from "lucide-react";
 
 import {
-  getDeposits,
-  getOrders,
+  getWalletTransactions,
 } from "../../services/api";
 
 import "./AdminTransactions.css";
@@ -41,75 +40,19 @@ export default function AdminTransactions() {
       setLoading(true);
       setError("");
 
-      const [depositResult, orderResult] =
-        await Promise.all([
-          getDeposits(),
-          getOrders(),
-        ]);
-
-      const deposits = Array.isArray(
-        depositResult?.deposits
-      )
-        ? depositResult.deposits
-        : [];
-
-      const orders = Array.isArray(
-        orderResult?.orders
-      )
-        ? orderResult.orders
-        : [];
-
-      const depositTransactions = deposits.map(
-        (deposit) => ({
-          id: deposit.id,
-          type: "deposit",
-          label: "Wallet Deposit",
-          reference: deposit.reference,
-          amount: Number(deposit.amount || 0),
-          status: deposit.status || "pending",
-          createdAt: deposit.createdAt,
-          customer:
-            deposit.customerName ||
-            deposit.customer ||
-            deposit.email ||
-            "Customer",
-          details: deposit.reference
-            ? `Transfer reference: ${deposit.reference}`
-            : "Wallet deposit",
-        })
-      );
-
-      const orderTransactions = orders.map(
-        (order) => ({
-          id: order.id,
-          type: "purchase",
-          label:
-            order.serviceName ||
-            order.service ||
-            "Service Purchase",
-          reference: order.id,
-          amount: Number(order.amount || 0),
-          status: order.status || "pending",
-          createdAt: order.createdAt,
-          customer:
-            order.customerName ||
-            order.customer ||
-            order.email ||
-            "Customer",
-          details: order.details || "Service purchase",
-        })
-      );
-
-      const combined = [
-        ...depositTransactions,
-        ...orderTransactions,
-      ].sort(
-        (a, b) =>
-          new Date(b.createdAt || 0) -
-          new Date(a.createdAt || 0)
-      );
-
-      setTransactions(combined);
+      const result = await getWalletTransactions();
+      const rows = result.transactions || [];
+      setTransactions(rows.map((row) => ({
+        id: row.id,
+        type: row.transaction_type === "deposit" ? "deposit" : "purchase",
+        label: row.transaction_type === "deposit" ? "Wallet Deposit" : row.transaction_type,
+        reference: row.source_id,
+        amount: Number(row.amount || 0),
+        status: row.status,
+        createdAt: row.created_at,
+        customer: row.user_id,
+        details: row.description,
+      })));
     } catch (err) {
       setError(
         err.message ||

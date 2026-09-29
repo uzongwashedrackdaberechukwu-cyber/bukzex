@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Search,
   Users,
@@ -22,11 +22,17 @@ export default function AdminCustomers() {
   const [search, setSearch] = useState("");
   const [selectedCustomer, setSelectedCustomer] =
     useState(null);
+  const [allCustomers, setAllCustomers] = useState([]);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    getRegisteredUsers()
+      .then((users) => setAllCustomers(users.filter((user) => user.role !== "admin")))
+      .catch((err) => setError(err.message || "Unable to load customers."));
+  }, []);
 
   const customers = useMemo(() => {
-    const users = getRegisteredUsers();
-
-    return users.filter((user) => {
+    return allCustomers.filter((user) => {
       const value = search.toLowerCase().trim();
 
       if (!value) return true;
@@ -42,7 +48,7 @@ export default function AdminCustomers() {
         .toLowerCase()
         .includes(value);
     });
-  }, [search]);
+  }, [allCustomers, search]);
 
   return (
     <section className="admin-customers">
@@ -78,6 +84,7 @@ export default function AdminCustomers() {
       </div>
 
       <div className="admin-customers-table-card">
+        {error && <p role="alert">{error}</p>}
         {customers.length === 0 ? (
           <div className="admin-customers-empty">
             <div>

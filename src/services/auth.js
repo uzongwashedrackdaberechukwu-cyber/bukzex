@@ -1,188 +1,125 @@
-const SESSION_KEY = "bukzex_session";
-const USERS_KEY = "bukzex_demo_users";
+import { requireSupabase } from "../lib/supabase";
 
-const DEMO_ADMIN = {
-  id: "admin-demo",
-  firstName: "BukzEx",
-  lastName: "Admin",
-  email: "admin@bukzex.com",
-  phone: "",
-  password: "admin123",
-  role: "admin",
-};
-
-function getUsers() {
-  try {
-    const users = JSON.parse(
-      localStorage.getItem(USERS_KEY) || "[]"
-    );
-
-    return Array.isArray(users) ? users : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveUsers(users) {
-  localStorage.setItem(
-    USERS_KEY,
-    JSON.stringify(users)
-  );
-}
-
-export function getSession() {
-  try {
-    return JSON.parse(
-      localStorage.getItem(SESSION_KEY) || "null"
-    );
-  } catch {
-    return null;
-  }
-}
-
-export function isAuthenticated() {
-  return Boolean(getSession());
-}
-
-export function getRegisteredUsers() {
-  return getUsers().map((user) => ({
-    id: user.id,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    email: user.email,
-    phone: user.phone,
-    role: user.role || "customer",
-  }));
-}
-
-export function registerUser(user) {
-  const users = getUsers();
-
-  const email = user.email.trim().toLowerCase();
-
-  const exists = users.some(
-    (item) =>
-      String(item.email).toLowerCase() === email
-  );
-
-  if (
-    email === DEMO_ADMIN.email.toLowerCase()
-  ) {
-    throw new Error(
-      "This email is reserved for administration."
-    );
-  }
-
-  if (exists) {
-    throw new Error(
-      "An account with this email already exists."
-    );
-  }
-
-  const newUser = {
-    id: `customer-${Date.now()}`,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    email: email,
-    phone: user.phone,
-    role: "customer",
+function toProfile(profile, email = "") {
+  return {
+    id: profile.id,
+    firstName: profile.first_name || "",
+    lastName: profile.last_name || "",
+    email,
+    phone: profile.phone || "",
+    role: profile.role || "customer",
+    notificationsEnabled: profile.notifications_enabled ?? true,
   };
+}
 
-  users.push({
-    ...newUser,
+export async function getSession() {
+  const client = requireSupabase();
+  const { data, error } = await client.auth.getUser();
+
+  if (error || !data?.user) return null;
+
+  const { data: profile, error: profileError } = await client
+    .from("profiles")
+    .select("id, email, first_name, last_name, phone, role, notifications_enabled")
+    .eq("id", data.user.id)
+    .maybeSingle();
+
+  if (profileError) throw profileError;
+  if (!profile) throw new Error("Your account profile is not ready yet. Please contact support.");
+
+  return toProfile(profile, profile.email || data.user.email || "");
+}
+
+export async function isAuthenticated() {
+  return Boolean(await getSession());
+}
+
+export async function getRegisteredUsers() {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from("profiles")
+    .select("id, email, first_name, last_name, phone, role, created_at")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  return (data || []).map((profile) =>
+    toProfile(profile, profile.email || "")
+  );
+}
+
+export async function registerUser(user) {
+  const client = requireSupabase();
+  const { data, error } = await client.auth.signUp({
+    email: user.email.trim().toLowerCase(),
     password: user.password,
+    options: {
+      emailRedirectTo: `${window.location.origin}/login`,
+      data: {
+        first_name: user.firstName.trim(),
+        last_name: user.lastName.trim(),
+        phone: user.phone.trim(),
+      },
+    },
   });
 
-  saveUsers(users);
+  if (error) throw error;
 
-  localStorage.setItem(
-    SESSION_KEY,
-    JSON.stringify(newUser)
-  );
-
-  return newUser;
-}
-
-export function loginUser(email, password) {
-  const cleanEmail = email.trim().toLowerCase();
-
-  /*
-   * Demo admin account.
-   * This will later be replaced by the client's
-   * real backend/API authentication.
-   */
-  if (
-    cleanEmail === DEMO_ADMIN.email &&
-    password === DEMO_ADMIN.password
-  ) {
-    const adminSession = {
-      id: DEMO_ADMIN.id,
-      firstName: DEMO_ADMIN.firstName,
-      lastName: DEMO_ADMIN.lastName,
-      email: DEMO_ADMIN.email,
-      phone: DEMO_ADMIN.phone,
-      role: "admin",
-    };
-
-    localStorage.setItem(
-      SESSION_KEY,
-      JSON.stringify(adminSession)
-    );
-
-    return adminSession;
+  if (!data.session) {
+    return { needsEmailConfirmation: true };
   }
 
-  const users = getUsers();
-
-  const user = users.find(
-    (item) =>
-      String(item.email).toLowerCase() === cleanEmail &&
-      item.password === password
-  );
-
-  if (!user) {
-    throw new Error(
-      "Invalid email or password."
-    );
-  }
-
-  const session = {
-    id: user.id,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    email: user.email,
-    phone: user.phone,
-    role: user.role || "customer",
-  };
-
-  localStorage.setItem(
-    SESSION_KEY,
-    JSON.stringify(session)
-  );
-
-  return session;
+  return getSession();
 }
 
-export function logoutUser() {
-  localStorage.removeItem(SESSION_KEY);
+export async function loginUser(email, password) {
+  const client = requireSupabase();
+  const { error } = await client.auth.signInWithPassword({
+    email: email.trim().toLowerCase(),
+    password,
+  });
+
+  if (error) throw error;
+  return getSession();
 }
 
-export function updateSession(updates) {
-  const current = getSession();
-
-  if (!current) {
-    throw new Error("No active session.");
-  }
-
-  const updated = {
-    ...current,
-    ...updates,
-  };
-
-  localStorage.setItem(
-    SESSION_KEY,
-    JSON.stringify(updated)
+export async function requestPasswordReset(email) {
+  const client = requireSupabase();
+  const { error } = await client.auth.resetPasswordForEmail(
+    email.trim().toLowerCase(),
+    { redirectTo: `${window.location.origin}/reset-password` }
   );
+  if (error) throw error;
+}
 
-  return updated;
+export async function updatePassword(password) {
+  const client = requireSupabase();
+  const { error } = await client.auth.updateUser({ password });
+  if (error) throw error;
+}
+
+export async function logoutUser() {
+  const client = requireSupabase();
+  const { error } = await client.auth.signOut();
+  if (error) throw error;
+}
+
+export async function updateSession(updates) {
+  const client = requireSupabase();
+  const current = await getSession();
+
+  if (!current) throw new Error("Sign in to update your profile.");
+
+  const { error } = await client
+    .from("profiles")
+    .update({
+      first_name: updates.firstName,
+      last_name: updates.lastName,
+      phone: updates.phone,
+      notifications_enabled: updates.notificationsEnabled,
+    })
+    .eq("id", current.id);
+
+  if (error) throw error;
+  return getSession();
 }
