@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Smartphone,
   Store,
@@ -74,6 +75,7 @@ const services = [
 
 export default function Services() {
   const servicesRef = useRef(null);
+  const navigate = useNavigate();
 
   const scrollServices = (direction) => {
     if (!servicesRef.current) return;
@@ -200,7 +202,11 @@ export default function Services() {
                     {service.description}
                   </p>
 
-                  <button className="service-link">
+                  <button
+                    type="button"
+                    className="service-link"
+                    onClick={() => navigate("/customer/services")}
+                  >
                     <span className="service-link-text">
                       {service.action}
                     </span>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { loginUser } from "../services/auth";
 
 import {
@@ -15,6 +15,7 @@ import "./Login.css";
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [showPassword, setShowPassword] =
     useState(false);
@@ -24,6 +25,7 @@ export default function Login() {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resetNotice, setResetNotice] = useState(false);
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -48,11 +50,11 @@ export default function Login() {
       );
 
       if (user.role === "admin") {
-        navigate("/admin", {
+        navigate(location.state?.from?.pathname || "/admin", {
           replace: true,
         });
       } else {
-        navigate("/customer", {
+        navigate(location.state?.from?.pathname || "/customer", {
           replace: true,
         });
       }
@@ -134,9 +136,13 @@ export default function Login() {
                   Password
                 </label>
 
-                <a href="/login">
+                <button
+                  type="button"
+                  className="login-forgot-button"
+                  onClick={() => setResetNotice(true)}
+                >
                   Forgot password?
-                </a>
+                </button>
               </div>
 
               <div className="login-password-wrapper">
@@ -178,6 +184,12 @@ export default function Login() {
                 </button>
               </div>
             </div>
+
+            {resetNotice && (
+              <div className="login-error" role="status">
+                Password reset is not set up yet. Account recovery will be available when BukzEx connects its account service.
+              </div>
+            )}
 
             {error && (
               <div className="login-error">

@@ -8,13 +8,7 @@ import {
   Bitcoin,
   Mail,
 } from "lucide-react";
-
-import {
-  FaFacebookF,
-  FaInstagram,
-  FaWhatsapp,
-  FaXTwitter,
-} from "react-icons/fa6";
+import { useState } from "react";
 
 import "./Footer.css";
 
@@ -28,19 +22,19 @@ const serviceLinks = [
 ];
 
 const companyLinks = [
-  "About Us",
-  "How It Works",
-  "Contact Us",
-  "FAQ",
+  { name: "About Us", href: "#about" },
+  { name: "How It Works", href: "#how-it-works" },
+  { name: "Contact Us", href: "#faq" },
+  { name: "FAQ", href: "#faq" },
 ];
 
 const supportLinks = [
-  "Help Center",
-  "Terms of Service",
-  "Privacy Policy",
+  { name: "Help Center", href: "#faq" },
 ];
 
 export default function Footer() {
+  const [notice, setNotice] = useState("");
+
   return (
     <footer className="footer">
 
@@ -68,23 +62,7 @@ export default function Footer() {
             </p>
 
             <div className="footer-socials">
-
-              <a href="#" aria-label="Facebook">
-                <FaFacebookF />
-              </a>
-
-              <a href="#" aria-label="Instagram">
-                <FaInstagram />
-              </a>
-
-              <a href="#" aria-label="X">
-                <FaXTwitter />
-              </a>
-
-              <a href="#" aria-label="WhatsApp">
-                <FaWhatsapp />
-              </a>
-
+              <span>Social channels will be linked here soon.</span>
             </div>
 
           </div>
@@ -123,8 +101,8 @@ export default function Footer() {
             <h3>Company</h3>
 
             {companyLinks.map((link) => (
-              <a href="#" key={link}>
-                {link}
+              <a href={link.href} key={link.name}>
+                {link.name}
               </a>
             ))}
 
@@ -137,10 +115,12 @@ export default function Footer() {
             <h3>Support</h3>
 
             {supportLinks.map((link) => (
-              <a href="#" key={link}>
-                {link}
+              <a href={link.href} key={link.name}>
+                {link.name}
               </a>
             ))}
+            <button type="button" onClick={() => setNotice("Terms of Service will be published before account services launch.")}>Terms of Service</button>
+            <button type="button" onClick={() => setNotice("Privacy Policy will be published before account services launch.")}>Privacy Policy</button>
 
           </div>
 
@@ -161,7 +141,13 @@ export default function Footer() {
               announcements and new service information.
             </p>
 
-            <form className="newsletter-form">
+            <form
+              className="newsletter-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                setNotice("Email updates are not connected yet.");
+              }}
+            >
 
               <div className="newsletter-input-icon">
                 <Mail size={13} />
@@ -170,6 +156,8 @@ export default function Footer() {
               <input
                 type="email"
                 placeholder="Your email address"
+                aria-label="Your email address"
+                required
               />
 
               <button type="submit" aria-label="Subscribe">
@@ -177,6 +165,7 @@ export default function Footer() {
               </button>
 
             </form>
+            {notice && <p role="status" className="footer-notice">{notice}</p>}
 
           </div>
 
@@ -190,9 +179,9 @@ export default function Footer() {
           </span>
 
           <div className="footer-bottom-links">
-            <a href="#">Privacy</a>
+            <span>Privacy</span>
             <span>•</span>
-            <a href="#">Terms</a>
+            <span>Terms</span>
           </div>
 
           <span className="footer-made">

@@ -218,6 +218,32 @@
     transform 0.2s ease;
 }
 
+.footer-column button {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.footer-column button:hover {
+  color: var(--gold);
+}
+
+.footer-socials span,
+.footer-notice {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.footer-notice {
+  margin: 10px 0 0;
+}
+
 .footer-column a:hover {
   color: var(--gold);
 

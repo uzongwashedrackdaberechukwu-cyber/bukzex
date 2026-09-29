@@ -8,6 +8,7 @@ import {
   Sparkles,
   CheckCircle2,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import "./WhyChooseUs.css";
 
@@ -45,6 +46,8 @@ const benefits = [
 ];
 
 export default function WhyChooseUs() {
+  const navigate = useNavigate();
+
   return (
     <section className="why-choose" id="about">
 
@@ -81,7 +84,10 @@ export default function WhyChooseUs() {
             your experience simple, fast and reliable.
           </p>
 
-          <button className="why-choose-button">
+          <button
+            className="why-choose-button"
+            onClick={() => navigate("/#services")}
+          >
             Learn More
             <ArrowRight size={15} />
           </button>

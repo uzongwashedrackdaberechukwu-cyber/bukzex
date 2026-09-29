@@ -31,6 +31,7 @@ export default function Signup() {
   const [showConfirmPassword, setShowConfirmPassword] =
     useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const [legalNotice, setLegalNotice] = useState("");
 
   return (
     <main className="signup-page">
@@ -183,6 +184,12 @@ export default function Signup() {
             }
           }}
         >
+
+            <p className="signup-demo-notice" role="note">
+              Demo mode: account information is stored only in this browser. Do not use a real password until secure account services are connected.
+            </p>
+
+            {error && <div className="signup-error" role="alert">{error}</div>}
 
             {/* NAME ROW */}
 
@@ -400,17 +407,18 @@ export default function Signup() {
 
               <span>
                 I agree to the{" "}
-                <a href="#">
+                <button type="button" className="signup-legal-link" onClick={() => setLegalNotice("Terms of Service have not been published yet.")}>
                   Terms of Service
-                </a>{" "}
+                </button>{" "}
                 and{" "}
-                <a href="#">
+                <button type="button" className="signup-legal-link" onClick={() => setLegalNotice("The Privacy Policy has not been published yet.")}>
                   Privacy Policy
-                </a>
+                </button>
                 .
               </span>
 
             </label>
+            {legalNotice && <p className="signup-legal-notice" role="status">{legalNotice}</p>}
 
             {/* SUBMIT */}
 

@@ -583,10 +583,24 @@
   border-color: var(--accent);
 }
 
-.signup-terms a {
+.signup-terms a,
+.signup-legal-link {
   color: #93c5fd;
-
   font-weight: 700;
+}
+
+.signup-legal-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.signup-legal-notice {
+  margin: -10px 0 14px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 11px;
 }
 
 /* =========================================================
@@ -919,4 +933,15 @@
   color: #b91c1c;
   font-size: 13px;
   line-height: 1.4;
+}
+
+.signup-demo-notice {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid rgba(234, 179, 8, 0.35);
+  border-radius: 10px;
+  background: rgba(234, 179, 8, 0.08);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 12px;
+  line-height: 1.5;
 }

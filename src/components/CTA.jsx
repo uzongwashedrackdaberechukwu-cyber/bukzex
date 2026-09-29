@@ -7,6 +7,7 @@ import {
   Bitcoin,
   ArrowRight,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import "./CTA.css";
 
@@ -20,6 +21,12 @@ const ctaServices = [
 ];
 
 export default function CTA() {
+  const navigate = useNavigate();
+
+  const goToServices = () => {
+    document.getElementById("services")?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
     <section className="cta-section">
       <div className="cta-background-grid"></div>
@@ -42,14 +49,14 @@ export default function CTA() {
           </p>
 
           <div className="cta-actions">
-            <button className="cta-primary">
+            <button className="cta-primary" onClick={() => navigate("/signup")}>
               Create Free Account
               <span>
                 <ArrowRight size={15} />
               </span>
             </button>
 
-            <button className="cta-secondary">
+            <button className="cta-secondary" onClick={goToServices}>
               Explore Services
             </button>
           </div>

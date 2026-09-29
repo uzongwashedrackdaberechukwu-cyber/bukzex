@@ -368,12 +368,19 @@
   margin-bottom: 9px;
 }
 
-.login-label-row a {
+.login-label-row a,
+.login-forgot-button {
   color: #93c5fd;
-
   font-size: 9px;
-
   font-weight: 700;
+}
+
+.login-forgot-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
 }
 
 .login-field > label {
@@ -805,7 +812,8 @@
     font-size: 9px;
   }
 
-  .login-label-row a {
+  .login-label-row a,
+  .login-forgot-button {
     font-size: 8px;
   }
 

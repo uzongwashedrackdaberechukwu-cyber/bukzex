@@ -11,6 +11,7 @@ import {
   Headphones,
   Sparkles,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import "./Hero.css";
 
@@ -48,6 +49,12 @@ const orbitServices = [
 ];
 
 export default function Hero() {
+  const navigate = useNavigate();
+
+  const goToServices = () => {
+    document.getElementById("services")?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
     <section className="hero" id="home">
 
@@ -81,14 +88,14 @@ export default function Hero() {
 
           <div className="hero-buttons">
 
-            <button className="hero-primary-btn">
+            <button className="hero-primary-btn" onClick={() => navigate("/signup")}>
               Create an Account
               <span>
                 <ArrowRight size={18} />
               </span>
             </button>
 
-            <button className="hero-secondary-btn">
+            <button className="hero-secondary-btn" onClick={goToServices}>
               View Services
             </button>
 
