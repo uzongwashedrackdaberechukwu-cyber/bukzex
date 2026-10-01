@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { updatePassword } from "../services/auth";
-import { isSupabaseConfigured } from "../lib/supabase";
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -40,7 +39,7 @@ export default function ResetPassword() {
       <section className="login-card">
         <h1>Choose a new password</h1>
         <p>Use the password reset link sent to your email.</p>
-        {!isSupabaseConfigured && <p role="status">Account services are not connected yet.</p>}
+        
         <form className="login-form" onSubmit={submit}>
           <label htmlFor="new-password">New password</label>
           <input id="new-password" type="password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
@@ -48,7 +47,7 @@ export default function ResetPassword() {
           <input id="confirm-password" type="password" autoComplete="new-password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} required />
           {error && <p role="alert">{error}</p>}
           {message && <p role="status">{message}</p>}
-          <button className="login-submit" type="submit" disabled={loading || !isSupabaseConfigured}>{loading ? "Updating..." : "Update password"}</button>
+          <button className="login-submit" type="submit" disabled={loading}>{loading ? "Updating..." : "Update password"}</button>
         </form>
         <p><Link to="/login">Back to sign in</Link></p>
       </section>

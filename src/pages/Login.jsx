@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { loginUser, requestPasswordReset } from "../services/auth";
-import { isSupabaseConfigured } from "../lib/supabase";
 
 import {
   Eye,
@@ -160,7 +159,7 @@ export default function Login() {
                   type="button"
                   className="login-forgot-button"
                   onClick={handlePasswordReset}
-                  disabled={resetLoading || !isSupabaseConfigured}
+                  disabled={resetLoading}
                 >
                   {resetLoading ? "Sending..." : "Forgot password?"}
                 </button>
@@ -212,12 +211,6 @@ export default function Login() {
               </div>
             )}
 
-            {!isSupabaseConfigured && (
-              <div className="login-error" role="status">
-                BukzEx account services are being connected. Sign-in will be available when setup is complete.
-              </div>
-            )}
-
             {error && (
               <div className="login-error">
                 {error}
@@ -239,7 +232,7 @@ export default function Login() {
             <button
               type="submit"
               className="login-submit"
-              disabled={loading || !isSupabaseConfigured}
+              disabled={loading}
             >
               <span>
                 {loading

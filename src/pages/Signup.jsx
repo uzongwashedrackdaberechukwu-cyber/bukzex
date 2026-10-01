@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { registerUser } from "../services/auth";
-import { isSupabaseConfigured } from "../lib/supabase";
 import {
   Eye,
   EyeOff,
@@ -196,12 +195,6 @@ export default function Signup() {
             }
           }}
         >
-
-            {!isSupabaseConfigured && (
-              <p className="signup-demo-notice" role="status">
-                BukzEx account services are being connected. Registration will be available after setup.
-              </p>
-            )}
 
             {error && <div className="signup-error" role="alert">{error}</div>}
             {success && <div className="signup-legal-notice" role="status">{success}</div>}
@@ -440,7 +433,7 @@ export default function Signup() {
             <button
               type="submit"
               className="signup-submit"
-              disabled={loading || !isSupabaseConfigured}
+              disabled={loading}
             >
               <span>{loading ? "Creating Account..." : "Create Account"}</span>
 

@@ -1,33 +1,63 @@
-import { requireSupabase } from "../lib/supabase";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updatePassword as firebaseUpdatePassword,
+  signOut,
+} from "firebase/auth";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore";
+import { auth, db } from "../lib/firebase";
 
-function toProfile(profile, email = "") {
+function toProfile(profile, email = "", role = "customer") {
   return {
     id: profile.id,
     firstName: profile.first_name || "",
     lastName: profile.last_name || "",
-    email,
+    email: email || profile.email || "",
     phone: profile.phone || "",
-    role: profile.role || "customer",
+    role,
     notificationsEnabled: profile.notifications_enabled ?? true,
   };
 }
 
+function requireUser() {
+  if (!auth.currentUser) throw new Error("Sign in to continue.");
+  return auth.currentUser;
+}
+
+async function isAdmin(uid) {
+  const adminDoc = await getDoc(doc(db, "admins", uid));
+  return adminDoc.exists();
+}
+
 export async function getSession() {
-  const client = requireSupabase();
-  const { data, error } = await client.auth.getUser();
+  const user = auth.currentUser;
+  if (!user) return null;
 
-  if (error || !data?.user) return null;
+  const [profileSnap, admin] = await Promise.all([
+    getDoc(doc(db, "profiles", user.uid)),
+    isAdmin(user.uid),
+  ]);
 
-  const { data: profile, error: profileError } = await client
-    .from("profiles")
-    .select("id, email, first_name, last_name, phone, role, notifications_enabled")
-    .eq("id", data.user.id)
-    .maybeSingle();
+  if (!profileSnap.exists()) {
+    throw new Error("Your account profile is not ready yet. Please contact support.");
+  }
 
-  if (profileError) throw profileError;
-  if (!profile) throw new Error("Your account profile is not ready yet. Please contact support.");
-
-  return toProfile(profile, profile.email || data.user.email || "");
+  return toProfile(
+    profileSnap.data(),
+    user.email || "",
+    admin ? "admin" : "customer"
+  );
 }
 
 export async function isAuthenticated() {
@@ -35,91 +65,82 @@ export async function isAuthenticated() {
 }
 
 export async function getRegisteredUsers() {
-  const client = requireSupabase();
-  const { data, error } = await client
-    .from("profiles")
-    .select("id, email, first_name, last_name, phone, role, created_at")
-    .order("created_at", { ascending: false });
+  const user = requireUser();
+  if (!(await isAdmin(user.uid))) {
+    throw new Error("Administrator access required.");
+  }
 
-  if (error) throw error;
+  const result = await getDocs(
+    query(collection(db, "profiles"), orderBy("created_at", "desc"))
+  );
 
-  return (data || []).map((profile) =>
-    toProfile(profile, profile.email || "")
+  return result.docs.map((profileDoc) =>
+    toProfile(profileDoc.data(), profileDoc.data().email || "", "customer")
   );
 }
 
 export async function registerUser(user) {
-  const client = requireSupabase();
-  const { data, error } = await client.auth.signUp({
-    email: user.email.trim().toLowerCase(),
-    password: user.password,
-    options: {
-      emailRedirectTo: `${window.location.origin}/login`,
-      data: {
-        first_name: user.firstName.trim(),
-        last_name: user.lastName.trim(),
-        phone: user.phone.trim(),
-      },
-    },
+  const email = user.email.trim().toLowerCase();
+  const credential = await createUserWithEmailAndPassword(
+    auth,
+    email,
+    user.password
+  );
+  const uid = credential.user.uid;
+
+  await setDoc(doc(db, "profiles", uid), {
+    id: uid,
+    email,
+    first_name: user.firstName.trim(),
+    last_name: user.lastName.trim(),
+    phone: user.phone.trim(),
+    notifications_enabled: true,
+    role: "customer",
+    created_at: serverTimestamp(),
+    updated_at: serverTimestamp(),
   });
 
-  if (error) throw error;
-
-  if (!data.session) {
-    return { needsEmailConfirmation: true };
-  }
+  await setDoc(doc(db, "wallets", uid), {
+    user_id: uid,
+    balance: 0,
+    currency: "NGN",
+    updated_at: serverTimestamp(),
+  });
 
   return getSession();
 }
 
 export async function loginUser(email, password) {
-  const client = requireSupabase();
-  const { error } = await client.auth.signInWithPassword({
-    email: email.trim().toLowerCase(),
-    password,
-  });
-
-  if (error) throw error;
+  await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
   return getSession();
 }
 
 export async function requestPasswordReset(email) {
-  const client = requireSupabase();
-  const { error } = await client.auth.resetPasswordForEmail(
-    email.trim().toLowerCase(),
-    { redirectTo: `${window.location.origin}/reset-password` }
-  );
-  if (error) throw error;
+  await sendPasswordResetEmail(auth, email.trim().toLowerCase(), {
+    url: window.location.origin + "/login",
+    handleCodeInApp: false,
+  });
 }
 
 export async function updatePassword(password) {
-  const client = requireSupabase();
-  const { error } = await client.auth.updateUser({ password });
-  if (error) throw error;
+  const user = requireUser();
+  await firebaseUpdatePassword(user, password);
 }
 
 export async function logoutUser() {
-  const client = requireSupabase();
-  const { error } = await client.auth.signOut();
-  if (error) throw error;
+  await signOut(auth);
 }
 
 export async function updateSession(updates) {
-  const client = requireSupabase();
-  const current = await getSession();
+  const user = requireUser();
 
-  if (!current) throw new Error("Sign in to update your profile.");
+  await updateDoc(doc(db, "profiles", user.uid), {
+    first_name: updates.firstName,
+    last_name: updates.lastName,
+    phone: updates.phone,
+    notifications_enabled: updates.notificationsEnabled,
+    updated_at: serverTimestamp(),
+  });
 
-  const { error } = await client
-    .from("profiles")
-    .update({
-      first_name: updates.firstName,
-      last_name: updates.lastName,
-      phone: updates.phone,
-      notifications_enabled: updates.notificationsEnabled,
-    })
-    .eq("id", current.id);
-
-  if (error) throw error;
   return getSession();
 }

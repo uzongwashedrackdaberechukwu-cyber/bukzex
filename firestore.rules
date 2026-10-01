@@ -1,0 +1,108 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    match /admins/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+    }
+
+    match /profiles/{userId} {
+      allow get, list: if isOwner(userId) || isAdmin();
+
+      allow create: if isOwner(userId)
+        && request.resource.data.id == userId
+        && request.resource.data.role == 'customer';
+
+      allow update: if isOwner(userId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly([
+            'first_name',
+            'last_name',
+            'phone',
+            'notifications_enabled',
+            'updated_at'
+          ]);
+
+      allow delete: if false;
+    }
+
+    match /wallets/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+
+      allow create: if isOwner(userId)
+        && request.resource.data.user_id == userId
+        && request.resource.data.balance == 0
+        && request.resource.data.currency == 'NGN';
+
+      allow update: if isAdmin()
+        && request.resource.data.balance is number
+        && request.resource.data.balance >= 0;
+
+      allow delete: if false;
+    }
+
+    match /services/{serviceKey} {
+      allow read: if isAdmin() || resource.data.status == 'active';
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /wallet_deposits/{depositId} {
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.user_id == request.auth.uid);
+
+      allow create: if signedIn()
+        && request.resource.data.user_id == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.amount is number
+        && request.resource.data.amount > 0
+        && request.resource.data.amount <= 10000000
+        && request.resource.data.payment_reference is string
+        && request.resource.data.payment_reference.size() > 0;
+
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    match /orders/{orderId} {
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.user_id == request.auth.uid);
+
+      allow create: if signedIn()
+        && request.resource.data.user_id == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.requested_amount is number
+        && request.resource.data.requested_amount > 0
+        && request.resource.data.requested_amount <= 10000000
+        && request.resource.data.details is string
+        && request.resource.data.details.size() > 0;
+
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    match /wallet_transactions/{transactionId} {
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.user_id == request.auth.uid);
+
+      allow create: if isAdmin()
+        && request.resource.data.amount is number
+        && request.resource.data.amount > 0;
+
+      allow update, delete: if false;
+    }
+  }
+}
