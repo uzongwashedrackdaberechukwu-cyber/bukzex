@@ -555,3 +555,259 @@
     width: 100%;
   }
 }
+
+/* =========================================================
+   BUKZEX PROFESSIONAL SERVICE BROWSER
+========================================================= */
+
+.customer-services-page,
+.customer-services-page button,
+.customer-services-page a {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.customer-services-page {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 8px 0 42px;
+}
+
+.customer-services-header {
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 25px 27px;
+  border: 1px solid rgba(212, 167, 44, 0.15);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 94% 4%, rgba(37, 99, 235, 0.13), transparent 35%),
+    linear-gradient(135deg, #14213d, #0f192c);
+}
+
+.customer-services-eyebrow {
+  margin-bottom: 9px;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+}
+
+.customer-services-header h1 {
+  margin-bottom: 8px;
+  font-size: clamp(27px, 3vw, 34px);
+  font-weight: 780;
+  letter-spacing: -0.8px;
+}
+
+.customer-services-header p {
+  font-size: 13px;
+}
+
+.customer-services-wallet {
+  min-height: 43px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 11px;
+  background: #1d4ed8;
+  box-shadow: 0 8px 19px rgba(37, 99, 235, 0.18);
+}
+
+.customer-services-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.customer-service-card {
+  min-height: 228px;
+  padding: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.13);
+  border-radius: 16px;
+  background: linear-gradient(150deg, #14213a, #101a2c 78%);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.13);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.customer-service-card::after {
+  width: 145px;
+  height: 145px;
+  right: -70px;
+  bottom: -77px;
+  background: rgba(212, 167, 44, 0.06);
+}
+
+.customer-service-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(212, 167, 44, 0.25);
+  box-shadow: 0 13px 26px rgba(0, 0, 0, 0.2);
+}
+
+.customer-service-icon {
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(96, 165, 250, 0.17);
+  border-radius: 12px;
+  background: rgba(37, 99, 235, 0.14);
+  color: #94bfff;
+}
+
+.customer-service-content {
+  margin-top: 17px;
+}
+
+.customer-service-kicker {
+  margin-bottom: 6px;
+  color: #c6a447;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+}
+
+.customer-service-content h2 {
+  margin-bottom: 6px;
+  font-size: 16px;
+  letter-spacing: -0.2px;
+}
+
+.customer-service-content p {
+  max-width: 290px;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.customer-service-button {
+  width: 100%;
+  min-height: 39px;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 17px;
+  padding: 0 12px;
+  border: 1px solid rgba(96, 165, 250, 0.25);
+  border-radius: 10px;
+  background: rgba(37, 99, 235, 0.12);
+  color: #b6d1ff;
+}
+
+.customer-service-button:hover {
+  border-color: rgba(212, 167, 44, 0.34);
+  background: rgba(212, 167, 44, 0.12);
+  color: #f4d77e;
+}
+
+.customer-service-overlay {
+  background: rgba(3, 8, 18, 0.78);
+  backdrop-filter: blur(8px);
+}
+
+.customer-service-modal {
+  border-color: rgba(148, 163, 184, 0.2);
+  border-radius: 18px;
+  background: linear-gradient(150deg, #14213a, #0c1627);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+  color: #f8fafc;
+}
+
+.customer-service-close {
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+}
+
+.customer-service-modal-icon {
+  border: 1px solid rgba(96, 165, 250, 0.14);
+  background: rgba(37, 99, 235, 0.15);
+  color: #9dc2ff;
+}
+
+.customer-service-modal h2 {
+  color: #fff;
+}
+
+.customer-service-modal p {
+  color: #a3b0c3;
+}
+
+.customer-service-fund {
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.customer-service-cancel {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: #d2dbea;
+}
+
+@media (max-width: 800px) {
+  .customer-services-page {
+    padding-top: 2px;
+  }
+
+  .customer-services-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .customer-services-page {
+    padding: 2px 0 28px;
+  }
+
+  .customer-services-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 17px;
+    margin-bottom: 14px;
+    padding: 20px 18px;
+    border-radius: 16px;
+  }
+
+  .customer-services-header h1 {
+    font-size: 27px;
+  }
+
+  .customer-services-header p {
+    font-size: 12px;
+  }
+
+  .customer-services-wallet {
+    width: 100%;
+  }
+
+  .customer-services-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .customer-service-card {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    align-items: start;
+    column-gap: 14px;
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .customer-service-content {
+    min-height: 100%;
+    margin-top: 0;
+  }
+
+  .customer-service-kicker {
+    display: block;
+    font-size: 7px;
+  }
+
+  .customer-service-content h2 {
+    font-size: 15px;
+  }
+
+  .customer-service-content p {
+    font-size: 11px;
+  }
+
+  .customer-service-button {
+    min-height: 36px;
+    margin-top: 12px;
+  }
+
+  .customer-service-modal {
+    padding: 24px 20px;
+  }
+}

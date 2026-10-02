@@ -89,9 +89,9 @@ export default function CustomerServices() {
     <main className="customer-services-page">
       <div className="customer-services-header">
         <div>
-          <span className="customer-services-eyebrow">BUKZEX SERVICES</span>
-          <h1>Services</h1>
-          <p>Select a service to continue with your purchase.</p>
+          <span className="customer-services-eyebrow">BUKZEX · CUSTOMER SERVICES</span>
+          <h1>Browse services</h1>
+          <p>Choose a service to explore current options and continue securely.</p>
         </div>
         <Link to="/customer" className="customer-services-wallet">Back to Dashboard</Link>
       </div>
@@ -112,9 +112,10 @@ export default function CustomerServices() {
           {activeServices.map((service) => {
             const Icon = service.icon;
             return (
-              <article key={service.id} className="customer-service-card">
+              <article key={service.id} className={`customer-service-card customer-service-card-${service.id}`}>
                 <div className="customer-service-icon"><Icon size={22} /></div>
                 <div className="customer-service-content">
+                  <span className="customer-service-kicker">BUKZEX SERVICE</span>
                   <h2>{service.title}</h2>
                   <p>{service.description}</p>
                   <button type="button" onClick={() => setSelectedService(service)} className="customer-service-button">

@@ -433,39 +433,40 @@ export default function Customer() {
           <section className="customer-dashboard-grid">
 
             <div className="customer-dashboard-card wallet-card">
-              <div className="customer-dashboard-card-top">
-                <div className="customer-dashboard-card-icon">
-                  <WalletCards size={19} />
+              <div className="customer-wallet-card-top">
+                <div className="customer-wallet-brand">
+                  <span className="customer-wallet-chip" aria-hidden="true" />
+                  <span>BUKZEX WALLET</span>
                 </div>
-
-                <span>WALLET</span>
+                <WalletCards size={22} aria-hidden="true" />
               </div>
 
-              <strong>
+              <div className="customer-wallet-balance-label">AVAILABLE BALANCE</div>
+              <strong className="customer-wallet-balance">
                 {loading
                   ? "Loading..."
                   : formatAmount(walletBalance)}
               </strong>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setDepositStatus("");
-                  setDepositMessage("");
-                  setError("");
-                  document
-                    .getElementById("fund-wallet")
-                    ?.scrollIntoView({
-                      behavior: "smooth",
-                    });
-                }}
-              >
-                Fund Wallet
-                <Plus size={14} />
-              </button>
+              <div className="customer-wallet-card-bottom">
+                <span>Secure digital wallet</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDepositStatus("");
+                    setDepositMessage("");
+                    setError("");
+                    document
+                      .getElementById("fund-wallet")
+                      ?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                >
+                  Fund Wallet <Plus size={15} />
+                </button>
+              </div>
             </div>
 
-            <div className="customer-dashboard-card">
+            <div className="customer-dashboard-card customer-shortcut-card">
               <div className="customer-dashboard-card-top">
                 <div className="customer-dashboard-card-icon">
                   <ShoppingBag size={19} />
@@ -482,19 +483,19 @@ export default function Customer() {
               </Link>
             </div>
 
-            <div className="customer-dashboard-card">
+            <div className="customer-dashboard-card customer-shortcut-card">
               <div className="customer-dashboard-card-top">
                 <div className="customer-dashboard-card-icon">
                   <Layers3 size={19} />
                 </div>
 
-                <span>SERVICES</span>
+                <span>MY STACK</span>
               </div>
 
-              <strong>6</strong>
+              <strong className="customer-stack-value">Services</strong>
 
-              <Link to="/customer/services">
-                View Services
+              <Link to="/customer/orders">
+                View purchases
                 <ArrowRight size={14} />
               </Link>
             </div>

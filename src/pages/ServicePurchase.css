@@ -296,3 +296,154 @@
     padding: 18px;
   }
 }
+
+/* Premium BukzEx purchase experience */
+.service-purchase-page,
+.service-purchase-page button,
+.service-purchase-page a,
+.service-purchase-page input,
+.service-purchase-page textarea,
+.service-purchase-page select {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.service-purchase-container {
+  max-width: 840px;
+}
+
+.service-purchase-back {
+  color: #9aabc1;
+}
+
+.service-purchase-header {
+  padding: 19px 21px;
+  border: 1px solid rgba(212, 167, 44, 0.14);
+  border-radius: 16px;
+  background: radial-gradient(circle at 95% 0%, rgba(37, 99, 235, 0.13), transparent 34%), linear-gradient(140deg, #14213d, #0e182a);
+}
+
+.service-purchase-icon {
+  border: 1px solid rgba(96, 165, 250, 0.16);
+  background: rgba(37, 99, 235, 0.14);
+  color: #a8c8ff;
+}
+
+.service-purchase-header h1 {
+  letter-spacing: -0.5px;
+}
+
+.service-wallet-card {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(212, 167, 44, 0.24);
+  border-radius: 15px;
+  background: radial-gradient(circle at 95% 0%, rgba(212, 167, 44, 0.11), transparent 34%), linear-gradient(135deg, #173467, #0d1c34);
+}
+
+.service-wallet-icon {
+  border: 1px solid rgba(255, 224, 148, 0.18);
+  background: rgba(212, 167, 44, 0.12);
+  color: #edcc70;
+}
+
+.service-wallet-card small {
+  color: #b7c5dc;
+  letter-spacing: 0.07em;
+}
+
+.service-wallet-card strong {
+  color: #fff;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.service-wallet-card a {
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 224, 148, 0.24);
+  border-radius: 10px;
+  background: linear-gradient(135deg, #e0b83f, #c99a24);
+  color: #101828;
+}
+
+.service-purchase-form {
+  border-color: rgba(148, 163, 184, 0.15);
+  border-radius: 17px;
+  background: linear-gradient(150deg, #14213a, #0f192b);
+  color: #f8fafc;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.17);
+}
+
+.service-form-heading h2,
+.service-form-field label {
+  color: #f1f5f9;
+}
+
+.service-form-heading p {
+  color: #95a4ba;
+  line-height: 1.6;
+}
+
+.service-purchase-page .service-form-field input,
+.service-purchase-page .service-form-field textarea,
+.service-purchase-page .service-form-field select {
+  border-color: rgba(148, 163, 184, 0.23);
+  border-radius: 10px;
+  background: #0b1526;
+  color: #f8fafc;
+}
+
+.service-purchase-page .service-form-field input:focus,
+.service-purchase-page .service-form-field textarea:focus,
+.service-purchase-page .service-form-field select:focus {
+  border-color: #5a91f5;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
+}
+
+.service-purchase-page .service-form-field input::placeholder,
+.service-purchase-page .service-form-field textarea::placeholder {
+  color: #71819a;
+}
+
+.service-purchase-submit {
+  min-height: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 11px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  box-shadow: 0 9px 22px rgba(37, 99, 235, 0.18);
+}
+
+.service-purchase-submit:hover {
+  background: #1e40af;
+}
+
+.service-purchase-not-found {
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 17px;
+  background: linear-gradient(150deg, #14213a, #0f192b);
+}
+
+.service-form-message.error {
+  border-color: rgba(248, 113, 113, 0.25);
+  background: rgba(248, 113, 113, 0.1);
+  color: #fda4a4;
+}
+
+.service-form-message.success {
+  border-color: rgba(52, 211, 153, 0.22);
+  background: rgba(52, 211, 153, 0.1);
+  color: #86efc5;
+}
+
+@media (max-width: 600px) {
+  .service-purchase-header {
+    padding: 16px;
+  }
+
+  .service-wallet-card {
+    padding: 15px;
+  }
+
+  .service-purchase-form {
+    padding: 18px;
+  }
+}
