@@ -1,0 +1,55 @@
+.shadex-catalogue-panel {
+  margin: 20px 0;
+  padding: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.58);
+}
+
+.shadex-catalogue-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.shadex-catalogue-heading span {
+  color: #d4ad37;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.shadex-catalogue-heading small,
+.shadex-catalogue-item span {
+  color: #aebbd0;
+}
+
+.shadex-catalogue-group + .shadex-catalogue-group { margin-top: 20px; }
+.shadex-catalogue-group h3 { margin: 0 0 10px; font-size: 1rem; }
+.shadex-catalogue-list { display: grid; gap: 8px; }
+
+.shadex-catalogue-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.17);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.shadex-catalogue-item summary { cursor: pointer; font-weight: 650; }
+.shadex-catalogue-item strong { text-align: right; }
+.shadex-catalogue-sublist { display: grid; gap: 8px; margin-top: 12px; }
+.shadex-catalogue-line { display: flex; justify-content: space-between; gap: 12px; font-size: 0.9rem; }
+.shadex-empty, .shadex-catalogue-status { display: flex; gap: 8px; align-items: center; color: #aebbd0; }
+.shadex-catalogue-status { margin: 16px 0; }
+.shadex-catalogue-status.error { color: #fca5a5; }
+
+@media (max-width: 520px) {
+  .shadex-catalogue-item, .shadex-catalogue-line { flex-direction: column; }
+  .shadex-catalogue-item strong { text-align: left; }
+}

@@ -5,6 +5,7 @@ import {
   TrendingUp,
   Gift,
   Bitcoin,
+  Receipt,
   ArrowRight,
 } from "lucide-react";
 
@@ -18,8 +19,14 @@ const services = [
   {
     id: "vtu",
     icon: Smartphone,
-    title: "VTU",
-    description: "Access available VTU services using your wallet balance.",
+    title: "Airtime & Data",
+    description: "Browse live airtime networks and data plans.",
+  },
+  {
+    id: "bills",
+    icon: Receipt,
+    title: "Bills",
+    description: "Browse electricity and cable TV providers.",
   },
   {
     id: "marketplace",
@@ -37,7 +44,7 @@ const services = [
     id: "social",
     icon: TrendingUp,
     title: "Social Media Boost",
-    description: "Purchase available social media growth services.",
+    description: "Browse live social media growth packages.",
   },
   {
     id: "gift-cards",
@@ -64,7 +71,7 @@ export default function CustomerServices() {
         const active = new Set(
           (result.services || [])
             .filter((service) => service.status === "active")
-            .map((service) => service.service_key)
+            .map((service) => service.service_key),
         );
         setEnabledServices(active);
       })
@@ -74,28 +81,19 @@ export default function CustomerServices() {
       });
   }, []);
 
-  const activeServices = services.filter((service) =>
-    enabledServices?.has(service.id)
+  const activeServices = services.filter(
+    (service) => enabledServices?.has(service.id) || service.id === "bills",
   );
 
   return (
     <main className="customer-services-page">
       <div className="customer-services-header">
         <div>
-          <span className="customer-services-eyebrow">
-            BUKZEX SERVICES
-          </span>
-
+          <span className="customer-services-eyebrow">BUKZEX SERVICES</span>
           <h1>Services</h1>
-
-          <p>
-            Select a service to continue with your purchase.
-          </p>
+          <p>Select a service to continue with your purchase.</p>
         </div>
-
-        <Link to="/customer" className="customer-services-wallet">
-          Back to Dashboard
-        </Link>
+        <Link to="/customer" className="customer-services-wallet">Back to Dashboard</Link>
       </div>
 
       {serviceError && <p role="status">{serviceError}</p>}
@@ -110,84 +108,41 @@ export default function CustomerServices() {
           </article>
         </section>
       ) : (
-      <section className="customer-services-grid">
-        {activeServices.map((service) => {
-          const Icon = service.icon;
-
-          return (
-            <article
-              key={service.id}
-              className="customer-service-card"
-            >
-              <div className="customer-service-icon">
-                <Icon size={22} />
-              </div>
-
-              <div className="customer-service-content">
-                <h2>{service.title}</h2>
-
-                <p>{service.description}</p>
-
-                <button
-                  type="button"
-                  onClick={() => setSelectedService(service)}
-                  className="customer-service-button"
-                >
-                  Continue
-                  <ArrowRight size={15} />
-                </button>
-              </div>
-            </article>
-          );
-        })}
-      </section>
+        <section className="customer-services-grid">
+          {activeServices.map((service) => {
+            const Icon = service.icon;
+            return (
+              <article key={service.id} className="customer-service-card">
+                <div className="customer-service-icon"><Icon size={22} /></div>
+                <div className="customer-service-content">
+                  <h2>{service.title}</h2>
+                  <p>{service.description}</p>
+                  <button type="button" onClick={() => setSelectedService(service)} className="customer-service-button">
+                    Continue <ArrowRight size={15} />
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </section>
       )}
 
       {selectedService && (
         <div className="customer-service-overlay">
           <div className="customer-service-modal">
-            <button
-              type="button"
-              className="customer-service-close"
-              onClick={() => setSelectedService(null)}
-            >
-              ×
-            </button>
-
+            <button type="button" className="customer-service-close" onClick={() => setSelectedService(null)}>×</button>
             <div className="customer-service-modal-icon">
-              {(() => {
-                const SelectedIcon = selectedService.icon;
-                return <SelectedIcon size={24} />;
-              })()}
+              {(() => { const SelectedIcon = selectedService.icon; return <SelectedIcon size={24} />; })()}
             </div>
-
             <h2>{selectedService.title}</h2>
-
-            <p>
-              Continue to the purchase page to enter the
-              information required for this service.
-            </p>
-
+            <p>Continue to browse the available options for this service.</p>
             <div className="customer-service-modal-actions">
-              <Link
-                to={`/customer/services/${selectedService.id}`}
-                className="customer-service-fund"
-              >
-                Continue
-              </Link>
-
-              <button
-                type="button"
-                className="customer-service-cancel"
-                onClick={() => setSelectedService(null)}
-              >
-                Close
-              </button>
+              <Link to={`/customer/services/${selectedService.id}`} className="customer-service-fund">Continue</Link>
+              <button type="button" className="customer-service-cancel" onClick={() => setSelectedService(null)}>Close</button>
             </div>
           </div>
         </div>
       )}
-
     </main>
   );
 }

@@ -1,0 +1,16 @@
+.service-form-field select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 12px;
+  background: #111b2d;
+  color: #f5f7fb;
+  font: inherit;
+}
+
+.service-form-field select:focus {
+  outline: 2px solid rgba(59, 130, 246, 0.65);
+  outline-offset: 2px;
+}
