@@ -31,9 +31,21 @@ function priceOf(item) {
 function editableItems(serviceId, data) {
   if (!data) return [];
   if (serviceId === "vtu") {
-    return (data.data?.networks || []).flatMap((network) => (network.plans || []).map((plan) => ({
+    const plans = data.data?.networks || [];
+    const networkById = new Map((data.airtime?.networks || []).map((network) => [String(network.id), network]));
+    if (plans.some((plan) => !Array.isArray(plan.plans) && (plan.network_id || plan.price || plan.amount_minor != null))) {
+      return plans.map((plan) => {
+        const network = networkById.get(String(plan.network_id));
+        return {
+          id: String(plan.id),
+          title: `${network?.name || plan.network_name || plan.network_code || "Data"} — ${plan.name || plan.plan_name || "Plan"}`,
+          price: priceOf(plan),
+        };
+      }).filter((item) => item.price);
+    }
+    return plans.flatMap((network) => (network.plans || []).map((plan) => ({
       id: String(plan.id), title: `${network.name} — ${plan.name}`, price: priceOf(plan),
-    })));
+    })).filter((item) => item.price));
   }
   if (serviceId === "bills") {
     return [

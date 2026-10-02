@@ -167,7 +167,27 @@ export default function ServicePurchase() {
 
   const networks = useMemo(() => {
     const section = vtuType === "airtime" ? catalogue?.airtime : catalogue?.data;
-    return Array.isArray(section?.networks) ? section.networks : [];
+    const rows = Array.isArray(section?.networks) ? section.networks : [];
+    if (vtuType !== "data" || !rows.some((row) => !Array.isArray(row.plans) && (row.network_id || row.price || row.amount_minor != null))) {
+      return rows;
+    }
+
+    const networkById = new Map((catalogue?.airtime?.networks || []).map((network) => [String(network.id), network]));
+    const groups = new Map();
+    for (const plan of rows) {
+      const id = String(plan.network_id || "unknown");
+      const sourceNetwork = networkById.get(id);
+      if (!groups.has(id)) {
+        groups.set(id, {
+          id,
+          code: sourceNetwork?.code || plan.network_code || "",
+          name: sourceNetwork?.name || plan.network_name || plan.network_code || "Network",
+          plans: [],
+        });
+      }
+      groups.get(id).plans.push(plan);
+    }
+    return Array.from(groups.values());
   }, [catalogue, vtuType]);
 
   const selectedNetwork = networks.find((network) => String(network.id) === networkId);
