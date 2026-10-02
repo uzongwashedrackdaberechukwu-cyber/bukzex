@@ -167,12 +167,15 @@ export default function ServicePurchase() {
 
   const networks = useMemo(() => {
     const section = vtuType === "airtime" ? catalogue?.airtime : catalogue?.data;
-    const rows = Array.isArray(section?.networks) ? section.networks : [];
-    if (vtuType !== "data" || !rows.some((row) => !Array.isArray(row.plans) && (row.network_id || row.price || row.amount_minor != null))) {
+    const networkRows = Array.isArray(section?.networks) ? section.networks : [];
+    if (vtuType !== "data") return networkRows;
+
+    const rows = Array.isArray(section?.plans) ? section.plans : networkRows;
+    if (!rows.some((row) => !Array.isArray(row.plans) && (row.network_id || row.price || row.amount_minor != null))) {
       return rows;
     }
 
-    const networkById = new Map((catalogue?.airtime?.networks || []).map((network) => [String(network.id), network]));
+    const networkById = new Map(networkRows.map((network) => [String(network.id), network]));
     const groups = new Map();
     for (const plan of rows) {
       const id = String(plan.network_id || "unknown");

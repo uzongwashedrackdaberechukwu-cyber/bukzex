@@ -31,10 +31,14 @@ function priceOf(item) {
 function editableItems(serviceId, data) {
   if (!data) return [];
   if (serviceId === "vtu") {
-    const plans = data.data?.networks || [];
-    const networkById = new Map((data.airtime?.networks || []).map((network) => [String(network.id), network]));
-    if (plans.some((plan) => !Array.isArray(plan.plans) && (plan.network_id || plan.price || plan.amount_minor != null))) {
-      return plans.map((plan) => {
+    const dataSection = data.data || {};
+    const networkById = new Map([
+      ...(dataSection.networks || []),
+      ...(data.airtime?.networks || []),
+    ].map((network) => [String(network.id), network]));
+    const flatPlans = Array.isArray(dataSection.plans) ? dataSection.plans : [];
+    if (flatPlans.length) {
+      return flatPlans.map((plan) => {
         const network = networkById.get(String(plan.network_id));
         return {
           id: String(plan.id),
@@ -43,7 +47,18 @@ function editableItems(serviceId, data) {
         };
       }).filter((item) => item.price);
     }
-    return plans.flatMap((network) => (network.plans || []).map((plan) => ({
+    const rows = dataSection.networks || [];
+    if (rows.some((row) => !Array.isArray(row.plans) && (row.network_id || row.price || row.amount_minor != null))) {
+      return rows.map((plan) => {
+        const network = networkById.get(String(plan.network_id));
+        return {
+          id: String(plan.id),
+          title: `${network?.name || plan.network_name || plan.network_code || "Data"} — ${plan.name || plan.plan_name || "Plan"}`,
+          price: priceOf(plan),
+        };
+      }).filter((item) => item.price);
+    }
+    return rows.flatMap((network) => (network.plans || []).map((plan) => ({
       id: String(plan.id), title: `${network.name} — ${plan.name}`, price: priceOf(plan),
     })).filter((item) => item.price));
   }
