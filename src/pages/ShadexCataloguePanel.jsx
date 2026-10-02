@@ -47,6 +47,7 @@ export default function ShadexCataloguePanel({ serviceId }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [markup, setMarkup] = useState(0);
+  const [overrides, setOverrides] = useState({});
 
   useEffect(() => {
     let live = true;
@@ -63,7 +64,10 @@ export default function ShadexCataloguePanel({ serviceId }) {
     let live = true;
     getDoc(doc(db, "services", serviceId))
       .then((snapshot) => {
-        if (live && snapshot.exists()) setMarkup(Number(snapshot.data().price_markup_percent || 0));
+        if (live && snapshot.exists()) {
+          setMarkup(Number(snapshot.data().price_markup_percent || 0));
+          setOverrides(snapshot.data().bukzex_prices || {});
+        }
       })
       .catch(() => {});
     return () => { live = false; };
@@ -85,11 +89,19 @@ export default function ShadexCataloguePanel({ serviceId }) {
         <NestedPlans rows={data.cable?.providers} label="Cable TV providers" markup={markup} />
       </>}
 
-      {serviceId === "marketplace" && expandableList(
-        "Products",
-        data.products,
-        (product) => <div className="shadex-catalogue-item" key={product.id}><strong>{product.title || product.name || "Product"}</strong><span>{money(product.price || product, markup)}</span></div>,
-      )}
+      {serviceId === "marketplace" && (() => {
+        const products = (data.products || [])
+          .filter((item) => overrides[String(item.id)]?.is_active === true && Number(overrides[String(item.id)]?.amount_minor) > 0)
+          .map((item) => ({ ...item, price: overrides[String(item.id)] }));
+        return products.length > 0
+          ? expandableList("Netflix, Spotify & other digital plans", products, (product) => (
+              <div className="shadex-catalogue-item" key={product.id}>
+                <strong>{product.title || product.name || "Digital service"}</strong>
+                <span>{money(product.price)}</span>
+              </div>
+            ))
+          : <p className="shadex-empty">Marketplace plans will appear here after BukzEx prices are saved and enabled.</p>;
+      })()}
 
       {serviceId === "sms" && expandableList(
         "OTP services",

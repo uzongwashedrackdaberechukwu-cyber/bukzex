@@ -22,10 +22,17 @@ function countItems(id, data) {
   return (data.products || data.services || []).length;
 }
 
+function priceInMajor(price) {
+  if (price?.amount_minor == null) return "";
+  return String(Number(price.amount_minor) / (10 ** Number(price.minor_unit ?? 2)));
+}
+
 export default function AdminServices() {
   const [catalogues, setCatalogues] = useState({});
   const [enabled, setEnabled] = useState({});
   const [markup, setMarkup] = useState({});
+  const [itemPrices, setItemPrices] = useState({});
+  const [marketplaceOverrides, setMarketplaceOverrides] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState("");
   const [error, setError] = useState("");
@@ -42,11 +49,15 @@ export default function AdminServices() {
       const nextMarkup = {};
       for (const item of MANAGED) {
         const row = byId[item.id];
-        nextEnabled[item.id] = row?.status === "active";
+        // The owner explicitly wants BukzEx Marketplace available by default.
+        // Saving Marketplace settings publishes this choice to customer pages.
+        nextEnabled[item.id] = item.id === "marketplace" || row?.status === "active";
         nextMarkup[item.id] = String(row?.price_markup_percent ?? 0);
       }
       setEnabled(nextEnabled);
       setMarkup(nextMarkup);
+      const savedOverrides = byId.marketplace?.bukzex_prices || {};
+      setMarketplaceOverrides(savedOverrides);
 
       const results = await Promise.all(MANAGED.map(async (item) => {
         try {
@@ -56,7 +67,16 @@ export default function AdminServices() {
           return [item.id, { data: null, error: err?.message || "Catalogue unavailable" }];
         }
       }));
-      setCatalogues(Object.fromEntries(results));
+      const nextCatalogues = Object.fromEntries(results);
+      setCatalogues(nextCatalogues);
+      const products = nextCatalogues.marketplace?.data?.products || [];
+      setItemPrices(Object.fromEntries(products.map((product) => {
+        const saved = savedOverrides[String(product.id)];
+        return [String(product.id), {
+          amount: saved?.amount_minor != null ? priceInMajor(saved) : priceInMajor(product.price),
+          enabled: saved?.is_active !== false,
+        }];
+      })));
     } catch (err) {
       setError(err?.message || "Unable to load service settings. Check that you are signed in as an admin.");
     } finally {
@@ -68,7 +88,7 @@ export default function AdminServices() {
 
   const canEnable = useMemo(() => Object.fromEntries(MANAGED.map((item) => {
     const result = catalogues[item.id];
-    return [item.id, Boolean(result?.data && countItems(item.id, result.data) > 0)];
+    return [item.id, Boolean(result?.data && (item.id === "marketplace" || countItems(item.id, result.data) > 0))];
   })), [catalogues]);
 
   async function save(item) {
@@ -109,6 +129,66 @@ export default function AdminServices() {
     }
   }
 
+  async function saveMarketplacePrices() {
+    setError("");
+    setNotice("");
+    const user = auth.currentUser;
+    if (!user) {
+      setError("Sign in again as an administrator, then try saving.");
+      return;
+    }
+    const products = catalogues.marketplace?.data?.products || [];
+    const nextOverrides = { ...marketplaceOverrides };
+    let savedCount = 0;
+    for (const product of products) {
+      const id = String(product.id);
+      const entry = itemPrices[id];
+      if (!entry?.amount?.trim()) continue;
+      const unit = Number(product.price?.minor_unit ?? 2);
+      const amount = Number(entry.amount);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        setError(`Enter a valid BukzEx price for ${product.title || product.name || "the selected plan"}.`);
+        return;
+      }
+      nextOverrides[id] = {
+        item_id: id,
+        item_name: String(product.title || product.name || "Digital service"),
+        amount_minor: Math.round(amount * (10 ** unit)),
+        currency: String(product.price?.currency || catalogues.marketplace?.data?.market?.currency || "NGN"),
+        minor_unit: unit,
+        is_active: Boolean(entry.enabled),
+      };
+      savedCount += 1;
+    }
+    if (!savedCount) {
+      setError("Enter a BukzEx price for at least one Marketplace plan.");
+      return;
+    }
+    setSaving("marketplace_prices");
+    try {
+      const adminSnap = await getDoc(doc(db, "admins", user.uid));
+      if (!adminSnap.exists()) throw new Error("Administrator access required.");
+      const serviceRef = doc(db, "services", "marketplace");
+      const current = await getDoc(serviceRef);
+      const currentData = current.exists() ? current.data() : {};
+      const saved = { ...(currentData.bukzex_prices || {}), ...nextOverrides };
+      await setDoc(serviceRef, {
+        service_key: "marketplace",
+        name: "Marketplace",
+        provider: "ShadexGoLtd",
+        status: enabled.marketplace ? "active" : "paused",
+        bukzex_prices: saved,
+        updated_at: serverTimestamp(),
+      }, { merge: true });
+      setMarketplaceOverrides(saved);
+      setNotice(`${savedCount} Marketplace price${savedCount === 1 ? "" : "s"} saved.`);
+    } catch (err) {
+      setError(err?.message || "Marketplace prices could not be saved.");
+    } finally {
+      setSaving("");
+    }
+  }
+
   return (
     <section className="admin-services">
       <div className="admin-services-header">
@@ -133,6 +213,7 @@ export default function AdminServices() {
           {MANAGED.map((item) => {
             const result = catalogues[item.id];
             const total = countItems(item.id, result?.data);
+            const products = item.id === "marketplace" ? (result?.data?.products || []) : [];
             const isSaving = saving === item.id;
             return (
               <article className="admin-shadex-card" key={item.id}>
@@ -150,10 +231,48 @@ export default function AdminServices() {
                   <input type="checkbox" checked={Boolean(enabled[item.id])} disabled={!canEnable[item.id]} onChange={(event) => setEnabled((old) => ({ ...old, [item.id]: event.target.checked }))} />
                   <span>Show this service to customers</span>
                 </label>
-                <label className="admin-shadex-markup">
-                  BukzEx markup (%)
-                  <input type="number" min="0" max="1000" step="0.1" value={markup[item.id] ?? "0"} onChange={(event) => setMarkup((old) => ({ ...old, [item.id]: event.target.value }))} />
-                </label>
+                {item.id === "marketplace" ? (
+                  <div className="admin-marketplace-editor">
+                    <h4>Set a BukzEx price for each plan</h4>
+                    {products.length === 0 ? (
+                      <p className="admin-marketplace-empty">No digital-service plans were returned by ShadexGoLtd yet.</p>
+                    ) : (
+                      <>
+                        <div className="admin-marketplace-list">
+                          {products.map((product) => {
+                            const id = String(product.id);
+                            const value = itemPrices[id] || { amount: priceInMajor(product.price), enabled: true };
+                            return (
+                              <div className="admin-marketplace-row" key={id}>
+                                <div className="admin-marketplace-name">
+                                  <strong>{product.title || product.name}</strong>
+                                  <small>ShadexGoLtd: {product.price?.currency || "NGN"} {priceInMajor(product.price)}</small>
+                                </div>
+                                <label className="admin-marketplace-price">
+                                  BukzEx price
+                                  <input type="number" min="0.01" step="0.01" value={value.amount} onChange={(event) => setItemPrices((old) => ({ ...old, [id]: { ...value, amount: event.target.value } }))} />
+                                </label>
+                                <label className="admin-marketplace-publish">
+                                  <input type="checkbox" checked={Boolean(value.enabled)} onChange={(event) => setItemPrices((old) => ({ ...old, [id]: { ...value, enabled: event.target.checked } }))} />
+                                  Show plan
+                                </label>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <button className="admin-shadex-save" type="button" onClick={saveMarketplacePrices} disabled={saving === "marketplace_prices" || loading}>
+                          {saving === "marketplace_prices" ? <LoaderCircle size={16} className="service-spinner" /> : <Save size={16} />}
+                          {saving === "marketplace_prices" ? "Saving prices…" : "Save Marketplace prices"}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <label className="admin-shadex-markup">
+                    BukzEx markup (%)
+                    <input type="number" min="0" max="1000" step="0.1" value={markup[item.id] ?? "0"} onChange={(event) => setMarkup((old) => ({ ...old, [item.id]: event.target.value }))} />
+                  </label>
+                )}
                 <button className="admin-shadex-save" type="button" onClick={() => save(item)} disabled={isSaving || loading}>
                   {isSaving ? <LoaderCircle size={16} className="service-spinner" /> : <Save size={16} />}
                   {isSaving ? "Saving…" : "Save service settings"}

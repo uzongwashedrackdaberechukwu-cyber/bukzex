@@ -22,3 +22,16 @@
 .admin-shadex-save { display:flex; align-items:center; justify-content:center; gap:8px; min-height:44px; padding:10px 14px; border:0; border-radius:10px; background:#d3a72b; color:#101827; font-weight:700; cursor:pointer; }
 .admin-shadex-save:disabled { opacity:.6; cursor:wait; }
 @media (max-width:480px) { .admin-shadex-card { padding:16px; } .admin-shadex-card-heading { flex-direction:column; } }
+
+.admin-marketplace-editor { display:grid; gap:12px; }
+.admin-marketplace-editor h4 { margin:4px 0; font-size:1rem; }
+.admin-marketplace-empty { color:#ffcc8c; }
+.admin-marketplace-list { display:grid; gap:10px; max-height:620px; overflow:auto; padding-right:3px; }
+.admin-marketplace-row { display:grid; grid-template-columns:minmax(0,1fr) minmax(110px,150px) auto; align-items:center; gap:12px; padding:12px; border:1px solid rgba(142,160,196,.18); border-radius:12px; background:rgba(4,10,22,.38); }
+.admin-marketplace-name { display:grid; gap:4px; min-width:0; }
+.admin-marketplace-name strong { overflow-wrap:anywhere; }
+.admin-marketplace-name small { color:#93a1b8; }
+.admin-marketplace-price { display:grid; gap:5px; color:#aeb9cc; font-size:.82rem; }
+.admin-marketplace-price input { width:100%; min-width:0; padding:9px; border:1px solid rgba(142,160,196,.25); border-radius:8px; background:#0c1424; color:#f5f7fb; font:inherit; }
+.admin-marketplace-publish { display:flex; gap:6px; align-items:center; color:#dce2ee; font-size:.82rem; }
+@media(max-width:650px) { .admin-marketplace-row { grid-template-columns:1fr 1fr; } .admin-marketplace-name { grid-column:1/-1; } .admin-marketplace-publish { justify-content:flex-start; } }
