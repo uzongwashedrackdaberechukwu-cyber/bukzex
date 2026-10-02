@@ -1,17 +1,18 @@
-BukzEx ShadexGoLtd catalogue batch
+BUKZEX ADMIN CATALOGUE SETTINGS UPDATE
 
-This update connects the BukzEx service pages to ShadexGoLtd catalogue routes:
-- VTU airtime and data
-- Bills (electricity and cable)
-- Marketplace
-- Virtual SMS / OTP
-- Social Boost
+This update connects Admin > Services to the ShadexGoLtd catalogue Worker.
+The admin can publish/hide each available service category and set a BukzEx
+percentage markup. Saving writes the settings to Firebase services documents.
+Customer Services then shows active categories and displays provider prices
+with the saved markup added.
 
-Orders are not submitted to ShadexGoLtd and this update does not debit wallets. The non-VTU pages are catalogue-only. The current ShadexGoLtd Marketplace catalogue is empty, and its OTP catalogue returned an upstream server error when checked on 2026-10-02; the app shows those states rather than placeholder products.
+Install by extracting this ZIP in the root of ~/bukzex and choosing overwrite.
+Then run npm run build. If it succeeds, commit and push the changed files so
+the BukzEx Worker deploys the update.
 
-Install in Termux:
-  cd ~/bukzex
-  unzip -o ~/storage/downloads/bukzex-shadex-catalogue-batch.zip -d .
-  npm run build
-
-The public Worker URL is set in src/services/shadexCatalog.js. If the workers.dev address differs from your Cloudflare Overview address, replace WORKER_URL in that file with your exact address.
+Notes:
+- Marketplace is disabled when the provider catalogue is empty.
+- OTP is disabled while ShadexGoLtd's OTP catalogue endpoint is failing.
+- This update sets published status and display pricing only. VTU orders still
+  go to the existing pending-for-admin-review flow; automatic provider order
+  submission and wallet charging are not enabled by this update.

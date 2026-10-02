@@ -15,6 +15,8 @@ import {
 
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../lib/firebase";
 
 import {
   getWalletBalance,
@@ -79,10 +81,11 @@ function planPrice(plan) {
   return amountMinor / 10 ** minorUnit;
 }
 
-function priceLabel(plan) {
+function priceLabel(plan, markup = 0) {
   const amount = planPrice(plan);
   if (amount === null) return "Price unavailable";
-  return `${plan.price.currency || "NGN"} ${amount.toLocaleString(undefined, {
+  const customerAmount = amount * (1 + Number(markup || 0) / 100);
+  return `${plan.price.currency || "NGN"} ${customerAmount.toLocaleString(undefined, {
     maximumFractionDigits: 2,
   })}`;
 }
@@ -107,6 +110,7 @@ export default function ServicePurchase() {
   const [networkId, setNetworkId] = useState("");
   const [planId, setPlanId] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [markup, setMarkup] = useState(0);
 
   useEffect(() => {
     async function loadWallet() {
@@ -121,6 +125,16 @@ export default function ServicePurchase() {
     }
     loadWallet();
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    getDoc(doc(db, "services", serviceId))
+      .then((snapshot) => {
+        if (active && snapshot.exists()) setMarkup(Number(snapshot.data().price_markup_percent || 0));
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [serviceId]);
 
   useEffect(() => {
     if (serviceId !== "vtu") return;
@@ -200,7 +214,7 @@ export default function ServicePurchase() {
           setError("Choose a data plan.");
           return;
         }
-        numericAmount = planPrice(selectedPlan);
+        numericAmount = planPrice(selectedPlan) * (1 + markup / 100);
         if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
           setError("The selected data plan has no valid price.");
           return;
@@ -208,6 +222,8 @@ export default function ServicePurchase() {
       } else if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
         setError("Enter a valid airtime amount.");
         return;
+      } else {
+        numericAmount *= 1 + markup / 100;
       }
       requestDetails = JSON.stringify({
         service_type: vtuType,
@@ -218,6 +234,9 @@ export default function ServicePurchase() {
         data_plan_name: selectedPlan?.name || null,
         phone_number: phoneNumber.trim(),
         currency: selectedPlan?.price?.currency || catalogue?.market?.currency || "NGN",
+        provider_amount: vtuType === "data" ? planPrice(selectedPlan) : Number(amount),
+        bukzex_markup_percent: markup,
+        customer_amount: numericAmount,
       });
     }
 
@@ -285,7 +304,7 @@ export default function ServicePurchase() {
             <h2>{serviceId === "vtu" ? "Choose Airtime or Data" : "Request a Service"}</h2>
             <p>
               {serviceId === "vtu"
-                ? "Prices and plans load from ShadexGoLtd. This submits a review request; no wallet money is taken."
+                ? `Prices load from ShadexGoLtd with the BukzEx markup (${markup}%). Requests are still sent for admin review; no wallet money is taken here.`
                 : "Send your request for administrator review. No wallet money is taken until provider pricing and fulfillment are connected."}
             </p>
           </div>
@@ -314,13 +333,14 @@ export default function ServicePurchase() {
                       <label htmlFor="vtu-plan">Data plan</label>
                       <select id="vtu-plan" value={planId} onChange={(event) => setPlanId(event.target.value)}>
                         <option value="">Select a data plan</option>
-                        {plans.map((plan) => <option key={plan.id} value={plan.id}>{plan.name} — {priceLabel(plan)}</option>)}
+                        {plans.map((plan) => <option key={plan.id} value={plan.id}>{plan.name} — {priceLabel(plan, markup)}</option>)}
                       </select>
                     </div>
                   ) : (
                     <div className="service-form-field">
                       <label htmlFor="service-amount">Airtime amount (₦)</label>
-                      <input id="service-amount" type="number" min="1" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="Enter amount" />
+                    <input id="service-amount" type="number" min="1" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="Enter amount" />
+                    <small className="service-price-hint">Estimated customer total with {markup}% markup: ₦{(Number(amount || 0) * (1 + markup / 100)).toLocaleString(undefined, { maximumFractionDigits: 2 })}</small>
                     </div>
                   )}
                   <div className="service-form-field">

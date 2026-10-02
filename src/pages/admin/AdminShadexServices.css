@@ -1,0 +1,24 @@
+.admin-shadex-note {
+  margin: 18px 0;
+  padding: 14px 16px;
+  border: 1px solid rgba(220, 176, 44, .35);
+  border-radius: 12px;
+  background: rgba(220, 176, 44, .08);
+  color: #d8dce6;
+  line-height: 1.5;
+}
+.admin-shadex-success { display:flex; align-items:center; gap:8px; margin:12px 0; color:#69d7a2; }
+.admin-shadex-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; margin-top:20px; }
+.admin-shadex-card { display:flex; flex-direction:column; gap:14px; padding:20px; border:1px solid rgba(142,160,196,.18); border-radius:18px; background:#111b2e; color:#f4f6fb; }
+.admin-shadex-card-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.admin-shadex-card-heading h3 { margin:0 0 6px; font-size:1.05rem; }
+.admin-shadex-card-heading p,.admin-shadex-count { margin:0; color:#8e9ab0; }
+.admin-shadex-count { font-size:.9rem; }
+.admin-shadex-error { margin:0; color:#ff9d9d; font-size:.9rem; overflow-wrap:anywhere; }
+.admin-shadex-toggle { display:flex; align-items:center; gap:10px; padding:12px; border-radius:10px; background:rgba(255,255,255,.04); color:#dce2ee; }
+.admin-shadex-toggle input { width:18px; height:18px; accent-color:#d4a928; }
+.admin-shadex-markup { display:grid; gap:8px; color:#aeb9cc; font-size:.9rem; font-weight:600; }
+.admin-shadex-markup input { box-sizing:border-box; width:100%; padding:12px; color:#f5f7fb; border:1px solid rgba(142,160,196,.22); border-radius:10px; background:#0c1424; font:inherit; }
+.admin-shadex-save { display:flex; align-items:center; justify-content:center; gap:8px; min-height:44px; padding:10px 14px; border:0; border-radius:10px; background:#d3a72b; color:#101827; font-weight:700; cursor:pointer; }
+.admin-shadex-save:disabled { opacity:.6; cursor:wait; }
+@media (max-width:480px) { .admin-shadex-card { padding:16px; } .admin-shadex-card-heading { flex-direction:column; } }

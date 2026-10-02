@@ -82,7 +82,7 @@ export default function CustomerServices() {
   }, []);
 
   const activeServices = services.filter(
-    (service) => enabledServices?.has(service.id) || service.id === "bills",
+    (service) => enabledServices?.has(service.id),
   );
 
   return (
