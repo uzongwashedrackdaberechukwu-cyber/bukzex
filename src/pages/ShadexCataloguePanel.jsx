@@ -5,13 +5,17 @@ import { AlertCircle, LoaderCircle } from "lucide-react";
 import { getShadexCatalogue } from "../services/shadexCatalog";
 import "./ShadexCataloguePanel.css";
 
-function money(price, markup = 0) {
-  if (price?.amount_minor === null || price?.amount_minor === undefined || price?.amount_minor === "") return "Price varies";
-  const value = Number(price?.amount_minor);
+function customerPrice(id, overrides) {
+  const saved = overrides[String(id)];
+  if (!saved || saved.is_active === false || saved.amount_minor == null) return null;
+  return saved;
+}
+
+function money(price) {
+  if (price?.amount_minor == null) return "Price varies";
+  const value = Number(price.amount_minor) / (10 ** Number(price.minor_unit ?? 2));
   if (!Number.isFinite(value)) return "Price varies";
-  const unit = Number(price?.minor_unit ?? 2);
-  const major = (value / 10 ** unit) * (1 + Number(markup || 0) / 100);
-  return `${price?.currency || "NGN"} ${major.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  return `${price.currency || "NGN"} ${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
 
 function expandableList(title, rows, renderRow) {
@@ -26,15 +30,25 @@ function expandableList(title, rows, renderRow) {
   );
 }
 
-function NestedPlans({ rows, label, markup }) {
-  return expandableList(label, rows, (row) => (
-    <details className="shadex-catalogue-item" key={row.id}>
-      <summary>{row.name || row.title || row.identifier}</summary>
+function NestedPlans({ rows, label, overrides }) {
+  const visible = (rows || []).map((provider) => {
+    const fee = customerPrice(`fee-${provider.id}`, overrides);
+    const plans = (provider.plans || []).map((plan) => ({
+      ...plan,
+      customer_price: plan.variable_amount ? null : customerPrice(plan.id, overrides),
+    })).filter((plan) => plan.customer_price);
+    return { ...provider, customer_fee: fee, visible_plans: plans };
+  }).filter((provider) => provider.visible_plans.length || provider.customer_fee);
+
+  return expandableList(label, visible, (provider) => (
+    <details className="shadex-catalogue-item" key={provider.id}>
+      <summary>{provider.name || provider.title || provider.identifier}</summary>
       <div className="shadex-catalogue-sublist">
-        {(row.plans || []).map((plan) => (
+        {provider.customer_fee && <div className="shadex-catalogue-line"><span>BukzEx service fee</span><strong>{money(provider.customer_fee)}</strong></div>}
+        {provider.visible_plans.map((plan) => (
           <div className="shadex-catalogue-line" key={plan.id}>
             <span>{plan.name}</span>
-            <strong>{plan.variable_amount ? `Variable amount + ${markup}%` : money({ amount_minor: plan.amount_minor, currency: plan.currency, minor_unit: plan.minor_unit }, markup)}</strong>
+            <strong>{plan.variable_amount ? "Variable amount" : money(plan.customer_price)}</strong>
           </div>
         ))}
       </div>
@@ -46,7 +60,6 @@ export default function ShadexCataloguePanel({ serviceId }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [markup, setMarkup] = useState(0);
   const [overrides, setOverrides] = useState({});
 
   useEffect(() => {
@@ -65,7 +78,6 @@ export default function ShadexCataloguePanel({ serviceId }) {
     getDoc(doc(db, "services", serviceId))
       .then((snapshot) => {
         if (live && snapshot.exists()) {
-          setMarkup(Number(snapshot.data().price_markup_percent || 0));
           setOverrides(snapshot.data().bukzex_prices || {});
         }
       })
@@ -77,43 +89,69 @@ export default function ShadexCataloguePanel({ serviceId }) {
   if (error) return <div className="shadex-catalogue-status error"><AlertCircle size={17} /> ShadexGoLtd catalogue is temporarily unavailable: {error}</div>;
   if (!data) return null;
 
+  const currency = data.market?.currency || "NGN";
   return (
     <section className="shadex-catalogue-panel">
       <div className="shadex-catalogue-heading">
         <span>LIVE FROM SHADEXGOLTD</span>
-        <small>{data.market?.currency || "NGN"} · {data.market?.countryCode || ""}</small>
+        <small>{currency} · {data.market?.countryCode || ""}</small>
       </div>
 
       {serviceId === "bills" && <>
-        <NestedPlans rows={data.electricity?.providers} label="Electricity providers" markup={markup} />
-        <NestedPlans rows={data.cable?.providers} label="Cable TV providers" markup={markup} />
+        <NestedPlans rows={data.electricity?.providers} label="Electricity providers" overrides={overrides} />
+        <NestedPlans rows={data.cable?.providers} label="Cable TV providers" overrides={overrides} />
       </>}
 
       {serviceId === "marketplace" && (() => {
-        const products = (data.products || [])
-          .filter((item) => overrides[String(item.id)]?.is_active === true && Number(overrides[String(item.id)]?.amount_minor) > 0)
-          .map((item) => ({ ...item, price: overrides[String(item.id)] }));
-        return products.length > 0
-          ? expandableList("Netflix, Spotify & other digital plans", products, (product) => (
-              <div className="shadex-catalogue-item" key={product.id}>
-                <strong>{product.title || product.name || "Digital service"}</strong>
-                <span>{money(product.price)}</span>
-              </div>
-            ))
-          : <p className="shadex-empty">Marketplace plans will appear here after BukzEx prices are saved and enabled.</p>;
+        const products = (data.products || []).map((item) => ({
+          ...item,
+          customer_price: customerPrice(item.id, overrides),
+        })).filter((item) => item.customer_price);
+        return expandableList("Netflix, Spotify & other digital plans", products, (product) => (
+          <div className="shadex-catalogue-item" key={product.id}>
+            <strong>{product.title || product.name || "Digital service"}</strong>
+            <span>{money(product.customer_price)}</span>
+          </div>
+        ));
       })()}
 
-      {serviceId === "sms" && expandableList(
-        "OTP services",
-        data.services,
-        (item) => <div className="shadex-catalogue-item" key={item.id}><strong>{item.service_name}</strong><span>{item.country_name} · {money(item.price, markup)}</span></div>,
-      )}
+      {serviceId === "sms" && (() => {
+        const services = (data.services || []).map((item) => ({
+          ...item,
+          customer_price: customerPrice(item.id, overrides),
+        })).filter((item) => item.customer_price);
+        return expandableList("OTP services", services, (item) => (
+          <div className="shadex-catalogue-item" key={item.id}>
+            <strong>{item.service_name}</strong><span>{item.country_name} · {money(item.customer_price)}</span>
+          </div>
+        ));
+      })()}
 
-      {serviceId === "social" && expandableList(
-        "Social Boost packages",
-        data.services,
-        (item) => <div className="shadex-catalogue-item" key={item.package_id}><strong>{item.service_name}</strong><span>{item.platform} · {Number(item.quantity).toLocaleString()} · {money(item.price, markup)}</span></div>,
-      )}
+      {serviceId === "social" && (() => {
+        const services = (data.services || []).map((item) => ({
+          ...item,
+          customer_price: customerPrice(item.package_id, overrides),
+        })).filter((item) => item.customer_price);
+        return expandableList("Social Boost packages", services, (item) => (
+          <div className="shadex-catalogue-item" key={item.package_id}>
+            <strong>{item.service_name}</strong><span>{item.platform} · {Number(item.quantity).toLocaleString()} · {money(item.customer_price)}</span>
+          </div>
+        ));
+      })()}
+
+      {serviceId === "vtu" && (() => {
+        const networks = data.data?.networks || [];
+        const plans = networks.flatMap((network) => (network.plans || []).map((plan) => ({
+          ...plan,
+          network_name: network.name,
+          customer_price: customerPrice(plan.id, overrides),
+        }))).filter((plan) => plan.customer_price);
+        return expandableList("Data plans", plans, (plan) => (
+          <div className="shadex-catalogue-item" key={plan.id}>
+            <strong>{plan.network_name} — {plan.name}</strong><span>{money(plan.customer_price)}</span>
+          </div>
+        ));
+      })()}
     </section>
   );
 }

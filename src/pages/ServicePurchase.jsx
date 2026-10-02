@@ -81,7 +81,12 @@ function planPrice(plan) {
   return amountMinor / 10 ** minorUnit;
 }
 
-function priceLabel(plan, markup = 0) {
+function priceLabel(plan, markup = 0, override = null) {
+  if (override?.is_active === false) return "Not available";
+  if (override?.amount_minor != null) {
+    const amount = Number(override.amount_minor) / (10 ** Number(override.minor_unit ?? 2));
+    return `${override.currency || "NGN"} ${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  }
   const amount = planPrice(plan);
   if (amount === null) return "Price unavailable";
   const customerAmount = amount * (1 + Number(markup || 0) / 100);
@@ -111,6 +116,7 @@ export default function ServicePurchase() {
   const [planId, setPlanId] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [markup, setMarkup] = useState(0);
+  const [priceOverrides, setPriceOverrides] = useState({});
 
   useEffect(() => {
     async function loadWallet() {
@@ -130,7 +136,10 @@ export default function ServicePurchase() {
     let active = true;
     getDoc(doc(db, "services", serviceId))
       .then((snapshot) => {
-        if (active && snapshot.exists()) setMarkup(Number(snapshot.data().price_markup_percent || 0));
+        if (active && snapshot.exists()) {
+          setMarkup(Number(snapshot.data().price_markup_percent || 0));
+          setPriceOverrides(snapshot.data().bukzex_prices || {});
+        }
       })
       .catch(() => {});
     return () => { active = false; };
@@ -162,8 +171,20 @@ export default function ServicePurchase() {
   }, [catalogue, vtuType]);
 
   const selectedNetwork = networks.find((network) => String(network.id) === networkId);
-  const plans = Array.isArray(selectedNetwork?.plans) ? selectedNetwork.plans : [];
+  const plans = (Array.isArray(selectedNetwork?.plans) ? selectedNetwork.plans : [])
+    .filter((plan) => {
+      const override = priceOverrides[String(plan.id)];
+      return override?.is_active !== false && Number(override?.amount_minor) > 0;
+    });
   const selectedPlan = plans.find((plan) => String(plan.id) === planId);
+
+  function planCustomerAmount(plan) {
+    const override = priceOverrides[String(plan?.id)];
+    if (override?.amount_minor != null) {
+      return Number(override.amount_minor) / (10 ** Number(override.minor_unit ?? 2));
+    }
+    return null;
+  }
 
   useEffect(() => {
     if (!networks.length) {
@@ -214,7 +235,7 @@ export default function ServicePurchase() {
           setError("Choose a data plan.");
           return;
         }
-        numericAmount = planPrice(selectedPlan) * (1 + markup / 100);
+        numericAmount = planCustomerAmount(selectedPlan);
         if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
           setError("The selected data plan has no valid price.");
           return;
@@ -333,7 +354,7 @@ export default function ServicePurchase() {
                       <label htmlFor="vtu-plan">Data plan</label>
                       <select id="vtu-plan" value={planId} onChange={(event) => setPlanId(event.target.value)}>
                         <option value="">Select a data plan</option>
-                        {plans.map((plan) => <option key={plan.id} value={plan.id}>{plan.name} — {priceLabel(plan, markup)}</option>)}
+                        {plans.map((plan) => <option key={plan.id} value={plan.id}>{plan.name} — {priceLabel(plan, markup, priceOverrides[String(plan.id)])}</option>)}
                       </select>
                     </div>
                   ) : (
