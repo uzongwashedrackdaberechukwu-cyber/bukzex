@@ -1,8 +1,34 @@
 .service-purchase-page {
+  --service-gold: #e7c66b;
   min-height: 100%;
   padding: 10px 0 40px;
   color: var(--white);
 }
+
+.service-customer-nav {
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  min-height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 0 max(5vw, 20px);
+  margin: -10px -5.4vw 24px;
+  border-bottom: 1px solid rgba(194, 213, 231, .12);
+  background: rgba(6, 21, 34, .94);
+  backdrop-filter: blur(18px);
+}
+
+.service-customer-brand { display: inline-flex; align-items: center; gap: 9px; color: #f7f8fa; }
+.service-customer-brand > span { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 11px; background: linear-gradient(145deg, #f4dc91, #bf9038); color: #152032; font-size: 15px; font-weight: 950; }
+.service-customer-brand strong { font-size: 16px; letter-spacing: -.04em; }
+.service-customer-brand strong span { color: var(--service-gold); }
+.service-customer-nav nav { height: 68px; display: flex; align-items: center; gap: clamp(17px, 3vw, 42px); }
+.service-customer-nav nav a { height: 100%; display: flex; align-items: center; border-bottom: 2px solid transparent; color: #9dabb9; font-size: 11px; font-weight: 650; }
+.service-customer-nav nav a:hover, .service-customer-nav nav a.active { border-color: var(--service-gold); color: #f5f6f8; }
+.service-customer-account { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 99px; background: linear-gradient(110deg, #f4d990, #cf9c3a); color: #182235; font-size: 10px; font-weight: 800; }
 
 .service-purchase-container {
   width: 100%;
@@ -375,6 +401,15 @@
 /* Mobile */
 
 @media (max-width: 600px) {
+  .service-customer-nav { min-height: 63px; gap: 8px; padding: 0 13px; margin: -10px -16px 20px; }
+  .service-customer-brand { gap: 7px; }
+  .service-customer-brand > span { width: 31px; height: 31px; }
+  .service-customer-brand strong { font-size: 14px; }
+  .service-customer-nav nav { height: 63px; gap: 10px; }
+  .service-customer-nav nav a { font-size: 8px; }
+  .service-customer-nav nav a:nth-child(3) { display: none; }
+  .service-customer-account { padding: 9px 10px; font-size: 0; }
+  .service-customer-account svg { width: 15px; }
   .service-purchase-header {
     align-items: flex-start;
   }

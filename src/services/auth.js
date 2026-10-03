@@ -1,8 +1,6 @@
 import {
   createUserWithEmailAndPassword,
-  browserLocalPersistence,
   signInWithEmailAndPassword,
-  setPersistence,
   sendPasswordResetEmail,
   updatePassword as firebaseUpdatePassword,
   signOut,
@@ -43,6 +41,9 @@ async function isAdmin(uid) {
 }
 
 export async function getSession() {
+  // Wait until Firebase has restored its saved browser session before
+  // deciding that the user is signed out after a page refresh.
+  await auth.authStateReady();
   const user = auth.currentUser;
   if (!user) return null;
 
@@ -52,6 +53,21 @@ export async function getSession() {
   ]);
 
   if (!profileSnap.exists()) {
+    // Some administrator accounts are created directly in /admins and do
+    // not have a customer /profiles record. Keep those signed-in admins in
+    // the admin area after a refresh instead of treating them as signed out.
+    if (admin) {
+      const nameParts = String(user.displayName || "").trim().split(/\s+/).filter(Boolean);
+      return {
+        id: user.uid,
+        firstName: nameParts[0] || "Admin",
+        lastName: nameParts.slice(1).join(" "),
+        email: user.email || "",
+        phone: "",
+        role: "admin",
+        notificationsEnabled: true,
+      };
+    }
     throw new Error("Your account profile is not ready yet. Please contact support.");
   }
 
@@ -83,7 +99,6 @@ export async function getRegisteredUsers() {
 
 export async function registerUser(user) {
   await authPersistenceReady;
-  await setPersistence(auth, browserLocalPersistence);
   const email = user.email.trim().toLowerCase();
   const credential = await createUserWithEmailAndPassword(
     auth,
@@ -116,7 +131,6 @@ export async function registerUser(user) {
 
 export async function loginUser(email, password) {
   await authPersistenceReady;
-  await setPersistence(auth, browserLocalPersistence);
   await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
   return getSession();
 }

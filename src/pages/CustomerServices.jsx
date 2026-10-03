@@ -58,22 +58,32 @@ const services = [
 
 export default function CustomerServices() {
   return (
+    <>
+    <header className="customer-services-topbar">
+      <Link to="/customer" className="customer-services-brand"><span>B</span><strong>Bukz<span>Ex</span></strong></Link>
+      <nav aria-label="Customer navigation"><Link to="/customer">Home</Link><Link to="/customer/services" className="active">Services</Link><Link to="/customer/orders">My purchases</Link><Link to="/customer/profile">Profile</Link></nav>
+      <Link to="/customer" className="customer-services-account">My account <ArrowRight size={15} /></Link>
+    </header>
     <main className="customer-services-page">
       <header className="customer-services-hero">
         <div className="customer-services-hero-copy">
-          <span className="customer-services-eyebrow">BUKZEX · SERVICES</span>
-          <h1>What would you like to do?</h1>
-          <p>Choose a service to view its available options and prices.</p>
+          <span className="customer-services-eyebrow"><i /> ONE BUKZEX ACCOUNT · MANY POSSIBILITIES</span>
+          <h1>Everyday services,<br /><em>made effortless.</em></h1>
+          <p>Stay connected, take care of bills and find the digital services you need. Choose a category to see available options and clear prices.</p>
+          <div className="customer-services-hero-actions"><Link to="/customer" className="customer-services-primary">Back to your dashboard <ArrowRight size={16} /></Link><span><span className="customer-services-secure">✓</span> Secure wallet checkout</span></div>
         </div>
-        <Link to="/customer" className="customer-services-wallet">
-          Back to dashboard
-        </Link>
+        <div className="customer-services-showcase" aria-hidden="true">
+          <div className="customer-services-showcase-orbit" />
+          <div className="customer-showcase-main"><span>BUKZEX SERVICES</span><strong>All the essentials.<br />One simple place.</strong><small>Choose. Pay. Get on with your day.</small></div>
+          <div className="customer-showcase-badges"><span><Smartphone size={15} /> VTU</span><span><Receipt size={15} /> BILLS</span><span><Store size={15} /> DIGITAL</span></div>
+        </div>
       </header>
 
       <div className="customer-services-section-heading">
         <div>
-          <span>BUKZEX SERVICES</span>
-          <h2>Browse by category</h2>
+          <span>YOUR SERVICE COLLECTION</span>
+          <h2>What do you need today?</h2>
+          <p>Select a category to browse its available services.</p>
         </div>
         <span className="customer-services-count">{services.length} services</span>
       </div>
@@ -109,14 +119,9 @@ export default function CustomerServices() {
         })}
       </section>
 
-      <aside className="customer-services-assurance">
-        <span className="customer-services-assurance-mark"><span>B</span></span>
-        <div>
-          <strong>One BukzEx account. Everyday services in one place.</strong>
-          <p>Check each service’s current options and BukzEx prices before checkout.</p>
-        </div>
-      </aside>
+      <aside className="customer-services-assurance"><span className="customer-services-assurance-mark"><span>✓</span></span><div><strong>One BukzEx account. Everyday services in one place.</strong><p>See available options and BukzEx prices before you continue to checkout.</p></div><Link to="/customer/orders">View my purchases <ArrowRight size={15} /></Link></aside>
       <WhatsAppSupport />
     </main>
+    </>
   );
 }

@@ -1,9 +1,6 @@
 import {
-  LayoutDashboard,
   Layers3,
   ShoppingBag,
-  UserRound,
-  Settings,
   LogOut,
   Bell,
   Menu,
@@ -15,6 +12,13 @@ import {
   CheckCircle2,
   AlertCircle,
   Plus,
+  Smartphone,
+  Receipt,
+  Store,
+  MessageSquareCode,
+  TrendingUp,
+  ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 
 import { useEffect, useState } from "react";
@@ -31,35 +35,12 @@ import WhatsAppSupport from "../components/WhatsAppSupport";
 
 import "./Customer.css";
 
-const navigation = [
-  {
-    label: "Dashboard",
-    icon: LayoutDashboard,
-    path: "/customer",
-  },
-  {
-    label: "Services",
-    icon: Layers3,
-    path: "/customer/services",
-  },
-  {
-    label: "My Orders",
-    icon: ShoppingBag,
-    path: "/customer/orders",
-  },
-];
-
-const accountNavigation = [
-  {
-    label: "Profile",
-    icon: UserRound,
-    path: "/customer/profile",
-  },
-  {
-    label: "Settings",
-    icon: Settings,
-    path: "/customer/settings",
-  },
+const serviceLinks = [
+  { id: "vtu", name: "Airtime & data", detail: "Stay connected", icon: Smartphone, tone: "blue" },
+  { id: "bills", name: "Bills", detail: "Electricity & TV", icon: Receipt, tone: "gold" },
+  { id: "marketplace", name: "Digital plans", detail: "Streaming & more", icon: Store, tone: "violet" },
+  { id: "sms", name: "Virtual numbers", detail: "SMS & verification", icon: MessageSquareCode, tone: "mint" },
+  { id: "social", name: "Social boost", detail: "Grow your reach", icon: TrendingUp, tone: "coral" },
 ];
 
 function formatAmount(value) {
@@ -251,157 +232,30 @@ export default function Customer() {
 
   return (
     <div className="customer-page">
-
-      {mobileOpen && (
-        <button
-          type="button"
-          className="customer-mobile-overlay"
-          aria-label="Close menu"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-
-      <aside
-        className={`customer-sidebar ${
-          mobileOpen ? "customer-sidebar-open" : ""
-        }`}
-      >
-        <div className="customer-sidebar-top">
-
-          <Link
-            to="/customer"
-            className="customer-logo"
-            onClick={() => setMobileOpen(false)}
-          >
-            <span className="customer-logo-mark">B</span>
-            <span>
-              Bukz<span>Ex</span>
-            </span>
+      <header className="customer-topbar">
+        <Link to="/customer" className="customer-logo" aria-label="BukzEx dashboard">
+          <span className="customer-logo-mark">B</span>
+          <span>Bukz<span>Ex</span></span>
+        </Link>
+        <nav className={`customer-topnav ${mobileOpen ? "is-open" : ""}`} aria-label="Customer navigation">
+          <Link to="/customer" onClick={() => setMobileOpen(false)} className="is-current">Home</Link>
+          <Link to="/customer/services" onClick={() => setMobileOpen(false)}>Services</Link>
+          <Link to="/customer/orders" onClick={() => setMobileOpen(false)}>My purchases</Link>
+          <Link to="/customer/profile" onClick={() => setMobileOpen(false)}>Profile</Link>
+        </nav>
+        <div className="customer-topbar-actions">
+          <button type="button" className="customer-notification" aria-label="Notifications"><Bell size={18} /></button>
+          <Link to="/customer/profile" className="customer-user" aria-label={`Open ${fullName}'s profile`}>
+            <span className="customer-user-avatar">{firstName.charAt(0).toUpperCase()}</span>
+            <span className="customer-user-info"><strong>{firstName}</strong><small>My account</small></span>
           </Link>
-
-          <button
-            type="button"
-            className="customer-mobile-close"
-            onClick={() => setMobileOpen(false)}
-            aria-label="Close navigation"
-          >
-            <X size={21} />
-          </button>
-
-          <nav className="customer-nav">
-            <div className="customer-nav-section">
-              <small>MAIN</small>
-
-              {navigation.map((item) => {
-                const Icon = item.icon;
-
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={
-                      item.path === "/customer"
-                        ? "customer-nav-link active"
-                        : "customer-nav-link"
-                    }
-                    onClick={() =>
-                      setMobileOpen(false)
-                    }
-                  >
-                    <Icon size={18} />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-
-            <div className="customer-nav-section">
-              <small>ACCOUNT</small>
-
-              {accountNavigation.map((item) => {
-                const Icon = item.icon;
-
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className="customer-nav-link"
-                    onClick={() =>
-                      setMobileOpen(false)
-                    }
-                  >
-                    <Icon size={18} />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          </nav>
-        </div>
-
-        <div className="customer-sidebar-bottom">
-          <div className="customer-sidebar-wallet">
-            <div className="customer-sidebar-wallet-icon">
-              <WalletCards size={17} />
-            </div>
-
-            <div>
-              <small>WALLET BALANCE</small>
-              <strong>
-                {formatAmount(walletBalance)}
-              </strong>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            className="customer-logout"
-            onClick={handleLogout}
-          >
-            <LogOut size={17} />
-            <span>Logout</span>
+          <button type="button" className="customer-menu-button" onClick={() => setMobileOpen((open) => !open)} aria-label={mobileOpen ? "Close menu" : "Open menu"}>
+            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
-      </aside>
+      </header>
 
-      <section className="customer-main">
-
-        <header className="customer-topbar">
-          <button
-            type="button"
-            className="customer-menu-button"
-            onClick={() => setMobileOpen(true)}
-            aria-label="Open navigation"
-          >
-            <Menu size={21} />
-          </button>
-
-          <div className="customer-topbar-spacer" />
-
-          <button
-            type="button"
-            className="customer-notification"
-            aria-label="Notifications"
-          >
-            <Bell size={19} />
-          </button>
-
-          <Link
-            to="/customer/profile"
-            className="customer-user"
-          >
-            <div className="customer-user-avatar">
-              {firstName.charAt(0).toUpperCase()}
-            </div>
-
-            <div className="customer-user-info">
-              <strong>{fullName}</strong>
-              <small>Customer</small>
-            </div>
-          </Link>
-        </header>
-
-        <main className="customer-content">
+      <main className="customer-content">
 
           {topUpOpen ? (
             <>
@@ -451,19 +305,27 @@ export default function Customer() {
           <>
 
           <section className="customer-welcome">
-            <div>
-              <span>BUKZEX DASHBOARD</span>
-
-              <h1>
-                Welcome back, {firstName}.
-              </h1>
-
-              <p>
-                Manage your wallet, services and orders
-                from one place.
-              </p>
+            <div className="customer-welcome-copy">
+              <span className="customer-welcome-kicker"><i /> YOUR BUKZEX ACCOUNT</span>
+              <h1>Your digital life,<br /><em>made effortless.</em></h1>
+              <p>Welcome back, {firstName}. Top up, pay bills and find the digital services you need, all from one secure account.</p>
+              <div className="customer-welcome-actions">
+                <Link to="/customer/services" className="customer-primary-action">Explore services <ArrowRight size={17} /></Link>
+                <button type="button" className="customer-secondary-action" onClick={() => { setDepositStatus(""); setDepositMessage(""); setError(""); setTopUpOpen(true); }}>Top up wallet <Plus size={16} /></button>
+              </div>
+              <div className="customer-trust-row"><span><ShieldCheck size={15} /> Secure wallet</span><span><Sparkles size={15} /> All your services</span></div>
             </div>
-
+            <div className="customer-welcome-art" aria-label="BukzEx services at a glance">
+              <div className="customer-art-glow" />
+              <div className="customer-art-screen">
+                <div className="customer-art-screen-top"><span className="customer-art-logo">B</span><span>BUKZEX</span><span className="customer-art-online"><i /> LIVE</span></div>
+                <div className="customer-art-feature"><span>YOUR DIGITAL LIFE</span><strong>Everything you need,<br />one simple place.</strong><small>Secure. Quick. Convenient.</small></div>
+                <div className="customer-art-services">
+                  {serviceLinks.slice(0, 3).map((service) => { const Icon = service.icon; return <div key={service.id}><span className={`customer-art-service-icon ${service.tone}`}><Icon size={17} /></span><strong>{service.id === "vtu" ? "VTU" : service.id === "bills" ? "Bills" : "Digital"}</strong></div>; })}
+                </div>
+              </div>
+              <div className="customer-art-float"><WalletCards size={18} /><span>WALLET READY</span><strong>{loading ? "Loading" : formatAmount(walletBalance)}</strong></div>
+            </div>
           </section>
 
           {error && (
@@ -543,10 +405,15 @@ export default function Customer() {
 
           </section>
 
-          <Link to="/customer/services" className="customer-browse-services-action">
-            <span><Layers3 size={18} /> Browse available services</span>
-            <ArrowRight size={18} />
-          </Link>
+          <section className="customer-service-preview">
+            <div className="customer-section-heading">
+              <div><span className="customer-section-kicker">ONE ACCOUNT · MORE POSSIBILITIES</span><h2>What do you need today?</h2><p>Choose a service to see live options and prices.</p></div>
+              <Link to="/customer/services" className="customer-view-all">View all services <ArrowRight size={16} /></Link>
+            </div>
+            <div className="customer-service-preview-grid">
+              {serviceLinks.map((service) => { const Icon = service.icon; return <Link to={`/customer/services/${service.id}`} key={service.id} className={`customer-service-preview-card tone-${service.tone}`}><span className="customer-preview-icon"><Icon size={21} /></span><span className="customer-preview-copy"><strong>{service.name}</strong><small>{service.detail}</small></span><ArrowRight className="customer-preview-arrow" size={17} /></Link>; })}
+            </div>
+          </section>
 
           <section className="customer-recent-section">
 
@@ -635,8 +502,8 @@ export default function Customer() {
           )}
 
         </main>
+        <footer className="customer-footer"><span>BUKZEX</span><small>Your digital world, made simpler.</small><button type="button" onClick={handleLogout}><LogOut size={15} /> Sign out</button></footer>
         <WhatsAppSupport />
-      </section>
     </div>
   );
 }

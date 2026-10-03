@@ -7,6 +7,7 @@ import {
   Bitcoin,
   Receipt,
   ArrowLeft,
+  UserRound,
   WalletCards,
   AlertCircle,
   CheckCircle2,
@@ -349,6 +350,11 @@ export default function ServicePurchase() {
 
   return (
     <main className="service-purchase-page">
+      <header className="service-customer-nav">
+        <Link to="/customer" className="service-customer-brand"><span>B</span><strong>Bukz<span>Ex</span></strong></Link>
+        <nav aria-label="Customer navigation"><Link to="/customer">Home</Link><Link to="/customer/services" className="active">Services</Link><Link to="/customer/orders">My purchases</Link><Link to="/customer/profile">Profile</Link></nav>
+        <Link to="/customer/profile" className="service-customer-account">My account <UserRound size={14} /></Link>
+      </header>
       <div className="service-purchase-container">
         <Link to={isCheckoutPage ? `/customer/services/${serviceId}` : "/customer/services"} className="service-purchase-back">
           <ArrowLeft size={16} /> {isCheckoutPage ? "Back to services" : "Back to Services"}
