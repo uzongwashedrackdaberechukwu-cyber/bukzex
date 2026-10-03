@@ -1,6 +1,8 @@
 import {
   createUserWithEmailAndPassword,
+  browserLocalPersistence,
   signInWithEmailAndPassword,
+  setPersistence,
   sendPasswordResetEmail,
   updatePassword as firebaseUpdatePassword,
   signOut,
@@ -16,7 +18,7 @@ import {
   setDoc,
   updateDoc,
 } from "firebase/firestore";
-import { auth, db } from "../lib/firebase";
+import { auth, authPersistenceReady, db } from "../lib/firebase";
 
 function toProfile(profile, email = "", role = "customer") {
   return {
@@ -80,6 +82,8 @@ export async function getRegisteredUsers() {
 }
 
 export async function registerUser(user) {
+  await authPersistenceReady;
+  await setPersistence(auth, browserLocalPersistence);
   const email = user.email.trim().toLowerCase();
   const credential = await createUserWithEmailAndPassword(
     auth,
@@ -111,6 +115,8 @@ export async function registerUser(user) {
 }
 
 export async function loginUser(email, password) {
+  await authPersistenceReady;
+  await setPersistence(auth, browserLocalPersistence);
   await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
   return getSession();
 }

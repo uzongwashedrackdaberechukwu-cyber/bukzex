@@ -341,7 +341,7 @@ export default function ServicePurchase() {
       if (message.includes("wallet has been refunded") || message.includes("payment reference was already used")) {
         sessionStorage.removeItem(requestStorageKey);
       }
-      setError("We couldn’t complete this purchase. Check My Stack before trying again, or contact BukzEx Customer Care.");
+      setError(err?.message || "We couldn’t complete this purchase. Check My Stack before trying again, or contact BukzEx Customer Care.");
     } finally {
       setSubmitting(false);
     }
