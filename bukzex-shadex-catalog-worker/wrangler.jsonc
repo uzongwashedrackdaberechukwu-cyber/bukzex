@@ -1,0 +1,10 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "bukzex-shadex-catalog",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "vars": {
+    "BUKZEX_ORIGIN": "https://bukzex.shadexgoltd.com"
+  }
+}

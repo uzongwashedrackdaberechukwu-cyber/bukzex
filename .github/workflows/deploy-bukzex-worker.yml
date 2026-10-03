@@ -24,9 +24,14 @@ jobs:
         with:
           node-version: 22
 
+      - name: Check Worker entry files
+        run: |
+          test -f bukzex-shadex-catalog-worker/wrangler.jsonc || { echo "::error::Missing bukzex-shadex-catalog-worker/wrangler.jsonc"; exit 1; }
+          test -f bukzex-shadex-catalog-worker/src/index.js || { echo "::error::Missing bukzex-shadex-catalog-worker/src/index.js"; exit 1; }
+
       - name: Deploy Worker
         working-directory: bukzex-shadex-catalog-worker
-        run: npx --yes wrangler@latest deploy
+        run: npx --yes wrangler@latest deploy src/index.js --config ./wrangler.jsonc --name bukzex-shadex-catalog
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
