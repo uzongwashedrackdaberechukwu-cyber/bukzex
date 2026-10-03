@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { sendEmailVerification, signOut } from "firebase/auth";
+import { auth } from "../lib/firebase";
+import WhatsAppSupport from "../components/WhatsAppSupport";
 import { loginUser, requestPasswordReset } from "../services/auth";
 
 import {
@@ -67,6 +70,21 @@ export default function Login() {
         cleanEmail,
         password
       );
+
+      const firebaseUser = auth.currentUser;
+      if (firebaseUser && !firebaseUser.emailVerified) {
+        let notice = "Your email is not confirmed yet.";
+        try {
+          await sendEmailVerification(firebaseUser);
+          notice += " We sent a fresh verification link. Check your inbox and spam folder.";
+        } catch {
+          notice += " Sign in again after confirming the link sent during registration.";
+        } finally {
+          await signOut(auth);
+        }
+        setError(notice);
+        return;
+      }
 
       if (user.role === "admin") {
         navigate(location.state?.from?.pathname || "/admin", {
@@ -283,6 +301,7 @@ export default function Login() {
           </div>
         </div>
       </div>
+      <WhatsAppSupport />
     </main>
   );
 }

@@ -12,6 +12,7 @@ import {
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getServices } from "../services/api";
+import WhatsAppSupport from "../components/WhatsAppSupport";
 
 import "./CustomerServices.css";
 
@@ -144,6 +145,7 @@ export default function CustomerServices() {
           </div>
         </div>
       )}
+      <WhatsAppSupport />
     </main>
   );
 }

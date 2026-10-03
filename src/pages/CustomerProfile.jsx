@@ -7,6 +7,7 @@ import {
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getSession, updateSession } from "../services/auth";
+import WhatsAppSupport from "../components/WhatsAppSupport";
 
 import "./CustomerProfile.css";
 
@@ -167,6 +168,7 @@ export default function CustomerProfile() {
         </form>
 
       </div>
+      <WhatsAppSupport />
     </main>
   );
 }

@@ -10,6 +10,7 @@ import {
   X,
   WalletCards,
   ArrowRight,
+  ArrowLeft,
   Clock3,
   CheckCircle2,
   AlertCircle,
@@ -26,6 +27,7 @@ import {
   getDepositStatus,
 } from "../services/api";
 import { getSession, logoutUser } from "../services/auth";
+import WhatsAppSupport from "../components/WhatsAppSupport";
 
 import "./Customer.css";
 
@@ -119,6 +121,7 @@ export default function Customer() {
   const [depositId, setDepositId] = useState("");
   const [depositStatus, setDepositStatus] = useState("");
   const [depositMessage, setDepositMessage] = useState("");
+  const [topUpOpen, setTopUpOpen] = useState(false);
 
   useEffect(() => {
     getSession().then(setSession).catch((err) => {
@@ -400,6 +403,53 @@ export default function Customer() {
 
         <main className="customer-content">
 
+          {topUpOpen ? (
+            <>
+              <button
+                type="button"
+                className="customer-topup-back"
+                onClick={() => setTopUpOpen(false)}
+              >
+                <ArrowLeft size={17} /> Back to dashboard
+              </button>
+
+              <section id="fund-wallet" className="customer-funding-section customer-topup-page">
+                <div className="customer-section-heading">
+                  <div>
+                    <span className="customer-topup-eyebrow">WALLET FUNDING</span>
+                    <h1>Top up your wallet</h1>
+                    <p>Transfer funds using the details below, then submit your transfer reference.</p>
+                  </div>
+                </div>
+
+                <div className="customer-funding-account">
+                  <div><small>BANK</small><strong>OPay</strong></div>
+                  <div><small>ACCOUNT NUMBER</small><strong>6402493498</strong></div>
+                  <div><small>ACCOUNT NAME</small><strong>MATTHEW CHUKWUEBUKA AGU</strong></div>
+                </div>
+
+                <form className="customer-funding-form" onSubmit={handleDepositSubmit}>
+                  <div>
+                    <label htmlFor="deposit-amount">Transfer Amount</label>
+                    <input id="deposit-amount" type="number" min="1" value={depositAmount} onChange={(event) => setDepositAmount(event.target.value)} placeholder="Enter amount" disabled={Boolean(depositId)} />
+                  </div>
+                  <div>
+                    <label htmlFor="deposit-reference">Transfer Reference</label>
+                    <input id="deposit-reference" type="text" value={depositReference} onChange={(event) => setDepositReference(event.target.value)} placeholder="Enter transfer reference" disabled={Boolean(depositId)} />
+                  </div>
+                  {!depositId && <button type="submit" disabled={funding} className="customer-funding-submit">{funding ? "Submitting..." : "Submit Deposit"}</button>}
+                </form>
+
+                {depositStatus === "pending" && <div className="customer-funding-status pending"><Clock3 size={18} /><div><strong>Deposit Pending</strong><p>Your transfer has been submitted and is waiting for confirmation.</p></div><span>Awaiting administrator review</span></div>}
+                {depositStatus === "confirmed" && <div className="customer-funding-status confirmed"><CheckCircle2 size={18} /><div><strong>Deposit Confirmed</strong><p>{depositMessage}</p></div></div>}
+                {depositStatus === "rejected" && <div className="customer-funding-status pending" role="status"><AlertCircle size={18} /><div><strong>Deposit Not Confirmed</strong><p>{depositMessage}</p></div></div>}
+                {error && <div className="customer-funding-error"><AlertCircle size={17} /><span>{error}</span></div>}
+                {!depositStatus && !error && <div className="customer-funding-note">Deposits remain pending until an administrator verifies the transfer and confirms it.</div>}
+              </section>
+            </>
+          ) : (
+          <>
+
           <section className="customer-welcome">
             <div>
               <span>BUKZEX DASHBOARD</span>
@@ -414,13 +464,6 @@ export default function Customer() {
               </p>
             </div>
 
-            <Link
-              to="/customer/services"
-              className="customer-primary-action"
-            >
-              Browse Services
-              <ArrowRight size={16} />
-            </Link>
           </section>
 
           {error && (
@@ -456,12 +499,10 @@ export default function Customer() {
                     setDepositStatus("");
                     setDepositMessage("");
                     setError("");
-                    document
-                      .getElementById("fund-wallet")
-                      ?.scrollIntoView({ behavior: "smooth" });
+                    setTopUpOpen(true);
                   }}
                 >
-                  Fund Wallet <Plus size={15} />
+                  Top up wallet <Plus size={15} />
                 </button>
               </div>
             </div>
@@ -489,154 +530,23 @@ export default function Customer() {
                   <Layers3 size={19} />
                 </div>
 
-                <span>MY STACK</span>
+                <span>PAYMENTS · ORDERS · STACK</span>
               </div>
 
-              <strong className="customer-stack-value">Services</strong>
+              <strong className="customer-stack-value">My purchases</strong>
 
               <Link to="/customer/orders">
-                View purchases
+                View payment stack
                 <ArrowRight size={14} />
               </Link>
             </div>
 
           </section>
 
-          <section
-            id="fund-wallet"
-            className="customer-funding-section"
-          >
-            <div className="customer-section-heading">
-              <div>
-                <h2>Fund Wallet</h2>
-                <p>
-                  Transfer funds to the account below, then submit
-                  your transfer reference.
-                </p>
-              </div>
-            </div>
-
-            <div className="customer-funding-account">
-              <div>
-                <small>BANK</small>
-                <strong>OPay</strong>
-              </div>
-
-              <div>
-                <small>ACCOUNT NUMBER</small>
-                <strong>6402493498</strong>
-              </div>
-
-              <div>
-                <small>ACCOUNT NAME</small>
-                <strong>MATTHEW CHUKWUEBUKA AGU</strong>
-              </div>
-            </div>
-
-            <form
-              className="customer-funding-form"
-              onSubmit={handleDepositSubmit}
-            >
-              <div>
-                <label htmlFor="deposit-amount">
-                  Transfer Amount
-                </label>
-
-                <input
-                  id="deposit-amount"
-                  type="number"
-                  min="1"
-                  value={depositAmount}
-                  onChange={(event) =>
-                    setDepositAmount(event.target.value)
-                  }
-                  placeholder="Enter amount"
-                  disabled={Boolean(depositId)}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="deposit-reference">
-                  Transfer Reference
-                </label>
-
-                <input
-                  id="deposit-reference"
-                  type="text"
-                  value={depositReference}
-                  onChange={(event) =>
-                    setDepositReference(event.target.value)
-                  }
-                  placeholder="Enter transfer reference"
-                  disabled={Boolean(depositId)}
-                />
-              </div>
-
-              {!depositId && (
-                <button
-                  type="submit"
-                  disabled={funding}
-                  className="customer-funding-submit"
-                >
-                  {funding
-                    ? "Submitting..."
-                    : "Submit Deposit"}
-                </button>
-              )}
-            </form>
-
-            {depositStatus === "pending" && (
-              <div className="customer-funding-status pending">
-                <Clock3 size={18} />
-
-                <div>
-                  <strong>Deposit Pending</strong>
-                  <p>
-                    Your transfer has been submitted and is waiting
-                    for confirmation.
-                  </p>
-                </div>
-
-                <span>Awaiting administrator review</span>
-              </div>
-            )}
-
-            {depositStatus === "confirmed" && (
-              <div className="customer-funding-status confirmed">
-                <CheckCircle2 size={18} />
-
-                <div>
-                  <strong>Deposit Confirmed</strong>
-                  <p>
-                    {depositMessage}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {depositStatus === "rejected" && (
-              <div className="customer-funding-status pending" role="status">
-                <AlertCircle size={18} />
-                <div>
-                  <strong>Deposit Not Confirmed</strong>
-                  <p>{depositMessage}</p>
-                </div>
-              </div>
-            )}
-
-            {error && (
-              <div className="customer-funding-error">
-                <AlertCircle size={17} />
-                <span>{error}</span>
-              </div>
-            )}
-
-            {!depositStatus && !error && (
-              <div className="customer-funding-note">
-                Deposits remain pending until an administrator verifies the transfer and confirms it.
-              </div>
-            )}
-          </section>
+          <Link to="/customer/services" className="customer-browse-services-action">
+            <span><Layers3 size={18} /> Browse available services</span>
+            <ArrowRight size={18} />
+          </Link>
 
           <section className="customer-recent-section">
 
@@ -721,8 +631,11 @@ export default function Customer() {
             )}
 
           </section>
+          </>
+          )}
 
         </main>
+        <WhatsAppSupport />
       </section>
     </div>
   );

@@ -4,12 +4,14 @@ import {
   LoaderCircle,
   RefreshCw,
   AlertCircle,
+  MessageCircle,
 } from "lucide-react";
 
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { getOrders } from "../services/api";
+import WhatsAppSupport from "../components/WhatsAppSupport";
 
 import "./CustomerOrders.css";
 
@@ -51,6 +53,24 @@ function getStatusClass(status) {
   }
 
   return "pending";
+}
+
+function isPaidOrder(order) {
+  const states = [order?.payment_status, order?.status, order?.fulfillment_status]
+    .map((value) => String(value || "").toLowerCase());
+  return states.some((value) => ["paid", "confirmed", "complete", "completed", "success", "successful", "fulfilled", "delivered"].includes(value));
+}
+
+function getServiceEmail(order) {
+  return order?.service_email || order?.serviceEmail ||
+    order?.fulfillment?.service_email || order?.credentials?.email || "";
+}
+
+function getOtpLink(order) {
+  const orderId = order?.id || order?.orderId || "my order";
+  const serviceEmail = getServiceEmail(order);
+  const message = `Hello BukzEx, please help me request the OTP for order ${orderId}${serviceEmail ? ` (service email: ${serviceEmail})` : ""}.`;
+  return `https://wa.me/2349161791736?text=${encodeURIComponent(message)}`;
 }
 
 export default function CustomerOrders() {
@@ -103,14 +123,12 @@ export default function CustomerOrders() {
             Back to Dashboard
           </Link>
 
-          <span className="customer-orders-eyebrow">
-            BUKZEX ACCOUNT
-          </span>
+          <span className="customer-orders-eyebrow">PAYMENT · ORDER · STACK</span>
 
-          <h1>My Orders</h1>
+          <h1>My Payment &amp; Order Stack</h1>
 
           <p>
-            View your service purchases and their current status.
+            Follow purchases from payment through order completion and access your delivered service details.
           </p>
         </div>
 
@@ -153,7 +171,7 @@ export default function CustomerOrders() {
             <ShoppingBag size={25} />
           </div>
 
-          <h2>No orders yet</h2>
+            <h2>Your stack is empty</h2>
 
           <p>
             Your completed and pending purchases will appear here.
@@ -224,12 +242,29 @@ export default function CustomerOrders() {
                       </strong>
                     </span>
                   </div>
+
+                  {isPaidOrder(order) ? (
+                    <div className="customer-order-fulfillment">
+                      {getServiceEmail(order) && (
+                        <div>
+                          <small>SERVICE EMAIL</small>
+                          <strong>{getServiceEmail(order)}</strong>
+                        </div>
+                      )}
+                      <a href={getOtpLink(order)} target="_blank" rel="noreferrer" className="customer-order-otp-link">
+                        <MessageCircle size={16} /> Request OTP via WhatsApp
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="customer-order-locked-details">Service details and OTP support appear here after payment is confirmed and the order is fulfilled.</p>
+                  )}
                 </div>
               </article>
             );
           })}
         </div>
       )}
+      <WhatsAppSupport />
     </main>
   );
 }

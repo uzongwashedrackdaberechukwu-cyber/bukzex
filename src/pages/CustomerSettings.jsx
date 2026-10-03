@@ -10,6 +10,7 @@ import { Link } from "react-router-dom";
 
 import "./CustomerSettings.css";
 import { getSession, updateSession } from "../services/auth";
+import WhatsAppSupport from "../components/WhatsAppSupport";
 
 export default function CustomerSettings() {
   const [notifications, setNotifications] = useState(true);
@@ -126,6 +127,7 @@ export default function CustomerSettings() {
         </section>
 
       </div>
+      <WhatsAppSupport />
     </main>
   );
 }

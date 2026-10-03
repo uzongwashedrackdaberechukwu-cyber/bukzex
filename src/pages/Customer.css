@@ -2409,6 +2409,113 @@
   letter-spacing: -0.2px;
 }
 
+.customer-browse-services-action {
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: -4px 0 24px;
+  padding: 0 20px;
+  border: 1px solid rgba(212, 167, 44, 0.24);
+  border-radius: 16px;
+  background: linear-gradient(105deg, rgba(37, 99, 235, 0.17), rgba(17, 29, 50, 0.94));
+  color: #f4f7fc;
+  font-size: 13px;
+  font-weight: 750;
+  transition: border-color .18s ease, transform .18s ease, background .18s ease;
+}
+
+.customer-browse-services-action > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.customer-browse-services-action svg {
+  color: #e0b83f;
+}
+
+.customer-browse-services-action:hover {
+  transform: translateY(-1px);
+  border-color: rgba(212, 167, 44, 0.5);
+  background: linear-gradient(105deg, rgba(37, 99, 235, 0.24), rgba(17, 29, 50, 0.98));
+}
+
+.customer-topup-back {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 3px 0 18px;
+  padding: 0 13px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 11px;
+  background: #111d32;
+  color: #dbe6f8;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.customer-topup-page {
+  max-width: 760px;
+  min-height: 70vh;
+  margin: 0 auto;
+  padding: clamp(20px, 4vw, 34px);
+  border-color: rgba(212, 167, 44, 0.19);
+  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.24);
+}
+
+.customer-topup-page .customer-section-heading {
+  margin-bottom: 24px;
+}
+
+.customer-topup-page .customer-section-heading h1 {
+  margin: 5px 0 8px;
+  color: #f6f8fc;
+  font-size: clamp(24px, 4vw, 32px);
+  letter-spacing: -.7px;
+}
+
+.customer-topup-eyebrow {
+  color: #d7ad36;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .15em;
+}
+
+.customer-topup-page .customer-funding-account {
+  grid-template-columns: 1fr;
+  gap: 9px;
+}
+
+.customer-topup-page .customer-funding-account > div {
+  padding: 15px 16px;
+  border-color: rgba(255, 255, 255, 0.08);
+  border-radius: 13px;
+  background: rgba(5, 13, 27, 0.46);
+}
+
+.customer-topup-page .customer-funding-account strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.customer-topup-page .customer-funding-form {
+  display: grid;
+  gap: 15px;
+}
+
+.customer-topup-page .customer-funding-submit {
+  min-height: 50px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #e0b83f, #c99a24);
+  color: #0b1425;
+  font-weight: 800;
+}
+
 @media (max-width: 800px) {
   .customer-dashboard-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2494,6 +2601,18 @@
   .customer-funding-section {
     padding: 17px;
     margin-bottom: 18px;
+  }
+
+  .customer-topup-page {
+    min-height: auto;
+    padding: 18px;
+  }
+
+  .customer-browse-services-action {
+    min-height: 56px;
+    margin-bottom: 18px;
+    padding: 0 15px;
+    font-size: 12px;
   }
 
   .customer-recent-section {

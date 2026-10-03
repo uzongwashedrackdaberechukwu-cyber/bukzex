@@ -1,0 +1,29 @@
+.bukzex-whatsapp-support {
+  position: fixed;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 1200;
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 17px;
+  border: 1px solid rgba(255,255,255,.3);
+  border-radius: 999px;
+  background: linear-gradient(135deg, #24c66a, #119b50);
+  color: #fff;
+  box-shadow: 0 12px 30px rgba(0,0,0,.32), 0 5px 16px rgba(17,155,80,.22);
+  font: 700 13px/1 system-ui, sans-serif;
+  text-decoration: none;
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.bukzex-whatsapp-support svg { width: 23px; height: 23px; }
+.bukzex-whatsapp-support:hover {
+  transform: translateY(-2px);
+  color: #fff;
+  box-shadow: 0 16px 34px rgba(0,0,0,.38), 0 7px 20px rgba(17,155,80,.3);
+}
+@media (max-width: 480px) {
+  .bukzex-whatsapp-support { right: max(14px, env(safe-area-inset-right)); min-height: 50px; padding: 0 15px; }
+}

@@ -24,6 +24,7 @@ import {
 } from "../services/api";
 import { getVtuCatalogue } from "../services/shadexCatalog";
 import ShadexCataloguePanel from "./ShadexCataloguePanel";
+import WhatsAppSupport from "../components/WhatsAppSupport";
 
 import "./ServicePurchase.css";
 import "./ShadexVtu.css";
@@ -416,6 +417,7 @@ export default function ServicePurchase() {
         </form>
         )}
       </div>
+      <WhatsAppSupport />
     </main>
   );
 }

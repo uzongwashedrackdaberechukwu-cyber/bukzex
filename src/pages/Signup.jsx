@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { sendEmailVerification, signOut } from "firebase/auth";
+import { auth } from "../lib/firebase";
+import WhatsAppSupport from "../components/WhatsAppSupport";
 import { registerUser } from "../services/auth";
 import {
   Eye,
@@ -183,11 +186,22 @@ export default function Signup() {
                 password,
               });
 
-              if (result?.needsEmailConfirmation) {
-                setSuccess("Check your email and confirm your account before signing in.");
-              } else {
-                navigate("/customer", { replace: true });
+              const firebaseUser = auth.currentUser;
+              const needsConfirmation = Boolean(
+                result?.needsEmailConfirmation ||
+                (firebaseUser && !firebaseUser.emailVerified)
+              );
+
+              if (needsConfirmation) {
+                if (firebaseUser && !firebaseUser.emailVerified && !result?.needsEmailConfirmation) {
+                  await sendEmailVerification(firebaseUser);
+                }
+                if (firebaseUser) await signOut(auth);
+                setSuccess(`We sent a verification link to ${email.trim()}. Open that email and confirm your address before signing in.`);
+                return;
               }
+
+              navigate("/customer", { replace: true });
             } catch (err) {
               setError(err.message);
             } finally {
@@ -489,6 +503,7 @@ export default function Signup() {
 
       </div>
 
+      <WhatsAppSupport />
     </main>
   );
 }

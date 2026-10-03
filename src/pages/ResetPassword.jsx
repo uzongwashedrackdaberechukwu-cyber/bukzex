@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { updatePassword } from "../services/auth";
+import WhatsAppSupport from "../components/WhatsAppSupport";
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -51,6 +52,7 @@ export default function ResetPassword() {
         </form>
         <p><Link to="/login">Back to sign in</Link></p>
       </section>
+      <WhatsAppSupport />
     </main>
   );
 }

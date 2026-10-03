@@ -21,6 +21,9 @@ export default function ProtectedRoute() {
 
   if (state.loading) return <main className="auth-loading">Checking your account…</main>;
   if (!state.user) return <Navigate to="/login" replace state={{ from: location }} />;
+  if (state.user.emailVerified === false) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
 
   if (state.user.role === "admin") {
     return <Navigate to="/admin" replace />;
