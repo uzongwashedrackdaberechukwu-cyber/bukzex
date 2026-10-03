@@ -63,7 +63,7 @@
 .shadex-catalogue-selectable > svg { flex: 0 0 auto; color: #e7bd45; }
 .shadex-catalogue-item-copy { display: flex; flex: 1; align-items: center; justify-content: space-between; gap: 14px; min-width: 0; }
 .shadex-catalogue-provider { padding: 0; border: 1px solid rgba(148, 163, 184, 0.17); border-radius: 11px; background: rgba(255, 255, 255, 0.025); }
-.shadex-catalogue-provider summary { padding: 14px; cursor: pointer; font-weight: 650; touch-action: manipulation; }
+.shadex-catalogue-provider summary { display: flex; align-items: center; gap: 12px; padding: 14px; cursor: pointer; font-weight: 650; touch-action: manipulation; }
 .shadex-catalogue-provider[open] summary { border-bottom: 1px solid rgba(148, 163, 184, 0.17); }
 .shadex-catalogue-sublist { display: grid; gap: 8px; margin-top: 12px; }
 .shadex-catalogue-line { display: flex; justify-content: space-between; gap: 12px; font-size: 0.9rem; }
@@ -74,6 +74,48 @@
 .shadex-catalogue-status.error { color: #fca5a5; }
 .service-request-notice { margin: 0 0 18px; padding: 12px 14px; border-radius: 10px; background: rgba(212, 173, 55, 0.1); color: #d9c77f; font-size: 0.9rem; line-height: 1.5; }
 .service-catalogue-change { display: block; margin: 14px auto 0; border: 0; background: transparent; color: #aebbd0; font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+
+.shadex-catalogue-selectable {
+  align-items: center;
+  min-height: 68px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: linear-gradient(130deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018));
+}
+
+.shadex-catalogue-selectable .shadex-catalogue-item-copy {
+  gap: 6px 14px;
+}
+
+.shadex-catalogue-selectable .shadex-catalogue-item-copy > strong {
+  color: #f7f9fd;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.shadex-catalogue-selectable .shadex-catalogue-item-copy > span {
+  color: #aebbd0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.shadex-catalogue-selectable.selected {
+  border-color: rgba(212, 167, 44, 0.8);
+  background: linear-gradient(135deg, rgba(212, 167, 44, 0.13), rgba(37, 99, 235, 0.08));
+}
+
+@media (max-width: 520px) {
+  .shadex-catalogue-selectable {
+    min-height: 70px;
+    padding: 11px;
+  }
+
+  .shadex-catalogue-selectable .shadex-catalogue-item-copy > strong {
+    font-size: 13px;
+  }
+}
 
 @media (max-width: 520px) {
   .shadex-catalogue-item, .shadex-catalogue-line { flex-direction: column; }

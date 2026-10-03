@@ -3,16 +3,17 @@ import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc, writeBatch }
 import { auth, db } from "../../lib/firebase";
 import { getShadexCatalogue } from "../../services/shadexCatalog";
 import { getServices } from "../../services/api";
-import { CheckCircle2, LoaderCircle, RefreshCw, Save, XCircle } from "lucide-react";
+import { CheckCircle2, LoaderCircle, MessageSquareCode, Receipt, RefreshCw, Save, Smartphone, Store, TrendingUp, XCircle } from "lucide-react";
+import ServiceBrandMark from "../../components/ServiceBrandMark";
 import "./AdminServices.css";
 import "./AdminShadexServices.css";
 
 const MANAGED = [
-  { id: "vtu", name: "Airtime & Data", endpoint: "vtu", summary: "Mobile airtime and data plans" },
-  { id: "bills", name: "Electricity & Cable TV", endpoint: "bills", summary: "Electricity and cable bill plans" },
-  { id: "marketplace", name: "Marketplace", endpoint: "marketplace", summary: "Netflix, Spotify and other digital plans" },
-  { id: "sms", name: "Virtual SMS / OTP", endpoint: "sms", summary: "Virtual phone number services" },
-  { id: "social", name: "Social Media Boost", endpoint: "social", summary: "Social growth packages" },
+  { id: "vtu", name: "Airtime & Data", endpoint: "vtu", summary: "Mobile airtime and data plans", icon: Smartphone },
+  { id: "bills", name: "Electricity & Cable TV", endpoint: "bills", summary: "Electricity and cable bill plans", icon: Receipt },
+  { id: "marketplace", name: "Marketplace", endpoint: "marketplace", summary: "Netflix, Spotify and other digital plans", icon: Store },
+  { id: "sms", name: "Virtual SMS / OTP", endpoint: "sms", summary: "Virtual phone number services", icon: MessageSquareCode },
+  { id: "social", name: "Social Media Boost", endpoint: "social", summary: "Social growth packages", icon: TrendingUp },
 ];
 
 function priceInMajor(price) {
@@ -324,6 +325,7 @@ export default function AdminServices() {
             return (
               <article className="admin-shadex-card" key={item.id}>
                 <div className="admin-shadex-card-heading">
+                  <ServiceBrandMark name={item.name} fallbackIcon={item.icon} size="medium" />
                   <div><h3>{item.name}</h3><p>{item.summary}</p></div>
                   <span className={`admin-service-status ${enabled[item.id] ? "available" : "unavailable"}`}>
                     {enabled[item.id] ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
@@ -348,8 +350,11 @@ export default function AdminServices() {
                         return (
                           <div className="admin-marketplace-row" key={key}>
                             <div className="admin-marketplace-name">
+                              <ServiceBrandMark name={row.title} fallbackIcon={item.icon} size="small" />
+                              <span>
                               <strong>{row.title}</strong>
                               <small>ShadexGoLtd: {row.price?.currency || "NGN"} {priceInMajor(row.price)}</small>
+                              </span>
                             </div>
                             <label className="admin-marketplace-price">
                               BukzEx price

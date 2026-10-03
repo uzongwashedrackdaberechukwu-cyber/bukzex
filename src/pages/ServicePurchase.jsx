@@ -16,6 +16,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../lib/firebase";
+import ServiceBrandMark from "../components/ServiceBrandMark";
 
 import { getWalletBalance, purchaseShadexService } from "../services/api";
 import { getVtuCatalogue } from "../services/shadexCatalog";
@@ -394,7 +395,10 @@ export default function ServicePurchase() {
           <form className="service-purchase-form" onSubmit={handlePurchase}>
             <div className="service-form-heading">
               <h2>Checkout</h2>
-              <p>{selectedCatalogueItem.name} · BukzEx secure checkout</p>
+              <div className="service-checkout-product">
+                <ServiceBrandMark name={selectedCatalogueItem.name} logoUrl={selectedCatalogueItem.logo_url} size="small" />
+                <p>{selectedCatalogueItem.name} · BukzEx secure checkout</p>
+              </div>
             </div>
             <div className="service-form-field">
               <label>Who is this purchase for?</label>

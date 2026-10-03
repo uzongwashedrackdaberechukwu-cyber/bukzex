@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getServices } from "../services/api";
 import WhatsAppSupport from "../components/WhatsAppSupport";
+import ServiceBrandMark from "../components/ServiceBrandMark";
 
 import "./CustomerServices.css";
 
@@ -103,7 +104,7 @@ export default function CustomerServices() {
           <article className="customer-service-card">
             <div className="customer-service-content">
               <h2>Services are being connected</h2>
-              <p>Available services will appear here after their provider and prices are set up.</p>
+              <p>More services will appear here as BukzEx adds them.</p>
             </div>
           </article>
         </section>
@@ -113,7 +114,7 @@ export default function CustomerServices() {
             const Icon = service.icon;
             return (
               <article key={service.id} className={`customer-service-card customer-service-card-${service.id}`}>
-                <div className="customer-service-icon"><Icon size={22} /></div>
+                <div className="customer-service-icon"><ServiceBrandMark name={service.title} logoUrl={service.logoUrl} fallbackIcon={Icon} /></div>
                 <div className="customer-service-content">
                   <span className="customer-service-kicker">BUKZEX SERVICE</span>
                   <h2>{service.title}</h2>

@@ -574,6 +574,18 @@
   line-height: 1.6;
 }
 
+.service-checkout-product {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.service-checkout-product p {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .service-checkout-empty .service-purchase-submit {
   display: flex;
   align-items: center;

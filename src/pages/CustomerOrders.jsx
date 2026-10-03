@@ -13,6 +13,7 @@ import { Link } from "react-router-dom";
 
 import { deleteMyUnpaidOrder, getOrders, refreshDigitalServiceOrder } from "../services/api";
 import WhatsAppSupport from "../components/WhatsAppSupport";
+import ServiceBrandMark from "../components/ServiceBrandMark";
 
 import "./CustomerOrders.css";
 
@@ -231,7 +232,7 @@ export default function CustomerOrders() {
                 key={order.id || order.orderId || index}
               >
                 <div className="customer-order-icon">
-                  <ShoppingBag size={20} />
+                  <ServiceBrandMark name={order.serviceName || order.service || "Service"} fallbackIcon={ShoppingBag} size="small" />
                 </div>
 
                 <div className="customer-order-main">

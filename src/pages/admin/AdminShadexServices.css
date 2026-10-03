@@ -11,6 +11,7 @@
 .admin-shadex-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; margin-top:20px; }
 .admin-shadex-card { display:flex; flex-direction:column; gap:14px; padding:20px; border:1px solid rgba(142,160,196,.18); border-radius:18px; background:#111b2e; color:#f4f6fb; }
 .admin-shadex-card-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.admin-shadex-card-heading > div { flex:1; min-width:0; }
 .admin-shadex-card-heading h3 { margin:0 0 6px; font-size:1.05rem; }
 .admin-shadex-card-heading p,.admin-shadex-count { margin:0; color:#8e9ab0; }
 .admin-shadex-count { font-size:.9rem; }
@@ -28,7 +29,8 @@
 .admin-marketplace-empty { color:#ffcc8c; }
 .admin-marketplace-list { display:grid; gap:10px; max-height:620px; overflow:auto; padding-right:3px; }
 .admin-marketplace-row { display:grid; grid-template-columns:minmax(0,1fr) minmax(110px,150px) auto; align-items:center; gap:12px; padding:12px; border:1px solid rgba(142,160,196,.18); border-radius:12px; background:rgba(4,10,22,.38); }
-.admin-marketplace-name { display:grid; gap:4px; min-width:0; }
+.admin-marketplace-name { display:flex; align-items:center; gap:10px; min-width:0; }
+.admin-marketplace-name > span { display:grid; gap:4px; min-width:0; }
 .admin-marketplace-name strong { overflow-wrap:anywhere; }
 .admin-marketplace-name small { color:#93a1b8; }
 .admin-marketplace-price { display:grid; gap:5px; color:#aeb9cc; font-size:.82rem; }
