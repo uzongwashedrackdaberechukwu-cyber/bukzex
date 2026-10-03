@@ -396,3 +396,23 @@
   font-size: 11px;
   line-height: 1.55;
 }
+
+.customer-order-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  margin-top: 13px;
+  padding: 0 12px;
+  border: 1px solid rgba(248, 113, 113, .28);
+  border-radius: 10px;
+  background: rgba(127, 29, 29, .16);
+  color: #fca5a5;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.customer-order-delete:hover { background: rgba(127, 29, 29, .3); }
+.customer-order-delete:disabled { opacity: .6; cursor: wait; }

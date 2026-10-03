@@ -274,6 +274,32 @@
   color: var(--accent);
 }
 
+.admin-order-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-order-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 35px;
+  padding: 0 10px;
+  border: 1px solid #fecaca;
+  border-radius: 9px;
+  background: #fff7f7;
+  color: #b42318;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-order-delete:disabled { opacity: .6; cursor: wait; }
+.admin-order-delete:hover { background: #fee2e2; }
+
 .admin-orders-empty {
   height: 190px;
   color: var(--muted) !important;
@@ -375,6 +401,23 @@
   font-size: 14px;
   overflow-wrap: anywhere;
 }
+
+.admin-order-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 18px 20px 0;
+}
+
+.admin-order-modal-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.admin-order-modal-actions.danger-action { padding: 12px 20px 20px; }
+.admin-order-modal-actions.danger-action button { color: #b42318; }
 
 @media (max-width: 900px) {
   .admin-orders-stats {

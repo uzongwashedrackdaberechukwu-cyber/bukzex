@@ -1,6 +1,7 @@
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -303,6 +304,40 @@ export async function updateOrder(orderId, status, adminNote = "") {
     status,
     admin_note: note || null,
   };
+}
+
+function orderIsUnpaidAndRemovable(order) {
+  const status = String(order?.status || "").toLowerCase();
+  const paymentStatus = String(order?.payment_status || "").toLowerCase();
+  const removableStatus = ["pending", "rejected", "failed"].includes(status);
+  const unpaid = !paymentStatus || ["unpaid", "failed", "rejected"].includes(paymentStatus);
+  return removableStatus && unpaid;
+}
+
+export async function deleteOrder(orderId) {
+  await requireAdmin();
+  const orderRef = doc(db, "orders", String(orderId || ""));
+  const snapshot = await getDoc(orderRef);
+  if (!snapshot.exists()) throw new Error("Order not found.");
+  if (!orderIsUnpaidAndRemovable(snapshot.data())) {
+    throw new Error("Only rejected or unpaid orders can be permanently deleted.");
+  }
+  await deleteDoc(orderRef);
+  return { id: orderId, deleted: true };
+}
+
+export async function deleteMyUnpaidOrder(orderId) {
+  const user = requireUser();
+  const orderRef = doc(db, "orders", String(orderId || ""));
+  const snapshot = await getDoc(orderRef);
+  if (!snapshot.exists()) throw new Error("Order not found.");
+  const order = snapshot.data();
+  if (order.user_id !== user.uid) throw new Error("You can only delete your own order.");
+  if (!orderIsUnpaidAndRemovable(order)) {
+    throw new Error("Only unpaid orders can be deleted.");
+  }
+  await deleteDoc(orderRef);
+  return { id: orderId, deleted: true };
 }
 
 export async function getDeposits() {

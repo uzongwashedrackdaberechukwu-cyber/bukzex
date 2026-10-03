@@ -5,12 +5,13 @@ import {
   RefreshCw,
   AlertCircle,
   MessageCircle,
+  Trash2,
 } from "lucide-react";
 
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { getOrders } from "../services/api";
+import { deleteMyUnpaidOrder, getOrders } from "../services/api";
 import WhatsAppSupport from "../components/WhatsAppSupport";
 
 import "./CustomerOrders.css";
@@ -61,6 +62,13 @@ function isPaidOrder(order) {
   return states.some((value) => ["paid", "confirmed", "complete", "completed", "success", "successful", "fulfilled", "delivered"].includes(value));
 }
 
+function canDeleteOrder(order) {
+  const status = String(order?.status || "").toLowerCase();
+  const paymentStatus = String(order?.payment_status || "").toLowerCase();
+  return ["pending", "rejected", "failed"].includes(status)
+    && (!paymentStatus || ["unpaid", "failed", "rejected"].includes(paymentStatus));
+}
+
 function getServiceEmail(order) {
   return order?.service_email || order?.serviceEmail ||
     order?.fulfillment?.service_email || order?.credentials?.email || "";
@@ -78,6 +86,7 @@ export default function CustomerOrders() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState("");
 
   const loadOrders = useCallback(async (manual = false) => {
     try {
@@ -110,6 +119,22 @@ export default function CustomerOrders() {
   useEffect(() => {
     loadOrders();
   }, [loadOrders]);
+
+  async function handleDelete(order) {
+    const orderId = order?.id || order?.orderId;
+    if (!orderId || !canDeleteOrder(order)) return;
+    if (!window.confirm("Permanently delete this unpaid service request?")) return;
+    try {
+      setDeletingId(String(orderId));
+      setError("");
+      await deleteMyUnpaidOrder(orderId);
+      setOrders((current) => current.filter((item) => String(item.id || item.orderId) !== String(orderId)));
+    } catch (err) {
+      setError(err?.message || "Unable to delete this unpaid request.");
+    } finally {
+      setDeletingId("");
+    }
+  }
 
   return (
     <main className="customer-orders-page">
@@ -257,6 +282,17 @@ export default function CustomerOrders() {
                     </div>
                   ) : (
                     <p className="customer-order-locked-details">Service details and OTP support appear here after payment is confirmed and the order is fulfilled.</p>
+                  )}
+                  {canDeleteOrder(order) && (
+                    <button
+                      type="button"
+                      className="customer-order-delete"
+                      onClick={() => handleDelete(order)}
+                      disabled={deletingId === String(order.id || order.orderId)}
+                    >
+                      <Trash2 size={15} />
+                      {deletingId === String(order.id || order.orderId) ? "Deleting…" : "Delete unpaid request"}
+                    </button>
                   )}
                 </div>
               </article>

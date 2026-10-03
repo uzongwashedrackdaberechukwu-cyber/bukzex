@@ -7,9 +7,10 @@ import {
   RefreshCw,
   Eye,
   X,
+  Trash2,
 } from "lucide-react";
 
-import { getOrders, updateOrder } from "../../services/api";
+import { deleteOrder, getOrders, updateOrder } from "../../services/api";
 import "./AdminOrders.css";
 
 function formatMoney(value) {
@@ -29,6 +30,13 @@ function statusClass(status) {
   return String(status || "pending").toLowerCase();
 }
 
+function isUnpaidAndRemovable(order) {
+  const status = String(order?.status || "").toLowerCase();
+  const paymentStatus = String(order?.payment_status || "").toLowerCase();
+  return ["pending", "rejected", "failed"].includes(status)
+    && (!paymentStatus || ["unpaid", "failed", "rejected"].includes(paymentStatus));
+}
+
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
   const [search, setSearch] = useState("");
@@ -37,6 +45,7 @@ export default function AdminOrders() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updating, setUpdating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   async function loadOrders() {
     try {
@@ -68,6 +77,25 @@ export default function AdminOrders() {
       setError(err.message || "Unable to update this order.");
     } finally {
       setUpdating(false);
+    }
+  }
+
+  async function handleDelete(order) {
+    if (!order?.id || !isUnpaidAndRemovable(order)) return;
+    const approved = window.confirm(
+      "Permanently delete this rejected or unpaid order? Its order record will be removed."
+    );
+    if (!approved) return;
+    try {
+      setDeleting(true);
+      setError("");
+      await deleteOrder(order.id);
+      setSelectedOrder(null);
+      await loadOrders();
+    } catch (err) {
+      setError(err.message || "Unable to delete this order.");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -212,7 +240,7 @@ export default function AdminOrders() {
         </div>
 
         <div className="admin-orders-filters">
-          {["all", "pending", "completed"].map(
+          {["all", "pending", "completed", "rejected"].map(
             (item) => (
               <button
                 key={item}
@@ -226,7 +254,9 @@ export default function AdminOrders() {
                   ? "All"
                   : item === "pending"
                     ? "Pending"
-                    : "Completed"}
+                    : item === "rejected"
+                      ? "Rejected"
+                      : "Completed"}
               </button>
             )
           )}
@@ -314,6 +344,7 @@ export default function AdminOrders() {
                     </td>
 
                     <td>
+                      <div className="admin-order-row-actions">
                       <button
                         type="button"
                         className="admin-order-view"
@@ -324,6 +355,17 @@ export default function AdminOrders() {
                         <Eye size={16} />
                         View
                       </button>
+                      {isUnpaidAndRemovable(order) && (
+                        <button
+                          type="button"
+                          className="admin-order-delete"
+                          onClick={() => handleDelete(order)}
+                          disabled={deleting}
+                        >
+                          <Trash2 size={15} /> Delete
+                        </button>
+                      )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -420,6 +462,18 @@ export default function AdminOrders() {
             {selectedOrder.status === "processing" && (
               <div className="admin-order-modal-actions">
                 <button type="button" disabled={updating} onClick={() => handleStatusChange("completed")}>Mark Completed</button>
+              </div>
+            )}
+            {isUnpaidAndRemovable(selectedOrder) && (
+              <div className="admin-order-modal-actions danger-action">
+                <button
+                  type="button"
+                  disabled={deleting || updating}
+                  onClick={() => handleDelete(selectedOrder)}
+                >
+                  <Trash2 size={16} />
+                  {deleting ? "Deleting…" : "Permanently delete order"}
+                </button>
               </div>
             )}
           </div>
