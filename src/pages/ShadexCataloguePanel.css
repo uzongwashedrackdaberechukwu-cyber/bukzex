@@ -41,15 +41,44 @@
   background: rgba(255, 255, 255, 0.025);
 }
 
-.shadex-catalogue-item summary { cursor: pointer; font-weight: 650; }
 .shadex-catalogue-item strong { text-align: right; }
+.shadex-catalogue-selectable {
+  width: 100%;
+  color: #f8fafc;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(212, 173, 55, 0.2);
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+.shadex-catalogue-selectable:hover,
+.shadex-catalogue-selectable:focus-visible {
+  border-color: rgba(212, 173, 55, 0.75);
+  background: rgba(212, 173, 55, 0.1);
+  outline: none;
+}
+.shadex-catalogue-selectable:active { transform: scale(0.99); }
+.shadex-catalogue-selectable.selected { border-color: #d4ad37; background: rgba(212, 173, 55, 0.14); }
+.shadex-catalogue-selectable > svg { flex: 0 0 auto; color: #e7bd45; }
+.shadex-catalogue-item-copy { display: flex; flex: 1; align-items: center; justify-content: space-between; gap: 14px; min-width: 0; }
+.shadex-catalogue-provider { padding: 0; border: 1px solid rgba(148, 163, 184, 0.17); border-radius: 11px; background: rgba(255, 255, 255, 0.025); }
+.shadex-catalogue-provider summary { padding: 14px; cursor: pointer; font-weight: 650; touch-action: manipulation; }
+.shadex-catalogue-provider[open] summary { border-bottom: 1px solid rgba(148, 163, 184, 0.17); }
 .shadex-catalogue-sublist { display: grid; gap: 8px; margin-top: 12px; }
 .shadex-catalogue-line { display: flex; justify-content: space-between; gap: 12px; font-size: 0.9rem; }
+.shadex-catalogue-line-button { align-items: center; }
+.shadex-catalogue-line-button .shadex-catalogue-item-copy { font-size: 0.9rem; }
 .shadex-empty, .shadex-catalogue-status { display: flex; gap: 8px; align-items: center; color: #aebbd0; }
 .shadex-catalogue-status { margin: 16px 0; }
 .shadex-catalogue-status.error { color: #fca5a5; }
+.service-request-notice { margin: 0 0 18px; padding: 12px 14px; border-radius: 10px; background: rgba(212, 173, 55, 0.1); color: #d9c77f; font-size: 0.9rem; line-height: 1.5; }
+.service-catalogue-change { display: block; margin: 14px auto 0; border: 0; background: transparent; color: #aebbd0; font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 
 @media (max-width: 520px) {
   .shadex-catalogue-item, .shadex-catalogue-line { flex-direction: column; }
   .shadex-catalogue-item strong { text-align: left; }
+  .shadex-catalogue-selectable { flex-direction: row; }
+  .shadex-catalogue-item-copy { align-items: flex-start; flex-direction: column; }
+  .shadex-catalogue-line-button .shadex-catalogue-item-copy { flex-direction: row; }
 }

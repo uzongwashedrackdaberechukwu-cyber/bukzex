@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
-import { AlertCircle, LoaderCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2, LoaderCircle } from "lucide-react";
 import { getShadexCatalogue } from "../services/shadexCatalog";
 import "./ShadexCataloguePanel.css";
 
@@ -30,33 +30,61 @@ function expandableList(title, rows, renderRow) {
   );
 }
 
-function NestedPlans({ rows, label, overrides }) {
+function SelectableItem({ item, selectedId, onSelect, children, className = "" }) {
+  const active = selectedId === String(item.id);
+  return (
+    <button
+      type="button"
+      className={`shadex-catalogue-item shadex-catalogue-selectable ${active ? "selected" : ""} ${className}`.trim()}
+      aria-pressed={active}
+      onClick={() => onSelect(item)}
+    >
+      <span className="shadex-catalogue-item-copy">{children}</span>
+      {active && <CheckCircle2 size={19} aria-label="Selected" />}
+    </button>
+  );
+}
+
+function NestedPlans({ rows, label, overrides, selectedId, onSelect }) {
   const visible = (rows || []).map((provider) => {
     const fee = customerPrice(`fee-${provider.id}`, overrides);
     const plans = (provider.plans || []).map((plan) => ({
       ...plan,
       customer_price: plan.variable_amount ? null : customerPrice(plan.id, overrides),
-    })).filter((plan) => plan.customer_price);
+    })).filter((plan) => plan.customer_price || plan.variable_amount);
     return { ...provider, customer_fee: fee, visible_plans: plans };
   }).filter((provider) => provider.visible_plans.length || provider.customer_fee);
 
   return expandableList(label, visible, (provider) => (
-    <details className="shadex-catalogue-item" key={provider.id}>
+    <details className="shadex-catalogue-provider" key={provider.id}>
       <summary>{provider.name || provider.title || provider.identifier}</summary>
       <div className="shadex-catalogue-sublist">
-        {provider.customer_fee && <div className="shadex-catalogue-line"><span>BukzEx service fee</span><strong>{money(provider.customer_fee)}</strong></div>}
+        {provider.customer_fee && (
+          <SelectableItem
+            key={`fee-${provider.id}`}
+            item={{ id: `fee-${provider.id}`, name: `${provider.name || provider.identifier} service fee`, price: provider.customer_fee, provider_id: provider.id }}
+            selectedId={selectedId}
+            onSelect={onSelect}
+            className="shadex-catalogue-line-button"
+          >
+            <span>BukzEx service fee</span><strong>{money(provider.customer_fee)}</strong>
+          </SelectableItem>
+        )}
         {provider.visible_plans.map((plan) => (
-          <div className="shadex-catalogue-line" key={plan.id}>
-            <span>{plan.name}</span>
-            <strong>{plan.variable_amount ? "Variable amount" : money(plan.customer_price)}</strong>
-          </div>
+          <SelectableItem
+            key={plan.id}
+            item={{ id: plan.id, name: plan.name, price: plan.customer_price, provider_id: provider.id, plan_type: plan.plan_type, variable_amount: plan.variable_amount === true }}
+            selectedId={selectedId}
+            onSelect={onSelect}
+            className="shadex-catalogue-line-button"
+          ><span>{plan.name}</span><strong>{plan.variable_amount ? "Enter amount" : money(plan.customer_price)}</strong></SelectableItem>
         ))}
       </div>
     </details>
   ));
 }
 
-export default function ShadexCataloguePanel({ serviceId }) {
+export default function ShadexCataloguePanel({ serviceId, selectedId = "", onSelect = () => {} }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -98,8 +126,8 @@ export default function ShadexCataloguePanel({ serviceId }) {
       </div>
 
       {serviceId === "bills" && <>
-        <NestedPlans rows={data.electricity?.providers} label="Electricity providers" overrides={overrides} />
-        <NestedPlans rows={data.cable?.providers} label="Cable TV providers" overrides={overrides} />
+        <NestedPlans rows={data.electricity?.providers} label="Electricity providers" overrides={overrides} selectedId={selectedId} onSelect={onSelect} />
+        <NestedPlans rows={data.cable?.providers} label="Cable TV providers" overrides={overrides} selectedId={selectedId} onSelect={onSelect} />
       </>}
 
       {serviceId === "marketplace" && (() => {
@@ -108,10 +136,9 @@ export default function ShadexCataloguePanel({ serviceId }) {
           customer_price: customerPrice(item.id, overrides),
         })).filter((item) => item.customer_price);
         return expandableList("Netflix, Spotify & other digital plans", products, (product) => (
-          <div className="shadex-catalogue-item" key={product.id}>
-            <strong>{product.title || product.name || "Digital service"}</strong>
-            <span>{money(product.customer_price)}</span>
-          </div>
+          <SelectableItem key={product.id} item={{ id: product.id, name: product.title || product.name || "Digital service", price: product.customer_price, provider_product_id: product.provider_product_id }} selectedId={selectedId} onSelect={onSelect}>
+            <strong>{product.title || product.name || "Digital service"}</strong><span>{money(product.customer_price)}</span>
+          </SelectableItem>
         ));
       })()}
 
@@ -121,9 +148,9 @@ export default function ShadexCataloguePanel({ serviceId }) {
           customer_price: customerPrice(item.id, overrides),
         })).filter((item) => item.customer_price);
         return expandableList("OTP services", services, (item) => (
-          <div className="shadex-catalogue-item" key={item.id}>
+          <SelectableItem key={item.id} item={{ id: item.id, name: item.service_name, price: item.customer_price, country_code: item.country_code, country_name: item.country_name, provider_service_id: item.provider_service_id }} selectedId={selectedId} onSelect={onSelect}>
             <strong>{item.service_name}</strong><span>{item.country_name} · {money(item.customer_price)}</span>
-          </div>
+          </SelectableItem>
         ));
       })()}
 
@@ -133,9 +160,9 @@ export default function ShadexCataloguePanel({ serviceId }) {
           customer_price: customerPrice(item.package_id, overrides),
         })).filter((item) => item.customer_price);
         return expandableList("Social Boost packages", services, (item) => (
-          <div className="shadex-catalogue-item" key={item.package_id}>
+          <SelectableItem key={item.package_id} item={{ id: item.package_id, name: item.service_name, price: item.customer_price, service_id: item.service_id, platform: item.platform, quantity: item.quantity, category: item.category }} selectedId={selectedId} onSelect={onSelect}>
             <strong>{item.service_name}</strong><span>{item.platform} · {Number(item.quantity).toLocaleString()} · {money(item.customer_price)}</span>
-          </div>
+          </SelectableItem>
         ));
       })()}
 
@@ -147,9 +174,9 @@ export default function ShadexCataloguePanel({ serviceId }) {
           customer_price: customerPrice(plan.id, overrides),
         }))).filter((plan) => plan.customer_price);
         return expandableList("Data plans", plans, (plan) => (
-          <div className="shadex-catalogue-item" key={plan.id}>
+          <SelectableItem key={plan.id} item={{ id: plan.id, name: `${plan.network_name} — ${plan.name}`, price: plan.customer_price, network_name: plan.network_name, network_id: plan.network_id }} selectedId={selectedId} onSelect={onSelect}>
             <strong>{plan.network_name} — {plan.name}</strong><span>{money(plan.customer_price)}</span>
-          </div>
+          </SelectableItem>
         ));
       })()}
     </section>

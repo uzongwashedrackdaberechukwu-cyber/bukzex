@@ -112,6 +112,7 @@ export default function ServicePurchase() {
   const [catalogue, setCatalogue] = useState(null);
   const [catalogueLoading, setCatalogueLoading] = useState(false);
   const [catalogueError, setCatalogueError] = useState("");
+  const [selectedCatalogueItem, setSelectedCatalogueItem] = useState(null);
   const [vtuType, setVtuType] = useState("data");
   const [networkId, setNetworkId] = useState("");
   const [planId, setPlanId] = useState("");
@@ -245,6 +246,27 @@ export default function ServicePurchase() {
     let numericAmount = Number(amount);
     let requestDetails = details.trim();
 
+    if (catalogueOnly) {
+      if (!selectedCatalogueItem) {
+        setError("Tap a service plan above to select it first.");
+        return;
+      }
+      const price = selectedCatalogueItem.price;
+      if (price?.amount_minor != null) {
+        numericAmount = Number(price.amount_minor) / (10 ** Number(price.minor_unit ?? 2));
+      }
+      if (!requestDetails) {
+        setError("Enter the information needed for this request.");
+        return;
+      }
+      requestDetails = JSON.stringify({
+        catalogue_item_id: selectedCatalogueItem.id,
+        catalogue_item_name: selectedCatalogueItem.name,
+        catalogue_item: selectedCatalogueItem,
+        customer_details: requestDetails,
+      });
+    }
+
     if (serviceId === "vtu") {
       if (!selectedNetwork) {
         setError("Choose a network.");
@@ -340,7 +362,63 @@ export default function ServicePurchase() {
         </div>
 
         {catalogueOnly && (
-          <ShadexCataloguePanel serviceId={serviceId} />
+          <ShadexCataloguePanel
+            serviceId={serviceId}
+            selectedId={String(selectedCatalogueItem?.id || "")}
+            onSelect={(item) => {
+              setSelectedCatalogueItem(item);
+              setDetails("");
+              const price = item.price;
+              const fixedAmount = price?.amount_minor == null
+                ? ""
+                : String(Number(price.amount_minor) / (10 ** Number(price.minor_unit ?? 2)));
+              setAmount(fixedAmount);
+              setError("");
+              setSuccess("");
+            }}
+          />
+        )}
+
+        {catalogueOnly && selectedCatalogueItem && (
+          <form className="service-purchase-form" onSubmit={handlePurchase}>
+            <div className="service-form-heading">
+              <h2>Selected service</h2>
+              <p>{selectedCatalogueItem.name}</p>
+            </div>
+            <div className="service-form-field">
+              <label htmlFor="selected-catalogue-amount">{selectedCatalogueItem.price ? "BukzEx price (₦)" : "Amount (₦)"}</label>
+              <input
+                id="selected-catalogue-amount"
+                type="number"
+                min="1"
+                value={amount}
+                onChange={(event) => setAmount(event.target.value)}
+                readOnly={selectedCatalogueItem.price?.amount_minor != null}
+                placeholder="Enter amount"
+              />
+            </div>
+            <div className="service-form-field">
+              <label htmlFor="service-details">
+                {serviceId === "marketplace" ? "Email for subscription or delivery" : serviceId === "social" ? "Profile or post link" : serviceId === "bills" ? "Meter or smartcard details" : "Request details"}
+              </label>
+              <textarea
+                id="service-details"
+                value={details}
+                onChange={(event) => setDetails(event.target.value)}
+                placeholder={serviceId === "marketplace" ? "Enter the email address for this subscription or delivery instructions." : serviceId === "social" ? "Paste the profile or post link and add any instructions." : serviceId === "bills" ? "Enter the meter number, smartcard number, or other required details." : "Add any details needed for this request."}
+                rows="4"
+              />
+            </div>
+            <p className="service-request-notice">This sends a request for admin review. No wallet money is taken here.</p>
+            {error && <div className="service-form-message error"><AlertCircle size={17} /><span>{error}</span></div>}
+            {success && <div className="service-form-message success"><CheckCircle2 size={17} /><span>{success}</span></div>}
+            <button type="submit" className="service-purchase-submit" disabled={submitting || loading}>
+              {submitting ? <><LoaderCircle size={17} className="service-spinner" /> Sending...</> : "Send Selected Service Request"}
+            </button>
+            <button type="button" className="service-catalogue-change" onClick={() => { setSelectedCatalogueItem(null); setAmount(""); setDetails(""); setError(""); setSuccess(""); }}>
+              Clear selection
+            </button>
+          </form>
         )}
 
         {!catalogueOnly && (
