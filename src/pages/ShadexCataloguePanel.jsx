@@ -90,7 +90,7 @@ export default function ShadexCataloguePanel({ serviceId, selectedId = "", onSel
     setError("");
     getShadexCatalogue(serviceId)
       .then((result) => { if (live) setData(result); })
-      .catch((err) => { if (live) setError(err?.message || "Catalogue is temporarily unavailable."); })
+      .catch(() => { if (live) setError("This catalogue is temporarily unavailable. Please try again shortly."); })
       .finally(() => { if (live) setLoading(false); });
     return () => { live = false; };
   }, [serviceId]);
@@ -108,14 +108,14 @@ export default function ShadexCataloguePanel({ serviceId, selectedId = "", onSel
   }, [serviceId]);
 
   if (loading) return <div className="shadex-catalogue-status"><LoaderCircle size={17} className="service-spinner" /> Loading live catalogue…</div>;
-  if (error) return <div className="shadex-catalogue-status error"><AlertCircle size={17} /> ShadexGoLtd catalogue is temporarily unavailable: {error}</div>;
+  if (error) return <div className="shadex-catalogue-status error"><AlertCircle size={17} /> {error}</div>;
   if (!data) return null;
 
   const currency = data.market?.currency || "NGN";
   return (
     <section className="shadex-catalogue-panel">
       <div className="shadex-catalogue-heading">
-        <span>LIVE FROM SHADEXGOLTD</span>
+        <span>BUKZEX SERVICE CATALOGUE</span>
         <small>{currency} · {data.market?.countryCode || ""}</small>
       </div>
 

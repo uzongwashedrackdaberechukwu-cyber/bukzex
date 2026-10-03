@@ -12,8 +12,8 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../lib/firebase";
 
@@ -29,7 +29,7 @@ const serviceMap = {
   vtu: {
     title: "VTU",
     icon: Smartphone,
-    description: "Choose live airtime and data options from ShadexGoLtd.",
+    description: "Choose airtime and data options available on BukzEx.",
     placeholder: "Enter the required service details",
   },
   bills: {
@@ -95,8 +95,10 @@ function priceLabel(plan, markup = 0, override = null) {
 export default function ServicePurchase() {
   const { serviceId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const service = serviceMap[serviceId];
   const catalogueOnly = ["bills", "marketplace", "sms", "social"].includes(serviceId);
+  const isCheckoutPage = location.pathname.endsWith("/checkout");
 
   const [walletBalance, setWalletBalance] = useState(0);
   const [amount, setAmount] = useState("");
@@ -109,7 +111,11 @@ export default function ServicePurchase() {
   const [catalogue, setCatalogue] = useState(null);
   const [catalogueLoading, setCatalogueLoading] = useState(false);
   const [catalogueError, setCatalogueError] = useState("");
-  const [selectedCatalogueItem, setSelectedCatalogueItem] = useState(null);
+  const [selectedCatalogueItem, setSelectedCatalogueItem] = useState(() => {
+    if (location.state?.selectedCatalogueItem) return location.state.selectedCatalogueItem;
+    try { return JSON.parse(sessionStorage.getItem(`bukzex:selected:${serviceId}`) || "null"); }
+    catch { return null; }
+  });
   const [vtuType, setVtuType] = useState("data");
   const [networkId, setNetworkId] = useState("");
   const [planId, setPlanId] = useState("");
@@ -123,9 +129,17 @@ export default function ServicePurchase() {
   const [targetLink, setTargetLink] = useState("");
   const [servicePhone, setServicePhone] = useState("");
   const [variableBillAmount, setVariableBillAmount] = useState("");
-  const [accountName, setAccountName] = useState("");
-  const [accountEmail, setAccountEmail] = useState("");
-  const checkoutRef = useRef(null);
+
+  useEffect(() => {
+    if (location.state?.selectedCatalogueItem) {
+      setSelectedCatalogueItem(location.state.selectedCatalogueItem);
+      return;
+    }
+    if (isCheckoutPage) {
+      try { setSelectedCatalogueItem(JSON.parse(sessionStorage.getItem(`bukzex:selected:${serviceId}`) || "null")); }
+      catch { setSelectedCatalogueItem(null); }
+    }
+  }, [isCheckoutPage, location.state, serviceId]);
 
   useEffect(() => {
     async function loadWallet() {
@@ -164,7 +178,7 @@ export default function ServicePurchase() {
         if (active) setCatalogue(result);
       })
       .catch((err) => {
-        if (active) setCatalogueError(err?.message || "Unable to load VTU options.");
+        if (active) setCatalogueError("We couldn’t load the catalogue right now. Please try again shortly.");
       })
       .finally(() => {
         if (active) setCatalogueLoading(false);
@@ -256,7 +270,7 @@ export default function ServicePurchase() {
     }
 
     if (serviceId !== "vtu" && !selectedCatalogueItem?.id) {
-      setError("Select a ShadexGoLtd service first.");
+      setError("Choose a service before continuing.");
       return;
     }
     if (serviceId === "bills" && (!customerIdentifier.trim() || !(purchaseFor === "friend" ? recipientPhone.trim() : servicePhone.trim()))) {
@@ -317,15 +331,16 @@ export default function ServicePurchase() {
       });
       const balance = await getWalletBalance();
       setWalletBalance(Number(balance?.balance || 0));
-      setSuccess(result?.message || "Payment submitted. Check Payment · Order · Stack for the ShadexGoLtd order.");
+      setSuccess("Payment complete. Your purchase is now in My Stack.");
       sessionStorage.removeItem(requestStorageKey);
+      sessionStorage.removeItem(`bukzex:selected:${serviceId}`);
       window.setTimeout(() => navigate("/customer/orders"), 900);
     } catch (err) {
       const message = String(err?.message || "").toLowerCase();
       if (message.includes("wallet has been refunded") || message.includes("payment reference was already used")) {
         sessionStorage.removeItem(requestStorageKey);
       }
-      setError(err?.message || "The payment could not be completed. Check Orders before trying again.");
+      setError("We couldn’t complete this purchase. Check My Stack before trying again, or contact BukzEx Customer Care.");
     } finally {
       setSubmitting(false);
     }
@@ -334,14 +349,14 @@ export default function ServicePurchase() {
   return (
     <main className="service-purchase-page">
       <div className="service-purchase-container">
-        <Link to="/customer" className="service-purchase-back">
-          <ArrowLeft size={16} /> Back to Dashboard
+        <Link to={isCheckoutPage ? `/customer/services/${serviceId}` : "/customer/services"} className="service-purchase-back">
+          <ArrowLeft size={16} /> {isCheckoutPage ? "Back to services" : "Back to Services"}
         </Link>
 
         <div className="service-purchase-header">
           <div className="service-purchase-icon"><Icon size={26} /></div>
           <div>
-            <span>SHADEXGOLTD · BUKZEX</span>
+            <span>BUKZEX SERVICE</span>
             <h1>{service.title}</h1>
             <p>{service.description}</p>
           </div>
@@ -356,12 +371,13 @@ export default function ServicePurchase() {
           <Link to="/customer">Fund Wallet</Link>
         </div>
 
-        {catalogueOnly && (
+        {catalogueOnly && !isCheckoutPage && (
           <ShadexCataloguePanel
             serviceId={serviceId}
             selectedId={String(selectedCatalogueItem?.id || "")}
             onSelect={(item) => {
               setSelectedCatalogueItem(item);
+              sessionStorage.setItem(`bukzex:selected:${serviceId}`, JSON.stringify(item));
               setDetails("");
               const price = item.price;
               const fixedAmount = price?.amount_minor == null
@@ -369,20 +385,16 @@ export default function ServicePurchase() {
                 : String(Number(price.amount_minor) / (10 ** Number(price.minor_unit ?? 2)));
               setAmount(fixedAmount);
               setError("");
-              window.setTimeout(() => checkoutRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+              navigate(`/customer/services/${serviceId}/checkout`, { state: { selectedCatalogueItem: item } });
             }}
           />
         )}
 
-        {catalogueOnly && selectedCatalogueItem && (
-          <form className="service-purchase-form" ref={checkoutRef} onSubmit={handlePurchase}>
+        {catalogueOnly && isCheckoutPage && selectedCatalogueItem && (
+          <form className="service-purchase-form" onSubmit={handlePurchase}>
             <div className="service-form-heading">
               <h2>Checkout</h2>
-              <p>{selectedCatalogueItem.name}</p>
-            </div>
-            <div className="service-brand-stamp" aria-label="Catalogue supplied by ShadexGoLtd">
-              <span className="service-brand-mark">S</span>
-              <span><strong>SHADEXGOLTD</strong><small>OFFICIAL SERVICE CATALOGUE</small></span>
+              <p>{selectedCatalogueItem.name} · BukzEx secure checkout</p>
             </div>
             <div className="service-form-field">
               <label>Who is this purchase for?</label>
@@ -405,35 +417,37 @@ export default function ServicePurchase() {
             </div>}
             {serviceId === "social" && <div className="service-form-field"><label htmlFor="social-target-link">Link to the post or account</label><input id="social-target-link" type="url" value={targetLink} onChange={(event) => setTargetLink(event.target.value)} placeholder="https://…" /></div>}
             <div className="service-purchase-total">
-              <span>Available wallet balance</span>
-              <strong>{loading ? "Loading…" : `₦${walletBalance.toLocaleString()}`}</strong>
-              <span>Price</span>
-              <strong>{selectedCatalogueItem.variable_amount ? "Enter amount" : selectedCatalogueItem.price ? priceLabel(selectedCatalogueItem, 0, selectedCatalogueItem.price) : "Price unavailable"}</strong>
+              <div><span>Available wallet balance</span><strong>{loading ? "Loading…" : `₦${walletBalance.toLocaleString()}`}</strong></div>
+              <div><span>Price</span><strong>{selectedCatalogueItem.variable_amount ? "Enter amount" : selectedCatalogueItem.price ? priceLabel(selectedCatalogueItem, 0, selectedCatalogueItem.price) : "Price unavailable"}</strong></div>
             </div>
-            <p className="service-request-notice">Payment is deducted from your BukzEx wallet. The ShadexGoLtd order status and any available service details will appear in Payment · Order · Stack. Contact Customer Care for OTP or password help.</p>
+            <p className="service-request-notice">Payment is securely deducted from your BukzEx wallet. Your purchase and available delivery details will appear in My Stack. Contact BukzEx Customer Care for OTP or password assistance.</p>
             {error && <div className="service-form-message error"><AlertCircle size={17} /><span>{error}</span></div>}
             {success && <div className="service-form-message success"><CheckCircle2 size={17} /><span>{success}</span></div>}
             <button type="submit" className="service-purchase-submit" disabled={submitting || loading}>
-              {submitting ? "Paying and submitting to ShadexGoLtd…" : "Pay with wallet"}
+              {submitting ? "Processing payment…" : "Pay with wallet"}
             </button>
-            <button type="button" className="service-catalogue-change" onClick={() => { setSelectedCatalogueItem(null); setAmount(""); setDetails(""); setError(""); }}>
-              Clear selection
+            <button type="button" className="service-catalogue-change" onClick={() => { setSelectedCatalogueItem(null); setAmount(""); setDetails(""); setError(""); sessionStorage.removeItem(`bukzex:selected:${serviceId}`); navigate(`/customer/services/${serviceId}`); }}>
+              Choose a different service
             </button>
           </form>
         )}
 
+        {catalogueOnly && isCheckoutPage && !selectedCatalogueItem && (
+          <section className="service-purchase-form service-checkout-empty">
+            <h2>Choose a service to continue</h2>
+            <p>Your selection is no longer available. Return to the catalogue and choose a service.</p>
+            <Link to={`/customer/services/${serviceId}`} className="service-purchase-submit">Browse services</Link>
+          </section>
+        )}
+
         {!catalogueOnly && (
         <form className="service-purchase-form" onSubmit={handlePurchase}>
-          <div className="service-brand-stamp" aria-label="Catalogue supplied by ShadexGoLtd">
-            <span className="service-brand-mark">S</span>
-            <span><strong>SHADEXGOLTD</strong><small>OFFICIAL SERVICE CATALOGUE</small></span>
-          </div>
             <div className="service-form-heading">
             <h2>{serviceId === "vtu" ? "Choose Airtime or Data" : "Request a Service"}</h2>
             <p>
               {serviceId === "vtu"
-                ? `Live options come from ShadexGoLtd. BukzEx markup: ${markup}%.`
-                : "Choose the option you need from the ShadexGoLtd catalogue."}
+                ? `Browse available options. BukzEx pricing: ${markup}% markup.`
+                : "Choose the service option you need."}
             </p>
           </div>
 
@@ -506,16 +520,11 @@ export default function ServicePurchase() {
           )}
 
           {error && <div className="service-form-message error"><AlertCircle size={17} /><span>{error}</span></div>}
-          <p className="service-request-notice">Payment is deducted from your BukzEx wallet and sent to ShadexGoLtd. Check Payment · Order · Stack for the order status and service details.</p>
+          <p className="service-request-notice">Payment is securely deducted from your BukzEx wallet. Track your purchase and available delivery details in My Stack.</p>
           <button type="submit" className="service-purchase-submit" disabled={submitting || loading || (vtuType === "data" && !planId)}>
-            {submitting ? "Paying and submitting to ShadexGoLtd…" : "Pay with wallet"}
+            {submitting ? "Processing payment…" : "Pay with wallet"}
           </button>
         </form>
-        )}
-        {catalogueOnly && selectedCatalogueItem && (
-          <button type="button" className="service-sticky-checkout" onClick={() => checkoutRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}>
-            Continue to checkout · {selectedCatalogueItem.name}
-          </button>
         )}
       </div>
       <WhatsAppSupport />

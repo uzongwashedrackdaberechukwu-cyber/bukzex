@@ -77,6 +77,11 @@ function App() {
           />
 
           <Route
+            path="/customer/services/:serviceId/checkout"
+            element={<ServicePurchase />}
+          />
+
+          <Route
             path="/customer/services/:serviceId"
             element={<ServicePurchase />}
           />

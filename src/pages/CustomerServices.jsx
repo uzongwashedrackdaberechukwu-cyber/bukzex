@@ -62,7 +62,6 @@ const services = [
 ];
 
 export default function CustomerServices() {
-  const [selectedService, setSelectedService] = useState(null);
   const [enabledServices, setEnabledServices] = useState(null);
   const [serviceError, setServiceError] = useState("");
 
@@ -119,9 +118,9 @@ export default function CustomerServices() {
                   <span className="customer-service-kicker">BUKZEX SERVICE</span>
                   <h2>{service.title}</h2>
                   <p>{service.description}</p>
-                  <button type="button" onClick={() => setSelectedService(service)} className="customer-service-button">
+                  <Link to={`/customer/services/${service.id}`} className="customer-service-button">
                     Continue <ArrowRight size={15} />
-                  </button>
+                  </Link>
                 </div>
               </article>
             );
@@ -129,22 +128,6 @@ export default function CustomerServices() {
         </section>
       )}
 
-      {selectedService && (
-        <div className="customer-service-overlay">
-          <div className="customer-service-modal">
-            <button type="button" className="customer-service-close" onClick={() => setSelectedService(null)}>×</button>
-            <div className="customer-service-modal-icon">
-              {(() => { const SelectedIcon = selectedService.icon; return <SelectedIcon size={24} />; })()}
-            </div>
-            <h2>{selectedService.title}</h2>
-            <p>Continue to browse the available options for this service.</p>
-            <div className="customer-service-modal-actions">
-              <Link to={`/customer/services/${selectedService.id}`} className="customer-service-fund">Continue</Link>
-              <button type="button" className="customer-service-cancel" onClick={() => setSelectedService(null)}>Close</button>
-            </div>
-          </div>
-        </div>
-      )}
       <WhatsAppSupport />
     </main>
   );

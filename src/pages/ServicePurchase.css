@@ -238,6 +238,111 @@
   animation: service-spin 1s linear infinite;
 }
 
+.service-brand-stamp {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 14px;
+  margin: 0 0 20px;
+  border: 1px solid rgba(212, 167, 44, 0.26);
+  border-radius: 12px;
+  background: linear-gradient(100deg, rgba(212, 167, 44, 0.1), rgba(15, 29, 51, 0.75));
+  color: #f8fafc;
+}
+
+.service-brand-mark {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid rgba(244, 215, 126, 0.65);
+  border-radius: 10px;
+  color: #f4d77e;
+  font-weight: 900;
+}
+
+.service-brand-stamp strong,
+.service-brand-stamp small {
+  display: block;
+}
+
+.service-brand-stamp strong {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
+
+.service-brand-stamp small {
+  margin-top: 3px;
+  color: #a8b3c6;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+.purchase-for-options {
+  display: flex;
+  gap: 10px;
+}
+
+.purchase-for-options label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid #2b3b54;
+  border-radius: 10px;
+  background: #0d1728;
+  color: #e7edf7;
+  cursor: pointer;
+}
+
+.purchase-for-options input {
+  width: 17px;
+  height: 17px;
+  accent-color: #d4a72c;
+}
+
+.friend-phone-label {
+  margin-top: 14px;
+}
+
+.service-purchase-total {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 16px;
+  margin: 18px 0;
+  border: 1px solid #2b3b54;
+  border-radius: 12px;
+  background: #0d1728;
+  color: #aebbd0;
+  font-size: 13px;
+}
+
+.service-purchase-total strong {
+  color: #f8fafc;
+  font-size: 15px;
+  text-align: right;
+}
+
+.service-request-notice {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(212, 167, 44, 0.12);
+  color: #e9d895;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (max-width: 540px) {
+  .purchase-for-options {
+    flex-direction: column;
+  }
+
+}
+
 @keyframes service-spin {
   to {
     transform: rotate(360deg);
@@ -384,6 +489,7 @@
 }
 
 .service-purchase-page .service-form-field input,
+.service-purchase-page .service-form-field input:not([type="radio"]),
 .service-purchase-page .service-form-field textarea,
 .service-purchase-page .service-form-field select {
   border-color: rgba(148, 163, 184, 0.23);
@@ -393,6 +499,7 @@
 }
 
 .service-purchase-page .service-form-field input:focus,
+.service-purchase-page .service-form-field input:not([type="radio"]):focus,
 .service-purchase-page .service-form-field textarea:focus,
 .service-purchase-page .service-form-field select:focus {
   border-color: #5a91f5;
@@ -400,8 +507,77 @@
 }
 
 .service-purchase-page .service-form-field input::placeholder,
+.service-purchase-page .service-form-field input:not([type="radio"])::placeholder,
 .service-purchase-page .service-form-field textarea::placeholder {
   color: #71819a;
+}
+
+/* Separate-route checkout layout and touch-sized recipient choices. */
+.purchase-for-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.purchase-for-options label {
+  min-width: 0;
+  min-height: 58px;
+  padding: 14px;
+  border-color: rgba(148, 163, 184, 0.22);
+  background: rgba(255, 255, 255, 0.035);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.purchase-for-options label:has(input:checked) {
+  border-color: rgba(212, 167, 44, 0.8);
+  background: rgba(212, 167, 44, 0.1);
+}
+
+.purchase-for-options input[type="radio"] {
+  flex: 0 0 18px;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px;
+  padding: 0 !important;
+  margin: 0;
+  accent-color: #d4a72c;
+}
+
+.service-purchase-total {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px;
+}
+
+.service-purchase-total > div {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.service-purchase-total span {
+  color: #aebbd0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.service-purchase-total strong {
+  overflow-wrap: anywhere;
+  font-size: clamp(14px, 4vw, 17px);
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+
+.service-checkout-empty p {
+  color: #aebbd0;
+  line-height: 1.6;
+}
+
+.service-checkout-empty .service-purchase-submit {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
 }
 
 .service-purchase-submit {
@@ -445,5 +621,9 @@
 
   .service-purchase-form {
     padding: 18px;
+  }
+
+  .purchase-for-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
