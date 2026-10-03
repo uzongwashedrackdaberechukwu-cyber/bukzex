@@ -4,6 +4,13 @@
   "main": "src/index.js",
   "compatibility_date": "2026-10-01",
   "workers_dev": true,
+  "keep_vars": true,
+  "secrets": {
+    "required": [
+      "SHADEX_API_KEY",
+      "FIREBASE_SERVICE_ACCOUNT_JSON"
+    ]
+  },
   "assets": {
     "directory": "../dist",
     "not_found_handling": "single-page-application",

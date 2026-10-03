@@ -18,12 +18,13 @@ import {
 } from "firebase/firestore";
 import { auth, authPersistenceReady, db } from "../lib/firebase";
 
-function toProfile(profile, email = "", role = "customer") {
+function toProfile(profile, email = "", role = "customer", emailVerified) {
   return {
     id: profile.id,
     firstName: profile.first_name || "",
     lastName: profile.last_name || "",
     email: email || profile.email || "",
+    emailVerified,
     phone: profile.phone || "",
     role,
     notificationsEnabled: profile.notifications_enabled ?? true,
@@ -63,6 +64,7 @@ export async function getSession() {
         firstName: nameParts[0] || "Admin",
         lastName: nameParts.slice(1).join(" "),
         email: user.email || "",
+        emailVerified: user.emailVerified,
         phone: "",
         role: "admin",
         notificationsEnabled: true,
@@ -74,7 +76,8 @@ export async function getSession() {
   return toProfile(
     profileSnap.data(),
     user.email || "",
-    admin ? "admin" : "customer"
+    admin ? "admin" : "customer",
+    user.emailVerified
   );
 }
 

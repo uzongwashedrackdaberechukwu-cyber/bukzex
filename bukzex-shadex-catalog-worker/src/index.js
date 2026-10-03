@@ -278,6 +278,9 @@ async function refundOnce(env, uid, idempotencyKey, message) {
 async function purchase(request, env) {
   const identity = await verifyFirebaseToken(request, env);
   const uid = identity.uid;
+  // Refuse checkout before touching the wallet if the supplier credential
+  // is missing. This prevents paid orders being left in processing forever.
+  if (!env.SHADEX_API_KEY) throw new HttpError(503, "BukzEx checkout is temporarily unavailable. Please try again later.");
   let data;
   try { data = await request.json(); } catch { throw new HttpError(400, "Checkout details are invalid."); }
   const serviceKey = String(data.service_key || "").trim();
