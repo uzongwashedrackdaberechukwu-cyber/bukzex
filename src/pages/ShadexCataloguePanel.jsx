@@ -60,15 +60,9 @@ function NestedPlans({ rows, label, overrides, selectedId, onSelect }) {
       <summary>{provider.name || provider.title || provider.identifier}</summary>
       <div className="shadex-catalogue-sublist">
         {provider.customer_fee && (
-          <SelectableItem
-            key={`fee-${provider.id}`}
-            item={{ id: `fee-${provider.id}`, name: `${provider.name || provider.identifier} service fee`, price: provider.customer_fee, provider_id: provider.id }}
-            selectedId={selectedId}
-            onSelect={onSelect}
-            className="shadex-catalogue-line-button"
-          >
-            <span>BukzEx service fee</span><strong>{money(provider.customer_fee)}</strong>
-          </SelectableItem>
+          <div className="shadex-catalogue-item shadex-catalogue-line-button" key={`fee-${provider.id}`}>
+            <span className="shadex-catalogue-item-copy"><span>BukzEx service fee</span><strong>{money(provider.customer_fee)}</strong></span>
+          </div>
         )}
         {provider.visible_plans.map((plan) => (
           <SelectableItem
@@ -136,7 +130,7 @@ export default function ShadexCataloguePanel({ serviceId, selectedId = "", onSel
           customer_price: customerPrice(item.id, overrides),
         })).filter((item) => item.customer_price);
         return expandableList("Netflix, Spotify & other digital plans", products, (product) => (
-          <SelectableItem key={product.id} item={{ id: product.id, name: product.title || product.name || "Digital service", price: product.customer_price, provider_product_id: product.provider_product_id }} selectedId={selectedId} onSelect={onSelect}>
+          <SelectableItem key={product.id} item={{ id: product.id, name: product.title || product.name || "Digital service", price: product.customer_price, provider_product_id: product.provider_product_id, service_slug: product.service_slug }} selectedId={selectedId} onSelect={onSelect}>
             <strong>{product.title || product.name || "Digital service"}</strong><span>{money(product.customer_price)}</span>
           </SelectableItem>
         ));

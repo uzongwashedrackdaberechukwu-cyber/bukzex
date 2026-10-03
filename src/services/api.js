@@ -12,7 +12,8 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-import { auth, db } from "../lib/firebase";
+import { auth, db, firebaseApp } from "../lib/firebase";
+import { getFunctions, httpsCallable } from "firebase/functions";
 
 function requireUser() {
   if (!auth.currentUser) throw new Error("Sign in to continue.");
@@ -77,6 +78,27 @@ export async function getWalletBalance() {
     balance: Number(wallet.balance || 0),
     currency: wallet.currency || "NGN",
   };
+}
+
+export async function purchaseDigitalService(payload) {
+  requireUser();
+  const callable = httpsCallable(getFunctions(firebaseApp, "us-central1"), "purchaseDigitalService");
+  const result = await callable(payload);
+  return result.data;
+}
+
+export async function purchaseShadexService(payload) {
+  requireUser();
+  const callable = httpsCallable(getFunctions(firebaseApp, "us-central1"), "purchaseShadexService");
+  const result = await callable(payload);
+  return result.data;
+}
+
+export async function refreshDigitalServiceOrder(orderId) {
+  requireUser();
+  const callable = httpsCallable(getFunctions(firebaseApp, "us-central1"), "refreshDigitalServiceOrder");
+  const result = await callable({ order_id: orderId });
+  return result.data;
 }
 
 export async function createDeposit(reference, amount) {

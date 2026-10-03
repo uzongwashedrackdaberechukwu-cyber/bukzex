@@ -8,20 +8,16 @@ import {
   Receipt,
   ArrowLeft,
   WalletCards,
-  LoaderCircle,
-  CheckCircle2,
   AlertCircle,
+  CheckCircle2,
 } from "lucide-react";
 
-import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../lib/firebase";
+import { auth, db } from "../lib/firebase";
 
-import {
-  getWalletBalance,
-  purchaseService,
-} from "../services/api";
+import { getWalletBalance, purchaseShadexService } from "../services/api";
 import { getVtuCatalogue } from "../services/shadexCatalog";
 import ShadexCataloguePanel from "./ShadexCataloguePanel";
 import WhatsAppSupport from "../components/WhatsAppSupport";
@@ -98,6 +94,7 @@ function priceLabel(plan, markup = 0, override = null) {
 
 export default function ServicePurchase() {
   const { serviceId } = useParams();
+  const navigate = useNavigate();
   const service = serviceMap[serviceId];
   const catalogueOnly = ["bills", "marketplace", "sms", "social"].includes(serviceId);
 
@@ -105,9 +102,9 @@ export default function ServicePurchase() {
   const [amount, setAmount] = useState("");
   const [details, setDetails] = useState("");
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const [catalogue, setCatalogue] = useState(null);
   const [catalogueLoading, setCatalogueLoading] = useState(false);
@@ -119,6 +116,16 @@ export default function ServicePurchase() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [markup, setMarkup] = useState(0);
   const [priceOverrides, setPriceOverrides] = useState({});
+  const [purchaseFor, setPurchaseFor] = useState("myself");
+  const [recipientName, setRecipientName] = useState("");
+  const [recipientPhone, setRecipientPhone] = useState("");
+  const [customerIdentifier, setCustomerIdentifier] = useState("");
+  const [targetLink, setTargetLink] = useState("");
+  const [servicePhone, setServicePhone] = useState("");
+  const [variableBillAmount, setVariableBillAmount] = useState("");
+  const [accountName, setAccountName] = useState("");
+  const [accountEmail, setAccountEmail] = useState("");
+  const checkoutRef = useRef(null);
 
   useEffect(() => {
     async function loadWallet() {
@@ -243,94 +250,82 @@ export default function ServicePurchase() {
     setError("");
     setSuccess("");
 
-    let numericAmount = Number(amount);
-    let requestDetails = details.trim();
-
-    if (catalogueOnly) {
-      if (!selectedCatalogueItem) {
-        setError("Tap a service plan above to select it first.");
-        return;
-      }
-      const price = selectedCatalogueItem.price;
-      if (price?.amount_minor != null) {
-        numericAmount = Number(price.amount_minor) / (10 ** Number(price.minor_unit ?? 2));
-      }
-      if (!requestDetails) {
-        setError("Enter the information needed for this request.");
-        return;
-      }
-      requestDetails = JSON.stringify({
-        catalogue_item_id: selectedCatalogueItem.id,
-        catalogue_item_name: selectedCatalogueItem.name,
-        catalogue_item: selectedCatalogueItem,
-        customer_details: requestDetails,
-      });
-    }
-
-    if (serviceId === "vtu") {
-      if (!selectedNetwork) {
-        setError("Choose a network.");
-        return;
-      }
-      if (!phoneNumber.trim()) {
-        setError("Enter the phone number to receive the service.");
-        return;
-      }
-      if (vtuType === "data") {
-        if (!selectedPlan) {
-          setError("Choose a data plan.");
-          return;
-        }
-        numericAmount = planCustomerAmount(selectedPlan);
-        if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-          setError("The selected data plan has no valid price.");
-          return;
-        }
-      } else if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-        setError("Enter a valid airtime amount.");
-        return;
-      } else {
-        numericAmount *= 1 + markup / 100;
-      }
-      requestDetails = JSON.stringify({
-        service_type: vtuType,
-        network_id: String(selectedNetwork.id),
-        network_code: selectedNetwork.code || "",
-        network_name: selectedNetwork.name || "",
-        data_plan_id: selectedPlan ? String(selectedPlan.id) : null,
-        data_plan_name: selectedPlan?.name || null,
-        phone_number: phoneNumber.trim(),
-        currency: selectedPlan?.price?.currency || catalogue?.market?.currency || "NGN",
-        provider_amount: vtuType === "data" ? planPrice(selectedPlan) : Number(amount),
-        bukzex_markup_percent: markup,
-        customer_amount: numericAmount,
-      });
-    }
-
-    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-      setError("Enter a valid amount.");
-      return;
-    }
-    if (!requestDetails) {
-      setError("Please enter the required service details.");
+    if (purchaseFor === "friend" && (!recipientName.trim() || !recipientPhone.trim())) {
+      setError("Enter your friend's name and phone number.");
       return;
     }
 
+    if (serviceId !== "vtu" && !selectedCatalogueItem?.id) {
+      setError("Select a ShadexGoLtd service first.");
+      return;
+    }
+    if (serviceId === "bills" && (!customerIdentifier.trim() || !(purchaseFor === "friend" ? recipientPhone.trim() : servicePhone.trim()))) {
+      setError("Enter the meter or smartcard number and phone number.");
+      return;
+    }
+    if (serviceId === "social" && !targetLink.trim()) {
+      setError("Enter the link for the social service.");
+      return;
+    }
+    if (serviceId === "vtu" && (!networkId || !(purchaseFor === "friend" ? recipientPhone.trim() : phoneNumber.trim()))) {
+      setError("Choose a network and enter the recipient phone number.");
+      return;
+    }
+    if (serviceId === "vtu" && vtuType === "data" && !planId) {
+      setError("Choose a data plan.");
+      return;
+    }
+    if (serviceId === "vtu" && vtuType === "airtime" && (!Number(amount) || Number(amount) < 50)) {
+      setError("Enter an airtime amount of at least ₦50.");
+      return;
+    }
+    if (serviceId === "bills" && selectedCatalogueItem.variable_amount && (!Number(variableBillAmount) || Number(variableBillAmount) < 100)) {
+      setError("Enter a bill amount of at least ₦100.");
+      return;
+    }
+
+    const itemId = serviceId === "vtu"
+      ? (vtuType === "data" ? planId : "airtime")
+      : String(selectedCatalogueItem.id);
+    const requestStorageKey = `bukzex-shadex-checkout:${auth.currentUser?.uid || "guest"}:${serviceId}:${itemId}`;
+    const requestKey = sessionStorage.getItem(requestStorageKey) || crypto.randomUUID();
+    sessionStorage.setItem(requestStorageKey, requestKey);
+    setSubmitting(true);
     try {
-      setSubmitting(true);
-      const result = await purchaseService({
-        service: serviceId,
-        amount: numericAmount,
-        details: requestDetails,
+      const result = await purchaseShadexService({
+        service_key: serviceId,
+        item_id: itemId,
+        idempotency_key: requestKey,
+        recipient_type: purchaseFor === "friend" ? "friend" : "self",
+        recipient_name: purchaseFor === "friend" ? recipientName.trim() : "",
+        recipient_phone: purchaseFor === "friend" ? recipientPhone.trim() : "",
+        inputs: serviceId === "vtu" ? {
+          service_type: vtuType,
+          network_id: networkId,
+          network_name: selectedNetwork?.name || "",
+          phone_number: purchaseFor === "friend" ? recipientPhone.trim() : phoneNumber.trim(),
+          amount: vtuType === "airtime" ? Number(amount) : 0,
+        } : {
+          phone_number: purchaseFor === "friend" ? recipientPhone.trim() : servicePhone.trim(),
+          customer_identifier: customerIdentifier.trim(),
+          amount: Number(variableBillAmount || 0),
+          variable_amount: selectedCatalogueItem?.variable_amount === true,
+          provider_id: selectedCatalogueItem?.provider_id || "",
+          item_name: selectedCatalogueItem?.name || "",
+          target_link: targetLink.trim(),
+        },
       });
-      setSuccess(result?.message || "Your order has been submitted for review.");
-      if (result?.balance !== undefined) setWalletBalance(Number(result.balance));
-      setAmount("");
-      setDetails("");
-      setPhoneNumber("");
-      setPlanId("");
+      const balance = await getWalletBalance();
+      setWalletBalance(Number(balance?.balance || 0));
+      setSuccess(result?.message || "Payment submitted. Check Payment · Order · Stack for the ShadexGoLtd order.");
+      sessionStorage.removeItem(requestStorageKey);
+      window.setTimeout(() => navigate("/customer/orders"), 900);
     } catch (err) {
-      setError(err?.message || "Unable to submit the request. Please try again.");
+      const message = String(err?.message || "").toLowerCase();
+      if (message.includes("wallet has been refunded") || message.includes("payment reference was already used")) {
+        sessionStorage.removeItem(requestStorageKey);
+      }
+      setError(err?.message || "The payment could not be completed. Check Orders before trying again.");
     } finally {
       setSubmitting(false);
     }
@@ -346,7 +341,7 @@ export default function ServicePurchase() {
         <div className="service-purchase-header">
           <div className="service-purchase-icon"><Icon size={26} /></div>
           <div>
-            <span>BUKZEX SERVICE</span>
+            <span>SHADEXGOLTD · BUKZEX</span>
             <h1>{service.title}</h1>
             <p>{service.description}</p>
           </div>
@@ -374,48 +369,54 @@ export default function ServicePurchase() {
                 : String(Number(price.amount_minor) / (10 ** Number(price.minor_unit ?? 2)));
               setAmount(fixedAmount);
               setError("");
-              setSuccess("");
+              window.setTimeout(() => checkoutRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
             }}
           />
         )}
 
         {catalogueOnly && selectedCatalogueItem && (
-          <form className="service-purchase-form" onSubmit={handlePurchase}>
+          <form className="service-purchase-form" ref={checkoutRef} onSubmit={handlePurchase}>
             <div className="service-form-heading">
-              <h2>Selected service</h2>
+              <h2>Checkout</h2>
               <p>{selectedCatalogueItem.name}</p>
             </div>
-            <div className="service-form-field">
-              <label htmlFor="selected-catalogue-amount">{selectedCatalogueItem.price ? "BukzEx price (₦)" : "Amount (₦)"}</label>
-              <input
-                id="selected-catalogue-amount"
-                type="number"
-                min="1"
-                value={amount}
-                onChange={(event) => setAmount(event.target.value)}
-                readOnly={selectedCatalogueItem.price?.amount_minor != null}
-                placeholder="Enter amount"
-              />
+            <div className="service-brand-stamp" aria-label="Catalogue supplied by ShadexGoLtd">
+              <span className="service-brand-mark">S</span>
+              <span><strong>SHADEXGOLTD</strong><small>OFFICIAL SERVICE CATALOGUE</small></span>
             </div>
             <div className="service-form-field">
-              <label htmlFor="service-details">
-                {serviceId === "marketplace" ? "Email for subscription or delivery" : serviceId === "social" ? "Profile or post link" : serviceId === "bills" ? "Meter or smartcard details" : "Request details"}
-              </label>
-              <textarea
-                id="service-details"
-                value={details}
-                onChange={(event) => setDetails(event.target.value)}
-                placeholder={serviceId === "marketplace" ? "Enter the email address for this subscription or delivery instructions." : serviceId === "social" ? "Paste the profile or post link and add any instructions." : serviceId === "bills" ? "Enter the meter number, smartcard number, or other required details." : "Add any details needed for this request."}
-                rows="4"
-              />
+              <label>Who is this purchase for?</label>
+              <div className="purchase-for-options">
+                <label><input type="radio" name="purchase-for" value="myself" checked={purchaseFor === "myself"} onChange={() => setPurchaseFor("myself")} /> Myself</label>
+                <label><input type="radio" name="purchase-for" value="friend" checked={purchaseFor === "friend"} onChange={() => setPurchaseFor("friend")} /> A friend</label>
+              </div>
             </div>
-            <p className="service-request-notice">This sends a request for admin review. No wallet money is taken here.</p>
+            {purchaseFor === "friend" && <div className="service-form-field">
+              <label htmlFor="friend-name">Friend’s name</label>
+              <input id="friend-name" value={recipientName} onChange={(event) => setRecipientName(event.target.value)} placeholder="Enter their name" />
+              <label htmlFor="friend-phone" className="friend-phone-label">Friend’s phone number</label>
+              <input id="friend-phone" type="tel" value={recipientPhone} onChange={(event) => setRecipientPhone(event.target.value)} placeholder="Enter their phone number" />
+            </div>}
+            {serviceId === "bills" && <div className="service-form-field">
+              <label htmlFor="customer-identifier">Meter or smartcard number</label>
+              <input id="customer-identifier" value={customerIdentifier} onChange={(event) => setCustomerIdentifier(event.target.value)} placeholder="Enter the number" />
+              {purchaseFor !== "friend" && <><label htmlFor="bill-phone" className="friend-phone-label">Phone number</label><input id="bill-phone" type="tel" value={servicePhone} onChange={(event) => setServicePhone(event.target.value)} placeholder="Enter phone number" /></>}
+              {selectedCatalogueItem.variable_amount && <><label htmlFor="bill-amount" className="friend-phone-label">Bill amount (₦)</label><input id="bill-amount" type="number" min="100" value={variableBillAmount} onChange={(event) => setVariableBillAmount(event.target.value)} placeholder="Enter bill amount" /></>}
+            </div>}
+            {serviceId === "social" && <div className="service-form-field"><label htmlFor="social-target-link">Link to the post or account</label><input id="social-target-link" type="url" value={targetLink} onChange={(event) => setTargetLink(event.target.value)} placeholder="https://…" /></div>}
+            <div className="service-purchase-total">
+              <span>Available wallet balance</span>
+              <strong>{loading ? "Loading…" : `₦${walletBalance.toLocaleString()}`}</strong>
+              <span>Price</span>
+              <strong>{selectedCatalogueItem.variable_amount ? "Enter amount" : selectedCatalogueItem.price ? priceLabel(selectedCatalogueItem, 0, selectedCatalogueItem.price) : "Price unavailable"}</strong>
+            </div>
+            <p className="service-request-notice">Payment is deducted from your BukzEx wallet. The ShadexGoLtd order status and any available service details will appear in Payment · Order · Stack. Contact Customer Care for OTP or password help.</p>
             {error && <div className="service-form-message error"><AlertCircle size={17} /><span>{error}</span></div>}
             {success && <div className="service-form-message success"><CheckCircle2 size={17} /><span>{success}</span></div>}
             <button type="submit" className="service-purchase-submit" disabled={submitting || loading}>
-              {submitting ? <><LoaderCircle size={17} className="service-spinner" /> Sending...</> : "Send Selected Service Request"}
+              {submitting ? "Paying and submitting to ShadexGoLtd…" : "Pay with wallet"}
             </button>
-            <button type="button" className="service-catalogue-change" onClick={() => { setSelectedCatalogueItem(null); setAmount(""); setDetails(""); setError(""); setSuccess(""); }}>
+            <button type="button" className="service-catalogue-change" onClick={() => { setSelectedCatalogueItem(null); setAmount(""); setDetails(""); setError(""); }}>
               Clear selection
             </button>
           </form>
@@ -423,14 +424,32 @@ export default function ServicePurchase() {
 
         {!catalogueOnly && (
         <form className="service-purchase-form" onSubmit={handlePurchase}>
-          <div className="service-form-heading">
+          <div className="service-brand-stamp" aria-label="Catalogue supplied by ShadexGoLtd">
+            <span className="service-brand-mark">S</span>
+            <span><strong>SHADEXGOLTD</strong><small>OFFICIAL SERVICE CATALOGUE</small></span>
+          </div>
+            <div className="service-form-heading">
             <h2>{serviceId === "vtu" ? "Choose Airtime or Data" : "Request a Service"}</h2>
             <p>
               {serviceId === "vtu"
-                ? `Prices load from ShadexGoLtd with the BukzEx markup (${markup}%). Requests are still sent for admin review; no wallet money is taken here.`
-                : "Send your request for administrator review. No wallet money is taken until provider pricing and fulfillment are connected."}
+                ? `Live options come from ShadexGoLtd. BukzEx markup: ${markup}%.`
+                : "Choose the option you need from the ShadexGoLtd catalogue."}
             </p>
           </div>
+
+          <div className="service-form-field">
+            <label>Who is this purchase for?</label>
+            <div className="purchase-for-options">
+              <label><input type="radio" name="purchase-for-other" value="myself" checked={purchaseFor === "myself"} onChange={() => setPurchaseFor("myself")} /> Myself</label>
+              <label><input type="radio" name="purchase-for-other" value="friend" checked={purchaseFor === "friend"} onChange={() => setPurchaseFor("friend")} /> A friend</label>
+            </div>
+          </div>
+          {purchaseFor === "friend" && <div className="service-form-field">
+            <label htmlFor="friend-name-other">Friend’s name</label>
+            <input id="friend-name-other" value={recipientName} onChange={(event) => setRecipientName(event.target.value)} placeholder="Enter their name" />
+            <label htmlFor="friend-phone-other" className="friend-phone-label">Friend’s phone number</label>
+            <input id="friend-phone-other" type="tel" value={recipientPhone} onChange={(event) => setRecipientPhone(event.target.value)} placeholder="Enter their phone number" />
+          </div>}
 
           {serviceId === "vtu" ? (
             <>
@@ -487,12 +506,16 @@ export default function ServicePurchase() {
           )}
 
           {error && <div className="service-form-message error"><AlertCircle size={17} /><span>{error}</span></div>}
-          {success && <div className="service-form-message success"><CheckCircle2 size={17} /><span>{success}</span></div>}
-
-          <button type="submit" className="service-purchase-submit" disabled={submitting || loading || (serviceId === "vtu" && (catalogueLoading || !catalogue))}>
-            {submitting ? <><LoaderCircle size={17} className="service-spinner" /> Processing...</> : "Submit for Review"}
+          <p className="service-request-notice">Payment is deducted from your BukzEx wallet and sent to ShadexGoLtd. Check Payment · Order · Stack for the order status and service details.</p>
+          <button type="submit" className="service-purchase-submit" disabled={submitting || loading || (vtuType === "data" && !planId)}>
+            {submitting ? "Paying and submitting to ShadexGoLtd…" : "Pay with wallet"}
           </button>
         </form>
+        )}
+        {catalogueOnly && selectedCatalogueItem && (
+          <button type="button" className="service-sticky-checkout" onClick={() => checkoutRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}>
+            Continue to checkout · {selectedCatalogueItem.name}
+          </button>
         )}
       </div>
       <WhatsAppSupport />

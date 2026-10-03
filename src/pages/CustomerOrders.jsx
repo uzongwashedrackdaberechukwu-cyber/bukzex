@@ -11,7 +11,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { deleteMyUnpaidOrder, getOrders } from "../services/api";
+import { deleteMyUnpaidOrder, getOrders, refreshDigitalServiceOrder } from "../services/api";
 import WhatsAppSupport from "../components/WhatsAppSupport";
 
 import "./CustomerOrders.css";
@@ -40,7 +40,8 @@ function getStatusClass(status) {
   if (
     value.includes("complete") ||
     value.includes("success") ||
-    value === "completed"
+    value === "completed" ||
+    value === "active"
   ) {
     return "success";
   }
@@ -98,11 +99,20 @@ export default function CustomerOrders() {
         setLoading(true);
       }
 
-      const result = await getOrders();
+      let result = await getOrders();
 
-      const data = Array.isArray(result)
+      let data = Array.isArray(result)
         ? result
         : result?.orders || result?.data || [];
+
+      const waiting = (Array.isArray(data) ? data : []).filter((order) =>
+        order?.provider === "ShadexGoLtd" && order?.service_key === "marketplace" && order?.supplier_order_id && !order?.service_email
+      );
+      if (waiting.length) {
+        await Promise.allSettled(waiting.map((order) => refreshDigitalServiceOrder(order.id)));
+        result = await getOrders();
+        data = Array.isArray(result) ? result : result?.orders || result?.data || [];
+      }
 
       setOrders(Array.isArray(data) ? data : []);
     } catch (err) {
