@@ -159,6 +159,16 @@ export default function ShadexCataloguePanel({ serviceId, selectedId = "", onSel
         });
       })()}
 
+      {serviceId === "email_verification" && (() => {
+        const services = data.services || [];
+        return expandableList("Email verification", services, (item) => {
+          const amount = customerPrice(item.id, overrides);
+          return <SelectableItem key={item.id} item={{ id: item.id, name: item.service_name, logo_url: item.logo_url, price: amount }} selectedId={selectedId} onSelect={onSelect} availability={priceState(item.id, overrides)} brandName={item.service_name}>
+            <strong>{item.service_name}</strong><span>{money(amount)}</span>
+          </SelectableItem>;
+        });
+      })()}
+
       {serviceId === "sms" && (() => {
         const services = data.services || [];
         return expandableList("Virtual SMS / OTP", services, (item) => {

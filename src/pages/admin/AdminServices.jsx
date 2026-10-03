@@ -3,7 +3,7 @@ import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc, writeBatch }
 import { auth, db } from "../../lib/firebase";
 import { getShadexCatalogue } from "../../services/shadexCatalog";
 import { getServices } from "../../services/api";
-import { CheckCircle2, LoaderCircle, MessageSquareCode, Receipt, RefreshCw, Save, Smartphone, Store, TrendingUp, XCircle } from "lucide-react";
+import { CheckCircle2, LoaderCircle, MessageSquareCode, Mail, Receipt, RefreshCw, Save, Smartphone, Store, TrendingUp, XCircle } from "lucide-react";
 import ServiceBrandMark from "../../components/ServiceBrandMark";
 import "./AdminServices.css";
 import "./AdminShadexServices.css";
@@ -13,6 +13,7 @@ const MANAGED = [
   { id: "bills", name: "Electricity & Cable TV", endpoint: "bills", summary: "Electricity and cable bill plans", icon: Receipt },
   { id: "marketplace", name: "Marketplace", endpoint: "marketplace", summary: "Netflix, Spotify and other digital plans", icon: Store },
   { id: "sms", name: "Virtual SMS / OTP", endpoint: "sms", summary: "Virtual phone number services", icon: MessageSquareCode },
+  { id: "email_verification", name: "Email Verification", endpoint: "email_verification", summary: "Temporary email addresses and verification codes", icon: Mail },
   { id: "social", name: "Social Media Boost", endpoint: "social", summary: "Social growth packages", icon: TrendingUp },
 ];
 
@@ -94,6 +95,11 @@ function editableItems(serviceId, data) {
   if (serviceId === "sms") {
     return (data.services || []).map((service) => ({
       id: String(service.id), title: `${service.service_name} — ${service.country_name}`, price: priceOf(service),
+    })).filter((item) => item.price);
+  }
+  if (serviceId === "email_verification") {
+    return (data.services || []).map((service) => ({
+      id: String(service.id), title: service.service_name, price: priceOf(service),
     })).filter((item) => item.price);
   }
   if (serviceId === "social") {

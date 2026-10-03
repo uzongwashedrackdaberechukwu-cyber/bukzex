@@ -9,11 +9,13 @@ const CATALOG_ROUTES = new Map([
   ["/api/catalog/marketplace", "/marketplace/products"],
   ["/api/catalog/otp", "/otp/services"],
   ["/api/catalog/social-boost", "/social-boost/services"],
+  ["/api/catalog/email-verification/services", "/email-verification/services"],
 ]);
 const ORDER_ROUTES = {
   vtu: "/vtu/orders",
   bills: "/bills/orders",
   sms: "/otp/orders",
+  email_verification: "/email-verification/orders",
   social: "/social-boost/orders",
   marketplace: "/digital-services/orders",
 };
@@ -219,6 +221,7 @@ function mapProviderBody(serviceKey, itemId, inputs, recipientType, data, reques
     phone_number: inputs.phone_number,
     ...(inputs.variable_amount === true ? { amount: requestedAmount } : {}),
   }];
+  if (serviceKey === "email_verification") return [ORDER_ROUTES.email_verification, { service_id: itemId, domain_name: inputs.domain_name }];
   if (serviceKey === "sms") return [ORDER_ROUTES.sms, { service_id: itemId }];
   if (serviceKey === "social") return [ORDER_ROUTES.social, { package_id: itemId, target_link: inputs.target_link }];
   return [ORDER_ROUTES.marketplace, {
@@ -299,6 +302,7 @@ async function purchase(request, env) {
   if (serviceKey === "vtu" && (!inputs.phone_number || !inputs.network_id || !["airtime", "data"].includes(String(inputs.service_type)))) throw new HttpError(400, "Choose airtime or data, a network and a phone number.");
   if (serviceKey === "bills" && (!inputs.customer_identifier || !inputs.phone_number)) throw new HttpError(400, "Enter the bill reference and phone number.");
   if (serviceKey === "social" && !String(inputs.target_link || "").trim()) throw new HttpError(400, "Enter the profile or post link for this service.");
+  if (serviceKey === "email_verification" && !String(inputs.domain_name || "").trim()) throw new HttpError(400, "Choose an available email domain.");
 
   const reqPath = `shadex_purchase_requests/${uid}_${idempotencyKey}`;
   const orderId = `shadex_${uid}_${idempotencyKey}`;
@@ -372,7 +376,7 @@ async function purchase(request, env) {
       requested_amount: charge, amount_minor: amountMinor, currency, minor_unit: minorUnit,
       provider: "ShadexGoLtd", status: "processing", payment_status: "paid", fulfillment_status: "processing",
       recipient_type: recipientType, recipient_name: recipientType === "friend" ? recipientName : null,
-      supplier_order_id: null, service_email: null, support_url: SUPPORT_URL,
+      supplier_order_id: null, service_email: null, email_address: null, otp_code: null, domain_name: serviceKey === "email_verification" ? String(inputs.domain_name || "") : null, expires_at: null, support_url: SUPPORT_URL,
       created_at: now, updated_at: now,
     };
     savedRequest = {
@@ -418,7 +422,7 @@ async function purchase(request, env) {
 
   const upstream = result.payload.data?.order || result.payload.data || {};
   const supplierOrderId = String(upstream.id || upstream.order_id || "");
-  const serviceEmail = upstream.login_email || upstream.service_email || null;
+  const serviceEmail = upstream.login_email || upstream.service_email || upstream.email_address || null;
   const providerStatus = String(upstream.status || "processing").toLowerCase();
   const completed = ["active", "completed", "success", "successful"].includes(providerStatus);
   const now = new Date().toISOString();
@@ -431,6 +435,10 @@ async function purchase(request, env) {
     updateWrite(env, orderPath, {
       supplier_order_id: supplierOrderId || null,
       service_email: serviceEmail ? String(serviceEmail).slice(0, 320) : null,
+      email_address: upstream.email_address ? String(upstream.email_address).slice(0, 320) : null,
+      otp_code: upstream.otp_code ? String(upstream.otp_code).slice(0, 100) : null,
+      domain_name: serviceKey === "email_verification" ? String(upstream.domain_name || inputs.domain_name || "").slice(0, 160) : null,
+      expires_at: upstream.expires_at || null,
       status: completed ? "completed" : "processing",
       fulfillment_status: completed ? "fulfilled" : "processing",
       supplier_status: providerStatus, support_url: SUPPORT_URL, updated_at: now,
@@ -442,6 +450,9 @@ async function purchase(request, env) {
   return {
     order_id: orderId, status: completed ? "completed" : "processing",
     service_email: serviceEmail || null,
+    email_address: upstream.email_address || null,
+    otp_code: upstream.otp_code || null,
+    expires_at: upstream.expires_at || null,
     message: serviceEmail
       ? "Payment complete. Your service email is in My Stack. Contact BukzEx Customer Care for password or OTP help."
       : "Payment complete. Your order is in My Stack. Contact BukzEx Customer Care for delivery or OTP help.",
@@ -456,23 +467,58 @@ async function refreshOrder(request, env) {
   const path = `orders/${orderId}`;
   const order = await firestoreGet(env, docResource(env, path));
   if (!order || order.data.user_id !== uid) throw new HttpError(404, "This BukzEx order was not found.");
-  if (!order.data.supplier_order_id) return { order_id: orderId, status: order.data.status, service_email: order.data.service_email || null };
-  const { response, payload } = await callShadex(env, `/orders/${encodeURIComponent(order.data.supplier_order_id)}`, "GET", "", null);
+
+  const emailVerification = order.data.service_key === "email_verification";
+  const supplierOrderId = String(order.data.supplier_order_id || "");
+  if (!supplierOrderId) {
+    return {
+      order_id: orderId,
+      status: order.data.status,
+      email_address: order.data.email_address || null,
+      otp_code: order.data.otp_code || null,
+      expires_at: order.data.expires_at || null,
+      service_email: order.data.service_email || null,
+    };
+  }
+
+  const refreshPath = emailVerification
+    ? `/email-verification/orders/${encodeURIComponent(supplierOrderId)}/refresh`
+    : `/orders/${encodeURIComponent(supplierOrderId)}`;
+  const method = emailVerification ? "POST" : "GET";
+  const { response, payload } = await callShadex(env, refreshPath, method, "", emailVerification ? {} : null);
   const upstream = payload?.data?.order || payload?.data;
   if (!response.ok || !upstream) throw new HttpError(503, "The order status is temporarily unavailable. Try again shortly.");
-  const active = Boolean(upstream.login_email || upstream.service_email) && String(upstream.status).toLowerCase() === "active";
+
+  const serviceEmail = upstream.login_email || upstream.service_email || upstream.email_address || null;
+  const active = Boolean(serviceEmail) && String(upstream.status).toLowerCase() === "active";
+  const emailStatus = String(upstream.status || order.data.status || "waiting").toLowerCase();
+  const status = emailVerification ? emailStatus : active ? "active" : "processing";
   const now = new Date().toISOString();
-  const serviceEmail = upstream.login_email || upstream.service_email || null;
+
   await firestoreCommit(env, [updateWrite(env, path, {
     service_email: serviceEmail ? String(serviceEmail).slice(0, 320) : null,
-    status: active ? "active" : "processing",
-    fulfillment_status: active ? "fulfilled" : "processing",
+    email_address: upstream.email_address ? String(upstream.email_address).slice(0, 320) : null,
+    otp_code: upstream.otp_code ? String(upstream.otp_code).slice(0, 100) : null,
+    domain_name: upstream.domain_name || order.data.domain_name || null,
+    expires_at: upstream.expires_at || order.data.expires_at || null,
+    status,
+    fulfillment_status: emailVerification
+      ? (upstream.otp_code ? "fulfilled" : emailStatus)
+      : active ? "fulfilled" : "processing",
     stack_id: upstream.stack_id || null,
     service_starts_at: upstream.starts_at || null,
     service_ends_at: upstream.ends_at || null,
     updated_at: now,
   }, order.updateTime)]);
-  return { order_id: orderId, status: active ? "active" : "processing", service_email: serviceEmail || null };
+
+  return {
+    order_id: orderId,
+    status,
+    service_email: serviceEmail,
+    email_address: upstream.email_address || null,
+    otp_code: upstream.otp_code || null,
+    expires_at: upstream.expires_at || null,
+  };
 }
 
 export default {
@@ -485,6 +531,20 @@ export default {
     }
     if (origin && !cors.has("Access-Control-Allow-Origin")) return json({ error: "origin_not_allowed" }, 403, cors);
     const url = new URL(request.url);
+    if (request.method === "GET" && url.pathname === "/api/catalog/email-verification/domains") {
+      const serviceId = String(url.searchParams.get("service_id") || "").trim();
+      if (!serviceId) return json({ success: false, error: { message: "service_id is required." } }, 400, cors);
+      if (!env.SHADEX_API_KEY) return json({ error: "provider_key_not_configured" }, 503, cors);
+      try {
+        const upstream = await fetch(`${UPSTREAM}/email-verification/domains?service_id=${encodeURIComponent(serviceId)}`, {
+          headers: { Authorization: `Bearer ${env.SHADEX_API_KEY}`, Accept: "application/json" },
+        });
+        return new Response(await upstream.text(), {
+          status: upstream.status,
+          headers: new Headers({ ...Object.fromEntries(cors), "Content-Type": upstream.headers.get("Content-Type") || "application/json; charset=utf-8", "Cache-Control": "no-store" }),
+        });
+      } catch { return json({ error: "provider_unreachable" }, 502, cors); }
+    }
     if (request.method === "GET" && CATALOG_ROUTES.has(url.pathname)) {
       if (!env.SHADEX_API_KEY) return json({ error: "provider_key_not_configured" }, 503, cors);
       try {

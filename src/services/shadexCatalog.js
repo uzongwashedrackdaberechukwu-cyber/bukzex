@@ -6,7 +6,23 @@ const CATALOGUE_PATHS = {
   marketplace: "marketplace",
   sms: "otp",
   social: "social-boost",
+  email_verification: "email-verification/services",
 };
+
+async function readResponse(response, fallback) {
+  let payload;
+  try {
+    payload = await response.json();
+  } catch {
+    throw new Error("ShadexGoLtd returned an unreadable response.");
+  }
+
+  if (!response.ok || payload?.success !== true || !payload?.data) {
+    throw new Error(payload?.error?.message || fallback);
+  }
+
+  return payload.data;
+}
 
 export async function getShadexCatalogue(serviceId) {
   const path = CATALOGUE_PATHS[serviceId];
@@ -16,20 +32,17 @@ export async function getShadexCatalogue(serviceId) {
     headers: { Accept: "application/json" },
   });
 
-  let payload;
-  try {
-    payload = await response.json();
-  } catch {
-    throw new Error("ShadexGoLtd returned an unreadable response.");
-  }
+  return readResponse(response, "The live service catalogue could not be loaded.");
+}
 
-  if (!response.ok || payload?.success !== true || !payload?.data) {
-    throw new Error(
-      payload?.error?.message || "The live service catalogue could not be loaded.",
-    );
-  }
+export async function getEmailVerificationDomains(serviceId) {
+  const query = new URLSearchParams({ service_id: String(serviceId || "") });
+  const response = await fetch(
+    `${WORKER_URL}/api/catalog/email-verification/domains?${query}`,
+    { headers: { Accept: "application/json" } },
+  );
 
-  return payload.data;
+  return readResponse(response, "Email types could not be loaded.");
 }
 
 export function getVtuCatalogue() {

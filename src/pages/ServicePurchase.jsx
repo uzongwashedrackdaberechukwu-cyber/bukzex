@@ -2,6 +2,7 @@ import {
   Smartphone,
   Store,
   MessageSquareCode,
+  Mail,
   TrendingUp,
   Gift,
   Bitcoin,
@@ -20,7 +21,7 @@ import { auth, db } from "../lib/firebase";
 import ServiceBrandMark from "../components/ServiceBrandMark";
 
 import { getWalletBalance, purchaseShadexService } from "../services/api";
-import { getVtuCatalogue } from "../services/shadexCatalog";
+import { getEmailVerificationDomains, getVtuCatalogue } from "../services/shadexCatalog";
 import ShadexCataloguePanel from "./ShadexCataloguePanel";
 import WhatsAppSupport from "../components/WhatsAppSupport";
 
@@ -51,6 +52,12 @@ const serviceMap = {
     icon: MessageSquareCode,
     description: "Request an available virtual messaging service.",
     placeholder: "Enter the required service details",
+  },
+  email_verification: {
+    title: "Email Verification",
+    icon: Mail,
+    description: "Get a temporary email address and receive verification codes in BukzEx.",
+    placeholder: "Choose a target service and email type",
   },
   social: {
     title: "Social Media Boost",
@@ -99,7 +106,7 @@ export default function ServicePurchase() {
   const navigate = useNavigate();
   const location = useLocation();
   const service = serviceMap[serviceId];
-  const catalogueOnly = ["bills", "marketplace", "sms", "social"].includes(serviceId);
+  const catalogueOnly = ["bills", "marketplace", "sms", "social", "email_verification"].includes(serviceId);
   const isCheckoutPage = location.pathname.endsWith("/checkout");
 
   const [walletBalance, setWalletBalance] = useState(0);
@@ -131,6 +138,10 @@ export default function ServicePurchase() {
   const [targetLink, setTargetLink] = useState("");
   const [servicePhone, setServicePhone] = useState("");
   const [variableBillAmount, setVariableBillAmount] = useState("");
+  const [emailDomains, setEmailDomains] = useState([]);
+  const [emailDomain, setEmailDomain] = useState("");
+  const [emailDomainsLoading, setEmailDomainsLoading] = useState(false);
+  const [emailDomainsError, setEmailDomainsError] = useState("");
 
   useEffect(() => {
     if (location.state?.selectedCatalogueItem) {
@@ -189,6 +200,30 @@ export default function ServicePurchase() {
       active = false;
     };
   }, [serviceId]);
+
+  useEffect(() => {
+    if (serviceId !== "email_verification" || !isCheckoutPage || !selectedCatalogueItem?.id) return;
+    let active = true;
+    setEmailDomains([]);
+    setEmailDomain("");
+    setEmailDomainsLoading(true);
+    setEmailDomainsError("");
+    getEmailVerificationDomains(selectedCatalogueItem.id)
+      .then((result) => {
+        if (!active) return;
+        const rows = Array.isArray(result?.domains) ? result.domains : [];
+        setEmailDomains(rows);
+        setEmailDomain(rows[0]?.domain_name || "");
+        if (!rows.length) setEmailDomainsError("No email types are available for this service right now.");
+      })
+      .catch((err) => {
+        if (active) setEmailDomainsError(err?.message || "Email types could not be loaded.");
+      })
+      .finally(() => {
+        if (active) setEmailDomainsLoading(false);
+      });
+    return () => { active = false; };
+  }, [serviceId, isCheckoutPage, selectedCatalogueItem?.id]);
 
   const networks = useMemo(() => {
     const section = vtuType === "airtime" ? catalogue?.airtime : catalogue?.data;
@@ -275,6 +310,10 @@ export default function ServicePurchase() {
       setError("Choose a service before continuing.");
       return;
     }
+    if (serviceId === "email_verification" && !emailDomain) {
+      setError("Choose an available email type.");
+      return;
+    }
     if (serviceId === "bills" && (!customerIdentifier.trim() || !(purchaseFor === "friend" ? recipientPhone.trim() : servicePhone.trim()))) {
       setError("Enter the meter or smartcard number and phone number.");
       return;
@@ -303,7 +342,7 @@ export default function ServicePurchase() {
     const itemId = serviceId === "vtu"
       ? (vtuType === "data" ? planId : "airtime")
       : String(selectedCatalogueItem.id);
-    const requestStorageKey = `bukzex-shadex-checkout:${auth.currentUser?.uid || "guest"}:${serviceId}:${itemId}`;
+    const requestStorageKey = `bukzex-shadex-checkout:${auth.currentUser?.uid || "guest"}:${serviceId}:${itemId}:${serviceId === "email_verification" ? emailDomain : ""}`;
     const requestKey = sessionStorage.getItem(requestStorageKey) || crypto.randomUUID();
     sessionStorage.setItem(requestStorageKey, requestKey);
     setSubmitting(true);
@@ -329,6 +368,7 @@ export default function ServicePurchase() {
           provider_id: selectedCatalogueItem?.provider_id || "",
           item_name: selectedCatalogueItem?.name || "",
           target_link: targetLink.trim(),
+          domain_name: emailDomain,
         },
       });
       const balance = await getWalletBalance();
@@ -419,6 +459,14 @@ export default function ServicePurchase() {
               <label htmlFor="friend-phone" className="friend-phone-label">Friend’s phone number</label>
               <input id="friend-phone" type="tel" value={recipientPhone} onChange={(event) => setRecipientPhone(event.target.value)} placeholder="Enter their phone number" />
             </div>}
+            {serviceId === "email_verification" && <div className="service-form-field">
+              <label htmlFor="email-domain">Email type</label>
+              <select id="email-domain" value={emailDomain} onChange={(event) => setEmailDomain(event.target.value)} disabled={emailDomainsLoading || !emailDomains.length}>
+                <option value="">{emailDomainsLoading ? "Loading email types…" : "Select email type"}</option>
+                {emailDomains.map((item) => <option key={item.domain_name} value={item.domain_name}>{item.domain_name} · {item.stock_count} available</option>)}
+              </select>
+              {emailDomainsError && <small role="status">{emailDomainsError}</small>}
+            </div>}
             {serviceId === "bills" && <div className="service-form-field">
               <label htmlFor="customer-identifier">Meter or smartcard number</label>
               <input id="customer-identifier" value={customerIdentifier} onChange={(event) => setCustomerIdentifier(event.target.value)} placeholder="Enter the number" />
@@ -433,7 +481,7 @@ export default function ServicePurchase() {
             <p className="service-request-notice">Payment is securely deducted from your BukzEx wallet. Your purchase and available delivery details will appear in My Stack. Contact BukzEx Customer Care for OTP or password assistance.</p>
             {error && <div className="service-form-message error"><AlertCircle size={17} /><span>{error}</span></div>}
             {success && <div className="service-form-message success"><CheckCircle2 size={17} /><span>{success}</span></div>}
-            <button type="submit" className="service-purchase-submit" disabled={submitting || loading}>
+            <button type="submit" className="service-purchase-submit" disabled={submitting || loading || (serviceId === "email_verification" && (!emailDomain || emailDomainsLoading))}>
               {submitting ? "Processing payment…" : "Pay with wallet"}
             </button>
             <button type="button" className="service-catalogue-change" onClick={() => { setSelectedCatalogueItem(null); setAmount(""); setDetails(""); setError(""); sessionStorage.removeItem(`bukzex:selected:${serviceId}`); navigate(`/customer/services/${serviceId}`); }}>

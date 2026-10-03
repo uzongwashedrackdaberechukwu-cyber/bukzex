@@ -1,11 +1,14 @@
 import {
   ArrowRight,
   MessageSquareCode,
+  Mail,
   Receipt,
   Smartphone,
   Store,
   TrendingUp,
 } from "lucide-react";
+import { FaApple, FaFacebookF, FaGoogle, FaRobot, FaTelegramPlane, FaTiktok, FaWhatsapp } from "react-icons/fa";
+import { SiBinance, SiTinder, SiUber } from "react-icons/si";
 import { Link } from "react-router-dom";
 import WhatsAppSupport from "../components/WhatsAppSupport";
 import ServiceBrandMark from "../components/ServiceBrandMark";
@@ -41,10 +44,10 @@ const services = [
   {
     id: "sms",
     icon: MessageSquareCode,
-    title: "Virtual SMS / OTP",
-    description: "Browse available virtual number and OTP services.",
+    title: "Virtual Numbers",
+    description: "Choose a virtual number and receive supported OTP codes.",
     accent: "violet",
-    tag: "Messaging",
+    tag: "OTP & SMS",
   },
   {
     id: "social",
@@ -54,6 +57,27 @@ const services = [
     accent: "coral",
     tag: "Social",
   },
+  {
+    id: "email_verification",
+    icon: Mail,
+    title: "Email Verification",
+    description: "Get a temporary email address and receive verification codes in BukzEx.",
+    accent: "blue",
+    tag: "New",
+  },
+];
+
+const popularApps = [
+  { name: "WhatsApp", icon: FaWhatsapp, color: "#25d366" },
+  { name: "ChatGPT / OpenAI", icon: FaRobot, color: "#10a37f" },
+  { name: "Telegram", icon: FaTelegramPlane, color: "#229ed9" },
+  { name: "Google / Gmail", icon: FaGoogle, color: "#4285f4" },
+  { name: "Apple ID", icon: FaApple, color: "#f4f7fb" },
+  { name: "TikTok", icon: FaTiktok, color: "#f4f7fb" },
+  { name: "Facebook", icon: FaFacebookF, color: "#0866ff" },
+  { name: "Tinder", icon: SiTinder, color: "#ff4458" },
+  { name: "Uber", icon: SiUber, color: "#f4f7fb" },
+  { name: "Binance", icon: SiBinance, color: "#f0b90b" },
 ];
 
 export default function CustomerServices() {
@@ -117,6 +141,11 @@ export default function CustomerServices() {
             </Link>
           );
         })}
+      </section>
+
+      <section className="customer-popular-apps" aria-label="Popular supported apps">
+        <div className="customer-popular-apps-heading"><div><span>POPULAR SUPPORTED APPS</span><h2>Find your service faster</h2></div><strong>500+ apps available</strong></div>
+        <div className="customer-popular-apps-grid">{popularApps.map(({ name, icon: AppIcon, color }) => <div className="customer-popular-app" key={name}><span style={{ color }}><AppIcon /></span><strong>{name}</strong></div>)}</div>
       </section>
 
       <aside className="customer-services-assurance"><span className="customer-services-assurance-mark"><span>✓</span></span><div><strong>One BukzEx account. Everyday services in one place.</strong><p>See available options and BukzEx prices before you continue to checkout.</p></div><Link to="/customer/orders">View my purchases <ArrowRight size={15} /></Link></aside>

@@ -72,7 +72,7 @@ function canDeleteOrder(order) {
 }
 
 function getServiceEmail(order) {
-  return order?.service_email || order?.serviceEmail ||
+  return order?.email_address || order?.service_email || order?.serviceEmail ||
     order?.fulfillment?.service_email || order?.credentials?.email || "";
 }
 
@@ -107,7 +107,7 @@ export default function CustomerOrders() {
         : result?.orders || result?.data || [];
 
       const waiting = (Array.isArray(data) ? data : []).filter((order) =>
-        order?.provider === "ShadexGoLtd" && order?.service_key === "marketplace" && order?.supplier_order_id && !order?.service_email
+        order?.provider === "ShadexGoLtd" && order?.supplier_order_id && ((order?.service_key === "marketplace" && !order?.service_email) || (order?.service_key === "email_verification" && !order?.otp_code && !["expired", "cancelled"].includes(String(order?.status || "").toLowerCase())))
       );
       if (waiting.length) {
         await Promise.allSettled(waiting.map((order) => refreshDigitalServiceOrder(order.id)));
@@ -280,17 +280,22 @@ export default function CustomerOrders() {
                   </div>
 
                   {isPaidOrder(order) ? (
-                    <div className="customer-order-fulfillment">
-                      {getServiceEmail(order) && (
-                        <div>
-                          <small>SERVICE EMAIL</small>
-                          <strong>{getServiceEmail(order)}</strong>
-                        </div>
-                      )}
-                      <a href={getOtpLink(order)} target="_blank" rel="noreferrer" className="customer-order-otp-link">
-                        <MessageCircle size={16} /> Request OTP via WhatsApp
-                      </a>
-                    </div>
+                    order.service_key === "email_verification" ? (
+                      <div className="customer-order-fulfillment">
+                        {order.email_address && <div><small>VERIFICATION EMAIL</small><strong>{order.email_address}</strong></div>}
+                        {order.domain_name && <div><small>EMAIL TYPE</small><strong>{order.domain_name}</strong></div>}
+                        {order.otp_code && <div><small>VERIFICATION CODE</small><strong>{order.otp_code}</strong></div>}
+                        {order.expires_at && <div><small>EXPIRES</small><strong>{formatDate(order.expires_at)}</strong></div>}
+                        {!order.otp_code && <p>Waiting for the verification code. Tap Refresh to check again.</p>}
+                      </div>
+                    ) : (
+                      <div className="customer-order-fulfillment">
+                        {getServiceEmail(order) && <div><small>SERVICE EMAIL</small><strong>{getServiceEmail(order)}</strong></div>}
+                        <a href={getOtpLink(order)} target="_blank" rel="noreferrer" className="customer-order-otp-link">
+                          <MessageCircle size={16} /> Request OTP via WhatsApp
+                        </a>
+                      </div>
+                    )
                   ) : (
                     <p className="customer-order-locked-details">Service details and OTP support appear here after payment is confirmed and the order is fulfilled.</p>
                   )}
