@@ -6,6 +6,12 @@ on:
       - main
     paths:
       - "bukzex-shadex-catalog-worker/**"
+      - "src/**"
+      - "public/**"
+      - "index.html"
+      - "package.json"
+      - "package-lock.json"
+      - "vite.config.*"
       - ".github/workflows/deploy-bukzex-worker.yml"
   workflow_dispatch:
 
@@ -28,6 +34,11 @@ jobs:
         run: |
           test -f bukzex-shadex-catalog-worker/wrangler.jsonc || { echo "::error::Missing bukzex-shadex-catalog-worker/wrangler.jsonc"; exit 1; }
           test -f bukzex-shadex-catalog-worker/src/index.js || { echo "::error::Missing bukzex-shadex-catalog-worker/src/index.js"; exit 1; }
+
+      - name: Build BukzEx website
+        run: |
+          npm ci
+          npm run build
 
       - name: Deploy Worker
         working-directory: bukzex-shadex-catalog-worker
