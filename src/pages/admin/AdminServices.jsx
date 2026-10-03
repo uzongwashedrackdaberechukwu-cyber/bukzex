@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc, writeBatch } from "firebase/firestore";
 import { auth, db } from "../../lib/firebase";
 import { getShadexCatalogue } from "../../services/shadexCatalog";
 import { getServices } from "../../services/api";
@@ -26,6 +26,10 @@ function priceOf(item) {
     return { amount_minor: item.amount_minor, currency: item.currency, minor_unit: item.minor_unit };
   }
   return null;
+}
+
+function priceDocumentId(itemId) {
+  return encodeURIComponent(String(itemId));
 }
 
 function editableItems(serviceId, data) {
@@ -142,9 +146,25 @@ export default function AdminServices() {
       const nextCatalogues = Object.fromEntries(results);
       setCatalogues(nextCatalogues);
 
+      const savedPriceResults = await Promise.all(MANAGED.map(async (item) => {
+        try {
+          const snapshot = await getDocs(collection(db, "services", item.id, "prices"));
+          return [item.id, Object.fromEntries(snapshot.docs.map((priceDoc) => {
+            const price = priceDoc.data();
+            return [String(price.item_id || decodeURIComponent(priceDoc.id)), price];
+          }))];
+        } catch {
+          return [item.id, {}];
+        }
+      }));
+      const savedPricesByService = Object.fromEntries(savedPriceResults);
+
       const nextPrices = {};
       for (const item of MANAGED) {
-        const overrides = byId[item.id]?.bukzex_prices || {};
+        const overrides = {
+          ...(byId[item.id]?.bukzex_prices || {}),
+          ...(savedPricesByService[item.id] || {}),
+        };
         for (const row of editableItems(item.id, nextCatalogues[item.id]?.data)) {
           const saved = overrides[row.id];
           nextPrices[`${item.id}:${row.id}`] = {
@@ -240,15 +260,32 @@ export default function AdminServices() {
     setSaving(`${item.id}_prices`);
     try {
       await verifyAdmin();
-      const serviceRef = doc(db, "services", item.id);
-      const current = await getDoc(serviceRef);
-      const currentData = current.exists() ? current.data() : {};
-      await setDoc(serviceRef, {
+      for (let offset = 0; offset < rows.length; offset += 450) {
+        const batch = writeBatch(db);
+        rows.slice(offset, offset + 450).forEach((row) => {
+          const key = `${item.id}:${row.id}`;
+          const entry = itemPrices[key];
+          if (!entry?.amount?.trim()) return;
+          const unit = Number(row.price?.minor_unit ?? 2);
+          const amount = Number(entry.amount);
+          batch.set(doc(db, "services", item.id, "prices", priceDocumentId(row.id)), {
+            service_key: item.id,
+            item_id: String(row.id),
+            item_name: row.title,
+            amount_minor: Math.round(amount * (10 ** unit)),
+            currency: String(row.price?.currency || "NGN"),
+            minor_unit: unit,
+            is_active: Boolean(entry.enabled),
+            updated_at: serverTimestamp(),
+          }, { merge: true });
+        });
+        await batch.commit();
+      }
+      await setDoc(doc(db, "services", item.id), {
         service_key: item.id,
         name: item.name,
         provider: "ShadexGoLtd",
         status: enabled[item.id] ? "active" : "paused",
-        bukzex_prices: { ...(currentData.bukzex_prices || {}), ...nextOverrides },
         updated_at: serverTimestamp(),
       }, { merge: true });
       setNotice(`${Object.keys(nextOverrides).length} ${item.name} item prices saved.`);

@@ -569,7 +569,7 @@
 .customer-services-page {
   max-width: 1240px;
   margin: 0 auto;
-  padding: 8px 0 42px;
+  padding: 10px 0 42px;
 }
 
 .customer-services-header {
@@ -745,28 +745,35 @@
 
 @media (max-width: 600px) {
   .customer-services-page {
-    padding: 2px 0 28px;
+    padding: 8px 12px 30px;
   }
 
   .customer-services-header {
     align-items: flex-start;
     flex-direction: column;
-    gap: 17px;
-    margin-bottom: 14px;
-    padding: 20px 18px;
-    border-radius: 16px;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 18px 17px;
+    border-radius: 17px;
   }
 
   .customer-services-header h1 {
-    font-size: 27px;
+    font-size: 25px;
   }
 
   .customer-services-header p {
-    font-size: 12px;
+    font-size: 13px;
+    line-height: 1.55;
   }
 
   .customer-services-wallet {
-    width: 100%;
+    width: fit-content;
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid rgba(147, 197, 253, 0.24);
+    border-radius: 10px;
+    background: rgba(37, 99, 235, 0.17);
+    color: #c9dcff;
   }
 
   .customer-services-grid {
@@ -777,11 +784,13 @@
   .customer-service-card {
     min-height: 0;
     display: grid;
-    grid-template-columns: 44px minmax(0, 1fr);
+    grid-template-columns: 46px minmax(0, 1fr);
     align-items: start;
-    column-gap: 14px;
-    padding: 16px;
-    border-radius: 14px;
+    column-gap: 13px;
+    padding: 15px;
+    border-radius: 15px;
+    background: linear-gradient(145deg, #14213a, #0d1728);
+    box-shadow: 0 9px 22px rgba(0, 0, 0, 0.14);
   }
 
   .customer-service-content {
@@ -795,16 +804,25 @@
   }
 
   .customer-service-content h2 {
-    font-size: 15px;
+    font-size: 16px;
+    letter-spacing: -0.15px;
   }
 
   .customer-service-content p {
-    font-size: 11px;
+    font-size: 13px;
+    line-height: 1.5;
   }
 
   .customer-service-button {
-    min-height: 36px;
-    margin-top: 12px;
+    width: fit-content;
+    min-height: 38px;
+    justify-content: flex-start;
+    margin-top: 13px;
+    padding: 0 13px;
+    border: 1px solid rgba(96, 165, 250, 0.26);
+    border-radius: 10px;
+    background: rgba(37, 99, 235, 0.15);
+    color: #c6dcff;
   }
 
   .customer-service-modal {

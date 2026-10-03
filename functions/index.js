@@ -338,6 +338,9 @@ exports.purchaseShadexService = onCall(
 
     const walletRef = db.collection("wallets").doc(uid);
     const serviceRef = db.collection("services").doc(serviceKey);
+    const priceRef = serviceRef.collection("prices").doc(encodeURIComponent(itemId));
+    const feeItemId = `fee-${String(inputs.provider_id || "")}`;
+    const feePriceRef = serviceRef.collection("prices").doc(encodeURIComponent(feeItemId));
     const orderRef = db.collection("orders").doc(`shadex_${uid}_${idempotencyKey}`);
     const requestRef = db.collection("shadex_purchase_requests").doc(`${uid}_${idempotencyKey}`);
     const purchaseLedgerRef = db.collection("wallet_transactions").doc(`purchase_${uid}_${idempotencyKey}`);
@@ -348,8 +351,11 @@ exports.purchaseShadexService = onCall(
     let serviceName = "ShadexGoLtd service";
 
     await db.runTransaction(async (tx) => {
-      const [requestSnap, walletSnap, serviceSnap] = await Promise.all([
-        tx.get(requestRef), tx.get(walletRef), tx.get(serviceRef),
+      const [requestSnap, walletSnap, serviceSnap, priceSnap, feePriceSnap] = await Promise.all([
+        tx.get(requestRef), tx.get(walletRef), tx.get(serviceRef), tx.get(priceRef),
+        serviceKey === "bills" && inputs.variable_amount === true
+          ? tx.get(feePriceRef)
+          : Promise.resolve(null),
       ]);
       if (requestSnap.exists) {
         const prior = requestSnap.data();
@@ -373,7 +379,7 @@ exports.purchaseShadexService = onCall(
         throw new HttpsError("failed-precondition", "Your BukzEx NGN wallet could not be found.");
       }
       const config = serviceSnap.data();
-      const savedPrice = config.bukzex_prices?.[itemId];
+      const savedPrice = priceSnap.exists ? priceSnap.data() : config.bukzex_prices?.[itemId];
       const markup = Number(config.price_markup_percent || 0);
       let chargeMajor;
       if (serviceKey === "vtu" && String(inputs.service_type) === "airtime") {
@@ -386,7 +392,9 @@ exports.purchaseShadexService = onCall(
         if (!Number.isFinite(requestedAmount) || requestedAmount < 100 || requestedAmount > 10000000) {
           throw new HttpsError("invalid-argument", "Enter a valid bill amount.");
         }
-        const fee = config.bukzex_prices?.[`fee-${String(inputs.provider_id || "")}`];
+        const fee = feePriceSnap?.exists
+          ? feePriceSnap.data()
+          : config.bukzex_prices?.[feeItemId];
         const feeMajor = fee && fee.is_active !== false ? Number(fee.amount_minor) / (10 ** Number(fee.minor_unit ?? 2)) : 0;
         chargeMajor = requestedAmount * (1 + markup / 100) + feeMajor;
         serviceName = String(inputs.item_name || "Bill payment");

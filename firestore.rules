@@ -58,6 +58,16 @@ service cloud.firestore {
     match /services/{serviceKey} {
       allow read: if isAdmin() || resource.data.status == 'active';
       allow create, update, delete: if isAdmin();
+
+      // Price rows live separately so large catalogues do not exceed the
+      // Firestore document size or field-count limits.
+      match /prices/{priceId} {
+        allow read: if isAdmin()
+          || (signedIn()
+            && exists(/databases/$(database)/documents/services/$(serviceKey))
+            && get(/databases/$(database)/documents/services/$(serviceKey)).data.status == 'active');
+        allow create, update, delete: if isAdmin();
+      }
     }
 
     match /wallet_deposits/{depositId} {
@@ -91,7 +101,20 @@ service cloud.firestore {
         && request.resource.data.details.size() > 0;
 
       allow update: if isAdmin();
-      allow delete: if false;
+      // Allow permanent deletion only for unpaid legacy requests or failed/rejected unpaid orders.
+      // Paid/completed orders are deliberately protected from deletion.
+      allow delete: if (
+          isAdmin()
+          && resource.data.status in ['pending', 'rejected', 'failed']
+          && (!('payment_status' in resource.data)
+            || resource.data.payment_status in ['unpaid', 'failed', 'rejected'])
+        ) || (
+          signedIn()
+          && resource.data.user_id == request.auth.uid
+          && resource.data.status in ['pending', 'rejected', 'failed']
+          && (!('payment_status' in resource.data)
+            || resource.data.payment_status in ['unpaid', 'failed', 'rejected'])
+        );
     }
 
     match /wallet_transactions/{transactionId} {
@@ -104,5 +127,6 @@ service cloud.firestore {
 
       allow update, delete: if false;
     }
+
   }
 }

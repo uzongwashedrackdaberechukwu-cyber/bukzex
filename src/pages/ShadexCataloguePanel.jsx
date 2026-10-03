@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { AlertCircle, CheckCircle2, LoaderCircle } from "lucide-react";
 import { getShadexCatalogue } from "../services/shadexCatalog";
@@ -97,11 +97,18 @@ export default function ShadexCataloguePanel({ serviceId, selectedId = "", onSel
 
   useEffect(() => {
     let live = true;
-    getDoc(doc(db, "services", serviceId))
-      .then((snapshot) => {
-        if (live && snapshot.exists()) {
-          setOverrides(snapshot.data().bukzex_prices || {});
-        }
+    Promise.all([
+      getDoc(doc(db, "services", serviceId)),
+      getDocs(collection(db, "services", serviceId, "prices")),
+    ])
+      .then(([serviceSnapshot, pricesSnapshot]) => {
+        if (!live) return;
+        const legacy = serviceSnapshot.exists() ? serviceSnapshot.data().bukzex_prices || {} : {};
+        const saved = Object.fromEntries(pricesSnapshot.docs.map((priceDoc) => {
+          const price = priceDoc.data();
+          return [String(price.item_id || decodeURIComponent(priceDoc.id)), price];
+        }));
+        setOverrides({ ...legacy, ...saved });
       })
       .catch(() => {});
     return () => { live = false; };
