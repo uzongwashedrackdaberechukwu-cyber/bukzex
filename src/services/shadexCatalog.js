@@ -1,4 +1,4 @@
-const WORKER_URL = "https://bukzex-shadex-catalog.uzongwashedrackdaberechukwu.workers.dev";
+export const WORKER_URL = "https://bukzex-shadex-catalog.uzongwashedrackdaberechukwu.workers.dev";
 
 const CATALOGUE_PATHS = {
   vtu: "vtu",

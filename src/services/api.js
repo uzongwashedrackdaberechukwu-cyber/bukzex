@@ -12,8 +12,8 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-import { auth, db, firebaseApp } from "../lib/firebase";
-import { getFunctions, httpsCallable } from "firebase/functions";
+import { auth, db } from "../lib/firebase";
+import { WORKER_URL } from "./shadexCatalog";
 
 function requireUser() {
   if (!auth.currentUser) throw new Error("Sign in to continue.");
@@ -81,23 +81,33 @@ export async function getWalletBalance() {
 }
 
 export async function purchaseDigitalService(payload) {
-  requireUser();
-  const callable = httpsCallable(getFunctions(firebaseApp, "us-central1"), "purchaseDigitalService");
-  const result = await callable(payload);
-  return result.data;
+  return callBukzExWorker("/api/checkout/purchase", payload);
 }
 
 export async function purchaseShadexService(payload) {
-  requireUser();
-  const callable = httpsCallable(getFunctions(firebaseApp, "us-central1"), "purchaseShadexService");
-  const result = await callable(payload);
-  return result.data;
+  return callBukzExWorker("/api/checkout/purchase", payload);
 }
 
 export async function refreshDigitalServiceOrder(orderId) {
-  requireUser();
-  const callable = httpsCallable(getFunctions(firebaseApp, "us-central1"), "refreshDigitalServiceOrder");
-  const result = await callable({ order_id: orderId });
+  return callBukzExWorker("/api/checkout/order-refresh", { order_id: orderId });
+}
+
+async function callBukzExWorker(path, payload) {
+  const user = requireUser();
+  const token = await user.getIdToken();
+  const response = await fetch(`${WORKER_URL}${path}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      ...(payload?.idempotency_key ? { "Idempotency-Key": payload.idempotency_key } : {}),
+    },
+    body: JSON.stringify(payload || {}),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || result?.success !== true) {
+    throw new Error(result?.error?.message || "BukzEx could not complete this request. Please try again.");
+  }
   return result.data;
 }
 
