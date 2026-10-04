@@ -3,3 +3,266 @@
 @media(max-width:760px){.customer-topbar{min-height:67px;padding:0 18px;gap:12px}.customer-topnav{position:absolute;top:calc(100% + 1px);right:0;left:0;height:auto;display:none;align-items:stretch;gap:0;padding:8px 18px 15px;border-bottom:1px solid var(--line);background:rgba(6,21,34,.98);box-shadow:0 20px 35px rgba(0,0,0,.18)}.customer-topnav.is-open{display:flex;flex-direction:column}.customer-topnav a{min-height:47px;border-bottom:1px solid rgba(188,207,224,.08);font-size:13px}.customer-topnav a.is-current:after{display:none}.customer-topbar-actions{gap:8px}.customer-user-info,.customer-notification{display:none}.customer-menu-button{display:grid;width:39px;height:39px}.customer-content{padding:19px 18px 52px}.customer-welcome{min-height:0;grid-template-columns:1fr;gap:27px;padding:37px 0 33px}.customer-welcome-copy{max-width:none}.customer-welcome h1{margin:20px 0 14px;font-size:clamp(42px,11vw,62px)}.customer-welcome-copy>p{font-size:14px;line-height:1.75}.customer-welcome-actions{gap:9px;margin-top:22px}.customer-primary-action,.customer-secondary-action{min-height:47px;padding:0 15px;font-size:12px}.customer-trust-row{gap:14px;margin-top:22px}.customer-welcome-art{min-height:300px}.customer-art-screen{min-height:300px;padding:17px;border-radius:24px}.customer-art-feature{min-height:145px;padding:17px}.customer-art-feature strong{font-size:22px}.customer-art-services>div{min-height:65px;grid-template-columns:30px 1fr;gap:6px;padding:8px}.customer-art-service-icon{width:29px;height:29px}.customer-art-services strong{font-size:9px}.customer-art-float{right:0;bottom:-4px;min-width:155px;padding:10px 12px}.customer-art-float strong{font-size:12px}.customer-dashboard-grid{grid-template-columns:1fr 1fr;gap:10px;margin:5px 0 41px}.wallet-card{grid-column:1/-1;min-height:198px;padding:20px}.customer-shortcut-card{min-height:166px;padding:16px}.customer-dashboard-card-top{gap:9px}.customer-dashboard-card-icon{width:37px;height:37px}.customer-dashboard-card-top>span{font-size:8px}.customer-shortcut-card>strong{margin-top:18px;font-size:25px}.customer-shortcut-card>strong.customer-stack-value{font-size:19px}.customer-shortcut-card>a{font-size:10px}.customer-service-preview{margin-bottom:39px}.customer-section-heading{align-items:flex-start}.customer-section-heading h2{font-size:24px}.customer-section-heading p{font-size:11px}.customer-view-all{font-size:10px;gap:5px}.customer-service-preview-grid{grid-template-columns:1fr 1fr;gap:9px}.customer-service-preview-card{min-height:136px;padding:13px;border-radius:16px}.customer-preview-icon{width:39px;height:39px}.customer-preview-copy{margin-top:12px}.customer-preview-copy strong{font-size:11px}.customer-preview-copy small{font-size:9px}.customer-recent-section{padding:17px;border-radius:19px}.customer-recent-order{grid-template-columns:36px minmax(0,1fr) auto;gap:9px;padding:10px}.customer-recent-order-icon{width:34px;height:34px}.customer-recent-status{grid-column:2/4;justify-self:start;margin-top:-3px}.customer-recent-amount{font-size:11px}.customer-footer{padding:18px}.customer-footer small{display:none}.customer-topup-page{margin:12px auto 52px;padding:20px;border-radius:20px}.customer-funding-account>div{padding:15px}.customer-funding-account strong{font-size:14px}}
 @media(max-width:390px){.customer-logo{font-size:16px}.customer-logo-mark{width:34px;height:34px}.customer-content{padding-right:14px;padding-left:14px}.customer-welcome h1{font-size:41px}.customer-dashboard-grid{gap:8px}.customer-shortcut-card{padding:13px}.customer-dashboard-card-top>span{font-size:7px}.customer-shortcut-card>strong.customer-stack-value{font-size:17px}.customer-art-screen{padding:13px}.customer-art-services{gap:6px}.customer-art-services>div{grid-template-columns:26px 1fr;padding:6px}.customer-art-service-icon{width:26px;height:26px}.customer-view-all{white-space:normal}}
 @media(prefers-reduced-motion:reduce){.customer-page *{scroll-behavior:auto!important;transition:none!important}}
+
+/* BukzEx advanced fintech dashboard refresh */
+.customer-page{
+  --ink:#f5f8fc;
+  --muted:#91a3b8;
+  --line:rgba(156,185,211,.14);
+  --deep:#050b16;
+  --panel:#0b1625;
+  --gold:#e7c66b;
+  background:
+    radial-gradient(ellipse at 82% 2%,rgba(23,103,127,.18),transparent 32%),
+    radial-gradient(ellipse at 4% 38%,rgba(31,66,126,.18),transparent 33%),
+    linear-gradient(145deg,#050b16 0%,#081321 53%,#050b15 100%);
+}
+.customer-topbar{
+  min-height:72px;
+  border-bottom-color:rgba(172,202,226,.1);
+  background:rgba(5,12,23,.88);
+}
+.customer-logo{font-size:19px}
+.customer-logo-mark{
+  border:1px solid rgba(255,255,255,.18);
+  box-shadow:0 0 28px rgba(219,178,83,.18);
+}
+.customer-topnav a{
+  font-size:12px;
+  transition:color .2s,background .2s;
+}
+.customer-topnav a.is-current{
+  padding-right:13px;
+  padding-left:13px;
+  border-radius:11px 11px 0 0;
+  background:linear-gradient(180deg,rgba(227,192,104,.08),transparent);
+}
+.customer-topbar-actions{gap:10px}
+.customer-notification,.customer-menu-button{
+  border-color:rgba(169,194,216,.13);
+  background:rgba(255,255,255,.035);
+}
+.customer-content{
+  width:min(1380px,100%);
+  padding-top:28px;
+}
+.customer-welcome{
+  min-height:455px;
+  margin:8px 0 24px;
+  padding:46px 36px;
+  overflow:hidden;
+  isolation:isolate;
+  border:1px solid rgba(162,195,220,.13);
+  border-radius:32px;
+  background:
+    radial-gradient(ellipse at 78% 18%,rgba(26,126,145,.18),transparent 35%),
+    linear-gradient(125deg,rgba(13,30,49,.95),rgba(7,18,32,.93) 58%,rgba(9,27,43,.9));
+  box-shadow:0 28px 90px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.045);
+}
+.customer-welcome:before{
+  position:absolute;
+  z-index:-1;
+  right:-150px;
+  bottom:-260px;
+  width:520px;
+  height:520px;
+  border:1px solid rgba(109,211,201,.1);
+  border-radius:50%;
+  box-shadow:0 0 0 34px rgba(109,211,201,.025),0 0 0 72px rgba(109,211,201,.018);
+  content:"";
+}
+.customer-welcome-kicker{
+  border-color:rgba(102,223,197,.2);
+  background:rgba(54,174,159,.08);
+  color:#b7d6d7;
+}
+.customer-welcome-kicker i{
+  background:#5ee0bc;
+  box-shadow:0 0 0 4px rgba(94,224,188,.12),0 0 15px rgba(94,224,188,.65);
+}
+.customer-welcome h1{
+  max-width:650px;
+  font-size:clamp(46px,6vw,72px);
+  letter-spacing:-.07em;
+}
+.customer-welcome h1 em{
+  color:#9ce8d1;
+  background:linear-gradient(90deg,#f0d38a,#9ce8d1 85%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+.customer-welcome-copy>p{color:#a9b8c8}
+.customer-primary-action{
+  background:linear-gradient(110deg,#f1d98f,#d2a644);
+  box-shadow:0 10px 30px rgba(204,163,74,.2);
+}
+.customer-secondary-action{
+  border-color:rgba(166,201,219,.2);
+  background:rgba(255,255,255,.045);
+}
+.customer-trust-row{
+  border-color:rgba(169,197,218,.12);
+  color:#b3c0ce;
+}
+.customer-trust-row svg{color:#83e3c7}
+.customer-welcome-art{min-height:370px}
+.customer-art-screen{
+  border-color:rgba(148,210,218,.2);
+  border-radius:28px;
+  background:
+    radial-gradient(ellipse at 92% 4%,rgba(41,156,161,.16),transparent 35%),
+    linear-gradient(145deg,#10233a,#091626 76%);
+  box-shadow:0 35px 90px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.08);
+  transform:perspective(1100px) rotateY(-4deg) rotateX(2deg);
+}
+.customer-art-feature{
+  border-color:rgba(143,216,207,.15);
+  background:linear-gradient(135deg,rgba(16,42,59,.96),rgba(8,24,39,.9));
+}
+.customer-art-feature>span{color:#9be5d0}
+.customer-art-feature strong{font-size:27px}
+.customer-art-float{
+  border-color:rgba(119,222,192,.28);
+  background:rgba(7,24,37,.97);
+  box-shadow:0 18px 48px rgba(0,0,0,.4),0 0 30px rgba(67,184,159,.08);
+}
+.customer-art-float>svg{color:#7ce1c0}
+.customer-dashboard-grid{
+  grid-template-columns:minmax(0,1.5fr) repeat(2,minmax(0,.8fr));
+  gap:16px;
+  margin-bottom:48px;
+}
+.customer-dashboard-card{
+  border-color:rgba(153,187,213,.14);
+  border-radius:23px;
+  background:linear-gradient(145deg,rgba(13,29,47,.96),rgba(8,19,32,.98));
+  box-shadow:0 18px 42px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.035);
+}
+.wallet-card{
+  border-color:rgba(226,195,116,.22);
+  background:
+    radial-gradient(circle at 90% 0%,rgba(93,204,181,.14),transparent 35%),
+    linear-gradient(125deg,#142c43,#0a1b2d 58%,#101d29);
+}
+.customer-wallet-brand{color:#dce8ef}
+.customer-wallet-brand>span:last-child{color:#a7b8c7}
+.customer-wallet-balance-label{color:#a8bdc8}
+.customer-wallet-card-bottom button{
+  background:linear-gradient(110deg,#f1d98f,#d0a143);
+  box-shadow:0 8px 24px rgba(197,154,60,.18);
+}
+.customer-dashboard-card-icon{
+  border-color:rgba(104,224,194,.19);
+  background:rgba(46,155,139,.12);
+  color:#89e0ca;
+}
+.customer-shortcut-card>strong{font-size:32px}
+.customer-shortcut-card>a,.customer-view-all{color:#9be5d0}
+.customer-service-preview{margin-bottom:48px}
+.customer-section-kicker{color:#98e1cf}
+.customer-section-heading h2{font-size:clamp(24px,3vw,32px)}
+.customer-service-preview-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:13px;
+}
+.customer-service-preview-card{
+  min-height:135px;
+  flex-direction:row;
+  align-items:center;
+  gap:14px;
+  padding:18px;
+  border-color:rgba(153,187,213,.13);
+  border-radius:18px;
+  background:linear-gradient(145deg,rgba(13,30,48,.92),rgba(8,19,32,.95));
+}
+.customer-service-preview-card:hover{
+  border-color:rgba(112,222,195,.4);
+  background:linear-gradient(145deg,rgba(17,47,62,.98),rgba(9,25,40,.98));
+  box-shadow:0 16px 35px rgba(0,0,0,.2),0 0 24px rgba(73,193,165,.055);
+}
+.customer-preview-icon{
+  width:48px;
+  height:48px;
+  flex:0 0 48px;
+  border-color:rgba(255,255,255,.09);
+  border-radius:15px;
+}
+.customer-preview-copy{margin:0}
+.customer-preview-copy strong{font-size:13px}
+.customer-preview-copy small{font-size:10px}
+.customer-preview-arrow{
+  position:static;
+  flex:0 0 auto;
+  margin-left:auto;
+  color:#9be5d0;
+  opacity:.7;
+}
+.customer-service-preview-card:hover .customer-preview-arrow{opacity:1}
+.customer-recent-section{
+  border-color:rgba(153,187,213,.13);
+  border-radius:23px;
+  background:linear-gradient(145deg,rgba(12,28,45,.95),rgba(7,18,30,.97));
+  box-shadow:0 18px 48px rgba(0,0,0,.18);
+}
+.customer-recent-order{
+  border-color:rgba(153,187,213,.1);
+  background:rgba(255,255,255,.025);
+  transition:background .18s,border-color .18s;
+}
+.customer-recent-order:hover{
+  border-color:rgba(112,222,195,.2);
+  background:rgba(67,160,147,.055);
+}
+.customer-recent-order-icon{
+  background:rgba(52,159,145,.13);
+  color:#8ce0c9;
+}
+.customer-recent-status{
+  background:rgba(226,190,99,.1);
+}
+.customer-footer{border-color:rgba(153,187,213,.1)}
+.customer-topup-page{
+  border-color:rgba(153,187,213,.15);
+  background:linear-gradient(145deg,#0e2033,#081523);
+}
+.customer-funding-account>div{
+  border-color:rgba(153,187,213,.12);
+  background:rgba(5,15,27,.7);
+}
+.customer-funding-submit{
+  background:linear-gradient(110deg,#f1d98f,#d0a143);
+}
+.customer-page a:focus-visible,.customer-page button:focus-visible,
+.customer-page input:focus-visible{
+  outline:2px solid #86e4ca;
+  outline-offset:3px;
+}
+@media(max-width:1050px){
+  .customer-welcome{padding:38px 25px}
+  .customer-service-preview-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:760px){
+  .customer-content{padding:16px 16px 45px}
+  .customer-welcome{
+    gap:20px;
+    padding:28px 20px;
+    border-radius:25px;
+  }
+  .customer-welcome h1{font-size:clamp(40px,10vw,58px)}
+  .customer-welcome-art{min-height:285px}
+  .customer-art-screen{transform:none}
+  .customer-dashboard-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .customer-service-preview-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .customer-service-preview-card{min-height:112px;gap:10px;padding:12px}
+  .customer-preview-icon{width:40px;height:40px;flex-basis:40px}
+  .customer-preview-copy strong{font-size:11px}
+  .customer-preview-copy small{font-size:9px}
+  .customer-preview-arrow{width:14px}
+}
+@media(max-width:390px){
+  .customer-content{padding-right:12px;padding-left:12px}
+  .customer-welcome{padding:24px 16px}
+  .customer-service-preview-card{gap:8px;padding:10px}
+  .customer-preview-icon{width:36px;height:36px;flex-basis:36px}
+}
