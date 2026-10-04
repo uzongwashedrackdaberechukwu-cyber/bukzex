@@ -6,6 +6,7 @@ import {
   AlertCircle,
   MessageCircle,
   Trash2,
+  Search,
 } from "lucide-react";
 
 import { useCallback, useEffect, useState } from "react";
@@ -89,6 +90,22 @@ export default function CustomerOrders() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState("");
+  const [orderQuery, setOrderQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState("all");
+
+  const normalizedQuery = orderQuery.trim().toLowerCase();
+  const filteredOrders = orders.filter((order) => {
+    const statusClass = getStatusClass(order.status || "pending");
+    const searchable = [
+      order.serviceName, order.service, order.id, order.orderId,
+      order.status, order.payment_status, order.service_key,
+    ].filter(Boolean).join(" ").toLowerCase();
+
+    return (activeFilter === "all" || statusClass === activeFilter)
+      && searchable.includes(normalizedQuery);
+  });
+  const pendingCount = orders.filter((order) => getStatusClass(order.status || "pending") === "pending").length;
+  const completedCount = orders.filter((order) => getStatusClass(order.status || "pending") === "success").length;
 
   const loadOrders = useCallback(async (manual = false) => {
     try {
@@ -159,12 +176,12 @@ export default function CustomerOrders() {
             Back to Dashboard
           </Link>
 
-          <span className="customer-orders-eyebrow">PAYMENT · ORDER · STACK</span>
+          <span className="customer-orders-eyebrow">ACCOUNT ACTIVITY</span>
 
-          <h1>My Payment &amp; Order Stack</h1>
+          <h1>Purchases &amp; orders</h1>
 
           <p>
-            Follow purchases from payment through order completion and access your delivered service details.
+            Track payment, delivery and verification details for your purchases.
           </p>
         </div>
 
@@ -185,6 +202,41 @@ export default function CustomerOrders() {
           Refresh
         </button>
       </div>
+
+      <section className="customer-orders-tools" aria-label="Order overview and filters">
+        <div className="customer-orders-stats">
+          <div><small>TOTAL</small><strong>{orders.length}</strong></div>
+          <div><small>PENDING</small><strong>{pendingCount}</strong></div>
+          <div><small>COMPLETED</small><strong>{completedCount}</strong></div>
+        </div>
+        <label className="customer-orders-search">
+          <Search size={17} aria-hidden="true" />
+          <input
+            type="search"
+            value={orderQuery}
+            onChange={(event) => setOrderQuery(event.target.value)}
+            placeholder="Search service or order ID"
+            aria-label="Search purchases"
+          />
+        </label>
+        <div className="customer-orders-filters" aria-label="Filter orders">
+          {[
+            ["all", "All"],
+            ["pending", "Pending"],
+            ["success", "Completed"],
+            ["failed", "Failed"],
+          ].map(([value, label]) => (
+            <button
+              type="button"
+              key={value}
+              className={activeFilter === value ? "active" : ""}
+              onClick={() => setActiveFilter(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </section>
 
       {error && (
         <div className="customer-orders-error">
@@ -222,7 +274,7 @@ export default function CustomerOrders() {
         </div>
       ) : (
         <div className="customer-orders-list">
-          {orders.map((order, index) => {
+          {filteredOrders.map((order, index) => {
             const status = order.status || "pending";
             const statusClass = getStatusClass(status);
 
