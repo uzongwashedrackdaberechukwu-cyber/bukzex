@@ -163,6 +163,7 @@ export default function Login() {
                 }
                 placeholder="Enter your email address"
                 autoComplete="email"
+                required
                 disabled={loading}
               />
             </div>
@@ -197,6 +198,7 @@ export default function Login() {
                   }
                   placeholder="Enter your password"
                   autoComplete="current-password"
+                  required
                   disabled={loading}
                 />
 
@@ -224,28 +226,16 @@ export default function Login() {
             </div>
 
             {resetNotice && (
-              <div className="login-error" role="status">
+              <div className="login-notice success" role="status" aria-live="polite">
                 {resetNotice}
               </div>
             )}
 
             {error && (
-              <div className="login-error">
+              <div className="login-notice error" role="alert">
                 {error}
               </div>
             )}
-
-            <div className="login-options">
-              <label className="login-remember">
-                <input type="checkbox" />
-
-                <span className="login-checkmark"></span>
-
-                <span>
-                  Remember me
-                </span>
-              </label>
-            </div>
 
             <button
               type="submit"
