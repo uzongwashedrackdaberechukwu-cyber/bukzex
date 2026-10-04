@@ -56,9 +56,9 @@ export default function CustomerSettings() {
           </div>
 
           <div>
-            <span>BUKZEX ACCOUNT</span>
+            <span>ACCOUNT PREFERENCES</span>
             <h1>Settings</h1>
-            <p>Manage your account preferences.</p>
+            <p>Choose which account updates you receive.</p>
           </div>
         </div>
 
@@ -81,6 +81,7 @@ export default function CustomerSettings() {
             <label className="customer-switch">
               <input
                 type="checkbox"
+                aria-label="Receive order and wallet notifications"
                 checked={notifications}
                 onChange={(event) =>
                   setNotifications(event.target.checked)
@@ -109,11 +110,11 @@ export default function CustomerSettings() {
           </div>
 
           {message && (
-            <div className="customer-settings-message">
+            <div className="customer-settings-message success" role="status" aria-live="polite">
               {message}
             </div>
           )}
-          {error && <div className="customer-settings-message" role="alert">{error}</div>}
+          {error && <div className="customer-settings-message error" role="alert">{error}</div>}
 
           <button
             type="button"
@@ -121,7 +122,7 @@ export default function CustomerSettings() {
             onClick={handleSave}
             disabled={saving}
           >
-            {saving ? "Saving..." : "Save Settings"}
+            {saving ? "Saving..." : "Save preferences"}
           </button>
 
         </section>
