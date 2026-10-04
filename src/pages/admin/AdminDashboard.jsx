@@ -618,56 +618,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               </section>
-
-              <section className="admin-quick-actions">
-                <div>
-                  <span>QUICK ACCESS</span>
-                  <h3>Manage BukzEx</h3>
-                </div>
-
-                <div className="admin-action-grid">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      selectSection("customers")
-                    }
-                  >
-                    <Users size={18} />
-                    Customers
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      selectSection("deposits")
-                    }
-                  >
-                    <WalletCards size={18} />
-                    Deposits
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      selectSection("orders")
-                    }
-                  >
-                    <ShoppingBag size={18} />
-                    Orders
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      selectSection("services")
-                    }
-                  >
-                    <Layers3 size={18} />
-                    Services
-                  </button>
-                </div>
-              </section>
-            </>
+</>
           )}
 
           {activeSection === "customers" && (
