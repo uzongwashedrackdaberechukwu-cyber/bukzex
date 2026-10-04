@@ -1,3 +1,4 @@
+import { useLocation } from "react-router-dom";
 import { FaWhatsapp } from "react-icons/fa";
 import "./WhatsAppSupport.css";
 
@@ -5,6 +6,8 @@ const supportNumber = "2349161791736";
 const supportText = "Hello BukzEx Customer Care, I need help with my account.";
 
 export default function WhatsAppSupport() {
+  const { pathname } = useLocation();
+  if (pathname === "/login" || pathname === "/signup") return null;
   const href = `https://wa.me/${supportNumber}?text=${encodeURIComponent(supportText)}`;
 
   return (

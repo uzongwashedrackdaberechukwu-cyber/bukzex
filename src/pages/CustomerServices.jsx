@@ -185,11 +185,6 @@ export default function CustomerServices() {
         )}
       </section>
 
-      <section className="customer-popular-apps" aria-label="Popular supported apps">
-        <div className="customer-popular-apps-heading"><div><span>POPULAR SUPPORTED APPS</span><h2>Find your service faster</h2></div></div>
-        <div className="customer-popular-apps-grid">{visibleApps.map(({ name, icon: AppIcon, color }) => <div className="customer-popular-app" key={name}><span style={{ color }}><AppIcon /></span><strong>{name}</strong></div>)}</div>
-      </section>
-
       <aside className="customer-services-assurance"><span className="customer-services-assurance-mark"><span>✓</span></span><div><strong>One BukzEx account. Everyday services in one place.</strong><p>See available options and BukzEx prices before you continue to checkout.</p></div><Link to="/customer/orders">View my purchases <ArrowRight size={15} /></Link></aside>
       <WhatsAppSupport />
     </main>

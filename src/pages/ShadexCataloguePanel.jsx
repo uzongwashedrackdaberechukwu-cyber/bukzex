@@ -163,7 +163,7 @@ export default function ShadexCataloguePanel({ serviceId, selectedId = "", onSel
         const services = data.services || [];
         return expandableList("Email verification", services, (item) => {
           const amount = customerPrice(item.id, overrides);
-          return <SelectableItem key={item.id} item={{ id: item.id, name: item.service_name, logo_url: item.logo_url, price: amount }} selectedId={selectedId} onSelect={onSelect} availability={priceState(item.id, overrides)} brandName={item.service_name}>
+          return <SelectableItem key={item.id} className="shadex-email-option" item={{ id: item.id, name: item.service_name, logo_url: item.logo_url, price: amount }} selectedId={selectedId} onSelect={onSelect} availability={priceState(item.id, overrides)} brandName={item.service_name}>
             <strong>{item.service_name}</strong><span>{money(amount)}</span>
           </SelectableItem>;
         });
@@ -181,12 +181,46 @@ export default function ShadexCataloguePanel({ serviceId, selectedId = "", onSel
 
       {serviceId === "social" && (() => {
         const services = data.services || [];
-        return expandableList("Social media packages", services, (item) => {
-          const amount = customerPrice(item.package_id, overrides);
-          return <SelectableItem key={item.package_id} item={{ id: item.package_id, name: item.service_name, logo_url: item.logo_url, price: amount, service_id: item.service_id, platform: item.platform, quantity: item.quantity, category: item.category }} selectedId={selectedId} onSelect={onSelect} availability={priceState(item.package_id, overrides)} brandName={item.platform}>
-            <strong>{item.package_name || item.service_name}</strong><span>{item.platform} · {Number(item.quantity).toLocaleString()} · {money(amount)}</span>
-          </SelectableItem>;
-        });
+        const groups = services.reduce((result, item) => {
+          const platform = item.platform || "Other";
+          (result[platform] ||= []).push(item);
+          return result;
+        }, {});
+        return (
+          <section className="shadex-catalogue-group shadex-social-groups">
+            <div className="shadex-catalogue-group-heading"><h3>Choose a platform</h3><span>{Object.keys(groups).length} platforms</span></div>
+            <div className="shadex-social-platform-grid">
+              {Object.entries(groups).map(([platform, packages]) => (
+                <details className="shadex-social-platform" key={platform}>
+                  <summary>
+                    <ServiceBrandMark name={platform} size="medium" />
+                    <span className="shadex-social-platform-copy"><strong>{platform}</strong><small>{packages.length} packages</small></span>
+                    <span className="shadex-social-view">View</span>
+                  </summary>
+                  <div className="shadex-social-packages">
+                    {packages.map((item) => {
+                      const amount = customerPrice(item.package_id, overrides);
+                      return (
+                        <SelectableItem
+                          key={item.package_id}
+                          className="shadex-social-package"
+                          item={{ id: item.package_id, name: item.service_name, logo_url: item.logo_url, price: amount, service_id: item.service_id, platform: item.platform, quantity: item.quantity, category: item.category }}
+                          selectedId={selectedId}
+                          onSelect={onSelect}
+                          availability={priceState(item.package_id, overrides)}
+                          brandName={item.platform}
+                        >
+                          <strong>{item.package_name || item.service_name}</strong>
+                          <span>{platform} · {Number(item.quantity).toLocaleString()} · {money(amount)}</span>
+                        </SelectableItem>
+                      );
+                    })}
+                  </div>
+                </details>
+              ))}
+            </div>
+          </section>
+        );
       })()}
 
       {serviceId === "vtu" && (() => {

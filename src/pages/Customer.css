@@ -266,3 +266,42 @@
   .customer-service-preview-card{gap:8px;padding:10px}
   .customer-preview-icon{width:36px;height:36px;flex-basis:36px}
 }
+
+/* BukzEx dashboard simplification */
+.customer-dashboard-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+}
+.customer-dashboard-card.wallet-card {
+  grid-column: auto;
+  min-height: 190px;
+}
+.customer-shortcut-card {
+  min-height: 190px;
+}
+.customer-service-preview {
+  margin-top: 30px;
+}
+.customer-service-preview-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.customer-service-preview-card {
+  min-height: 112px;
+  padding: 20px;
+}
+@media (max-width: 700px) {
+  .customer-dashboard-grid,
+  .customer-service-preview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .customer-dashboard-grid,
+  .customer-service-preview-grid {
+    grid-template-columns: 1fr;
+  }
+  .customer-dashboard-card.wallet-card,
+  .customer-shortcut-card {
+    min-height: 155px;
+  }
+}

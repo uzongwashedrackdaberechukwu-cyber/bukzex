@@ -306,30 +306,6 @@ export default function Customer() {
           ) : (
           <>
 
-          <section className="customer-welcome">
-            <div className="customer-welcome-copy">
-              <span className="customer-welcome-kicker"><i /> YOUR BUKZEX ACCOUNT</span>
-              <h1>Your digital life,<br /><em>made effortless.</em></h1>
-              <p>Welcome back, {firstName}. Top up, pay bills and find the digital services you need, all from one secure account.</p>
-              <div className="customer-welcome-actions">
-                <Link to="/customer/services" className="customer-primary-action">Explore services <ArrowRight size={17} /></Link>
-                <button type="button" className="customer-secondary-action" onClick={() => { setDepositStatus(""); setDepositMessage(""); setError(""); setTopUpOpen(true); }}>Top up wallet <Plus size={16} /></button>
-              </div>
-              <div className="customer-trust-row"><span><ShieldCheck size={15} /> Secure wallet</span><span><Sparkles size={15} /> All your services</span></div>
-            </div>
-            <div className="customer-welcome-art" aria-label="BukzEx services at a glance">
-              <div className="customer-art-glow" />
-              <div className="customer-art-screen">
-                <div className="customer-art-screen-top"><span className="customer-art-logo">B</span><span>BUKZEX</span><span className="customer-art-online"><i /> LIVE</span></div>
-                <div className="customer-art-feature"><span>YOUR DIGITAL LIFE</span><strong>Everything you need,<br />one simple place.</strong><small>Secure. Quick. Convenient.</small></div>
-                <div className="customer-art-services">
-                  {serviceLinks.slice(0, 3).map((service) => { const Icon = service.icon; return <div key={service.id}><span className={`customer-art-service-icon ${service.tone}`}><Icon size={17} /></span><strong>{service.id === "vtu" ? "VTU" : service.id === "bills" ? "Bills" : "Digital"}</strong></div>; })}
-                </div>
-              </div>
-              <div className="customer-art-float"><WalletCards size={18} /><span>WALLET READY</span><strong>{loading ? "Loading" : formatAmount(walletBalance)}</strong></div>
-            </div>
-          </section>
-
           {error && (
             <div className="customer-dashboard-error">
               <AlertCircle size={17} />
@@ -415,90 +391,6 @@ export default function Customer() {
             <div className="customer-service-preview-grid">
               {serviceLinks.map((service) => { const Icon = service.icon; return <Link to={`/customer/services/${service.id}`} key={service.id} className={`customer-service-preview-card tone-${service.tone}`}><span className="customer-preview-icon"><Icon size={21} /></span><span className="customer-preview-copy"><strong>{service.name}</strong><small>{service.detail}</small></span><ArrowRight className="customer-preview-arrow" size={17} /></Link>; })}
             </div>
-          </section>
-
-          <section className="customer-recent-section">
-
-            <div className="customer-section-heading">
-              <div>
-                <h2>Recent Orders</h2>
-                <p>Your latest service activity.</p>
-              </div>
-
-              <Link to="/customer/orders">
-                View All
-              </Link>
-            </div>
-
-            {loading ? (
-              <div className="customer-recent-empty">
-                Loading orders...
-              </div>
-            ) : orders.length === 0 ? (
-              <div className="customer-recent-empty">
-                <ShoppingBag size={24} />
-
-                <h3>No orders yet</h3>
-
-                <p>
-                  Your service purchases will appear here.
-                </p>
-
-                <Link to="/customer/services">
-                  Browse Services
-                </Link>
-              </div>
-            ) : (
-              <div className="customer-recent-list">
-                {orders.map((order, index) => {
-                  const status =
-                    order.status || "pending";
-
-                  return (
-                    <div
-                      className="customer-recent-order"
-                      key={
-                        order.id ||
-                        order.orderId ||
-                        index
-                      }
-                    >
-                      <div className="customer-recent-order-icon">
-                        <ShoppingBag size={17} />
-                      </div>
-
-                      <div className="customer-recent-order-info">
-                        <strong>
-                          {order.serviceName ||
-                            order.service ||
-                            "Service Order"}
-                        </strong>
-
-                        <small>
-                          {order.id ||
-                            order.orderId ||
-                            "Order"}
-                        </small>
-                      </div>
-
-                      <strong className="customer-recent-amount">
-                        {formatAmount(order.amount)}
-                      </strong>
-
-                      <span
-                        className={`customer-recent-status ${getStatusClass(
-                          status
-                        )}`}
-                      >
-                        {getStatusIcon(status)}
-                        {status}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
           </section>
           </>
           )}

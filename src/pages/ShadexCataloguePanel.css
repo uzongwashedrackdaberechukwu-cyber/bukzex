@@ -144,3 +144,44 @@
   .shadex-catalogue-item-copy { align-items: flex-start; flex-direction: column; }
   .shadex-catalogue-selectable .shadex-catalogue-item-copy > span { text-align: left; }
 }
+
+/* BukzEx catalogue choice cards */
+.shadex-social-platform-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.shadex-social-platform {
+  overflow: hidden;
+  border: 1px solid rgba(148,163,184,.18);
+  border-radius: 16px;
+  background: rgba(255,255,255,.035);
+}
+.shadex-social-platform summary {
+  min-height: 82px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+.shadex-social-platform summary::-webkit-details-marker { display: none; }
+.shadex-social-platform-copy { display: grid; gap: 4px; }
+.shadex-social-platform-copy strong { color: #f8fafc; font-size: 16px; font-weight: 800; }
+.shadex-social-platform-copy small { color: #aebbd0; font-size: 12px; }
+.shadex-social-view { margin-left: auto; color: #e2c261; font-size: 13px; font-weight: 750; }
+.shadex-social-packages { display: grid; gap: 8px; padding: 10px; border-top: 1px solid rgba(148,163,184,.12); }
+.shadex-social-package .shadex-catalogue-item-copy,
+.shadex-email-option .shadex-catalogue-item-copy {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 5px;
+}
+.shadex-social-package .shadex-catalogue-item-copy > span,
+.shadex-email-option .shadex-catalogue-item-copy > span { text-align: left; }
+.shadex-email-option { min-height: 76px; }
+@media (max-width: 520px) {
+  .shadex-social-platform-grid { grid-template-columns: 1fr; }
+  .shadex-social-platform summary { min-height: 74px; }
+}

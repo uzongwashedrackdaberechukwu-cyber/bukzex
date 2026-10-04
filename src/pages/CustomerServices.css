@@ -139,3 +139,67 @@
   .customer-popular-apps{padding:14px}
   .customer-popular-apps-heading>strong{display:none}
 }
+
+/* BukzEx service navigation refresh */
+.customer-services-topbar nav a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.customer-services-page {
+  width: min(100% - 32px, 1120px);
+  margin: 0 auto;
+}
+.customer-service-filters {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 2px 12px;
+  scrollbar-width: thin;
+}
+.customer-service-filters button {
+  min-height: 48px;
+  flex: 0 0 auto;
+  padding: 0 20px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 999px;
+  background: rgba(255,255,255,.04);
+  color: #d5deeb;
+  font-size: 14px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.customer-service-filters button.active {
+  border-color: #d9bd68;
+  background: rgba(217,189,104,.14);
+  color: #f2d777;
+}
+.customer-services-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.customer-service-card {
+  min-height: 205px;
+}
+@media (max-width: 760px) {
+  .customer-services-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 520px) {
+  .customer-services-topbar nav a {
+    min-height: 42px;
+    padding: 0 11px;
+    font-size: 12px;
+  }
+  .customer-services-grid {
+    grid-template-columns: 1fr;
+  }
+  .customer-service-card {
+    min-height: 170px;
+  }
+}
