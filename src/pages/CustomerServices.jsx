@@ -1,5 +1,6 @@
 import {
   ArrowRight,
+  Search,
   MessageSquareCode,
   Mail,
   Receipt,
@@ -9,6 +10,7 @@ import {
 } from "lucide-react";
 import { FaApple, FaFacebookF, FaGoogle, FaRobot, FaTelegramPlane, FaTiktok, FaWhatsapp } from "react-icons/fa";
 import { SiBinance, SiTinder, SiUber } from "react-icons/si";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import WhatsAppSupport from "../components/WhatsAppSupport";
 import ServiceBrandMark from "../components/ServiceBrandMark";
@@ -81,6 +83,18 @@ const popularApps = [
 ];
 
 export default function CustomerServices() {
+  const [query, setQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState("All");
+  const filters = ["All", ...new Set(services.map((service) => service.tag))];
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleServices = services.filter((service) =>
+    (activeFilter === "All" || service.tag === activeFilter) &&
+    `${service.title} ${service.description} ${service.tag}`.toLowerCase().includes(normalizedQuery)
+  );
+  const visibleApps = popularApps.filter((app) =>
+    app.name.toLowerCase().includes(normalizedQuery)
+  );
+
   return (
     <>
     <header className="customer-services-topbar">
@@ -112,8 +126,33 @@ export default function CustomerServices() {
         <span className="customer-services-count">{services.length} services</span>
       </div>
 
+      <div className="customer-service-controls">
+        <label className="customer-service-search">
+          <Search size={17} aria-hidden="true" />
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search services or apps"
+            aria-label="Search services or apps"
+          />
+        </label>
+        <div className="customer-service-filters" aria-label="Filter services">
+          {filters.map((filter) => (
+            <button
+              type="button"
+              key={filter}
+              className={activeFilter === filter ? "active" : ""}
+              onClick={() => setActiveFilter(filter)}
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <section className="customer-services-grid" aria-label="Available services">
-        {services.map((service) => {
+        {visibleServices.map((service) => {
           const Icon = service.icon;
           return (
             <Link
@@ -141,11 +180,14 @@ export default function CustomerServices() {
             </Link>
           );
         })}
+        {visibleServices.length === 0 && (
+          <p className="customer-services-empty">No matching services. Try another search or category.</p>
+        )}
       </section>
 
       <section className="customer-popular-apps" aria-label="Popular supported apps">
-        <div className="customer-popular-apps-heading"><div><span>POPULAR SUPPORTED APPS</span><h2>Find your service faster</h2></div><strong>500+ apps available</strong></div>
-        <div className="customer-popular-apps-grid">{popularApps.map(({ name, icon: AppIcon, color }) => <div className="customer-popular-app" key={name}><span style={{ color }}><AppIcon /></span><strong>{name}</strong></div>)}</div>
+        <div className="customer-popular-apps-heading"><div><span>POPULAR SUPPORTED APPS</span><h2>Find your service faster</h2></div></div>
+        <div className="customer-popular-apps-grid">{visibleApps.map(({ name, icon: AppIcon, color }) => <div className="customer-popular-app" key={name}><span style={{ color }}><AppIcon /></span><strong>{name}</strong></div>)}</div>
       </section>
 
       <aside className="customer-services-assurance"><span className="customer-services-assurance-mark"><span>✓</span></span><div><strong>One BukzEx account. Everyday services in one place.</strong><p>See available options and BukzEx prices before you continue to checkout.</p></div><Link to="/customer/orders">View my purchases <ArrowRight size={15} /></Link></aside>

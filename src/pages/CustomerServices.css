@@ -13,3 +13,129 @@
 .customer-popular-app>span{width:36px;height:36px;flex:0 0 36px;display:grid;place-items:center;border-radius:11px;background:rgba(255,255,255,.08);font-size:18px}
 .customer-popular-app strong{color:#e5ebf1;font-size:11px;font-weight:700}
 @media(max-width:680px){.customer-popular-apps{padding:16px;border-radius:18px}.customer-popular-apps-grid{gap:8px}.customer-popular-app{min-height:54px;padding:8px}.customer-popular-app>span{width:32px;height:32px;flex-basis:32px;font-size:16px}.customer-popular-app strong{font-size:10px}.customer-popular-apps-heading>strong{font-size:9px;padding:7px 9px}}
+
+
+/* Clean, interactive services catalogue */
+.customer-services-hero{
+  min-height:0;
+  grid-template-columns:1fr;
+  padding:34px 0 24px;
+  margin-bottom:24px;
+}
+.customer-services-showcase{display:none}
+.customer-services-hero h1{font-size:clamp(38px,5vw,58px)}
+.customer-services-hero-copy>p{max-width:680px}
+.customer-services-hero-actions{margin-top:17px}
+.customer-services-section-heading{margin-bottom:14px}
+.customer-service-controls{display:grid;gap:13px;margin:0 0 17px}
+.customer-service-search{
+  width:min(100%,520px);
+  min-height:48px;
+  display:flex;
+  align-items:center;
+  gap:11px;
+  padding:0 15px;
+  border:1px solid rgba(156,185,211,.18);
+  border-radius:14px;
+  background:rgba(255,255,255,.045);
+  color:#9be5d0;
+}
+.customer-service-search:focus-within{
+  border-color:rgba(112,222,195,.6);
+  box-shadow:0 0 0 3px rgba(112,222,195,.1);
+}
+.customer-service-search input{
+  width:100%;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:#f5f8fc;
+  font:inherit;
+  font-size:13px;
+}
+.customer-service-search input::placeholder{color:#8294a7}
+.customer-service-filters{display:flex;flex-wrap:wrap;gap:8px}
+.customer-service-filters button{
+  min-height:35px;
+  padding:0 13px;
+  border:1px solid rgba(156,185,211,.16);
+  border-radius:99px;
+  background:rgba(255,255,255,.035);
+  color:#aebdcb;
+  font-size:11px;
+  font-weight:700;
+  cursor:pointer;
+  transition:background .18s,border-color .18s,color .18s;
+}
+.customer-service-filters button:hover,
+.customer-service-filters button.active{
+  border-color:rgba(112,222,195,.38);
+  background:rgba(54,174,159,.13);
+  color:#a7ead6;
+}
+.customer-services-grid{gap:12px}
+.customer-service-card{
+  min-height:185px;
+  padding:17px;
+  border-radius:17px;
+  box-shadow:0 10px 25px rgba(0,0,0,.12);
+}
+.customer-service-card:hover{transform:translateY(-2px)}
+.customer-service-content{margin-top:15px}
+.customer-service-content h3{font-size:15px}
+.customer-service-action{padding-top:12px}
+.customer-services-empty{
+  grid-column:1/-1;
+  margin:0;
+  padding:25px;
+  border:1px dashed rgba(156,185,211,.2);
+  border-radius:16px;
+  color:#aebdcb;
+  text-align:center;
+}
+.customer-popular-apps{
+  margin-top:22px;
+  padding:18px;
+  border-radius:18px;
+  box-shadow:none;
+}
+.customer-popular-apps-heading{margin-bottom:12px}
+.customer-popular-apps-grid{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.customer-popular-app{
+  min-height:42px;
+  padding:6px 11px;
+  border-radius:12px;
+}
+.customer-popular-app>span{
+  width:28px;
+  height:28px;
+  flex-basis:28px;
+  border-radius:9px;
+  font-size:15px;
+}
+.customer-services-page a:focus-visible,
+.customer-services-page button:focus-visible,
+.customer-services-page input:focus-visible{
+  outline:2px solid #86e4ca;
+  outline-offset:3px;
+}
+@media(max-width:920px){
+  .customer-services-hero{grid-template-columns:1fr}
+  .customer-services-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:680px){
+  .customer-services-hero{padding:26px 0 18px;margin-bottom:20px}
+  .customer-services-hero h1{font-size:clamp(36px,9vw,48px)}
+  .customer-services-hero-actions{gap:10px}
+  .customer-service-controls{gap:10px}
+  .customer-service-filters{flex-wrap:nowrap;overflow-x:auto;padding:2px 1px 7px}
+  .customer-service-filters button{flex:0 0 auto}
+  .customer-services-grid{grid-template-columns:1fr}
+  .customer-service-card{min-height:155px}
+  .customer-popular-apps{padding:14px}
+  .customer-popular-apps-heading>strong{display:none}
+}
