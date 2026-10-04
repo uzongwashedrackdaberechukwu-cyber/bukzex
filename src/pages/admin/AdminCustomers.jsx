@@ -57,7 +57,7 @@ export default function AdminCustomers() {
           <span>CUSTOMER MANAGEMENT</span>
           <h2>Customers</h2>
           <p>
-            View and manage customers registered on BukzEx.
+            Search customer accounts and review their contact details.
           </p>
         </div>
 
@@ -164,7 +164,7 @@ export default function AdminCustomers() {
 
                     <td>
                       <span className="admin-customer-status">
-                        Active
+                        Registered
                       </span>
                     </td>
 
