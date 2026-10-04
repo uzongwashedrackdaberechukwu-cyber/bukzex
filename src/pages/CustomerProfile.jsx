@@ -151,11 +151,11 @@ export default function CustomerProfile() {
           </div>
 
           {message && (
-            <div className="customer-profile-message">
+            <div className="customer-profile-message success" role="status" aria-live="polite">
               {message}
             </div>
           )}
-          {error && <div className="customer-profile-message" role="alert">{error}</div>}
+          {error && <div className="customer-profile-message error" role="alert">{error}</div>}
 
           <button
             type="submit"
@@ -163,7 +163,7 @@ export default function CustomerProfile() {
             disabled={saving}
           >
             <Save size={16} />
-            {saving ? "Saving..." : "Save Changes"}
+            {saving ? "Saving..." : "Save profile"}
           </button>
         </form>
 
