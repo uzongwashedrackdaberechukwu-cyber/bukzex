@@ -16,6 +16,7 @@ import {
   Receipt,
   Store,
   MessageSquareCode,
+  Mail,
   TrendingUp,
   ShieldCheck,
   Sparkles,
@@ -40,6 +41,7 @@ const serviceLinks = [
   { id: "bills", name: "Bills", detail: "Electricity & TV", icon: Receipt, tone: "gold" },
   { id: "marketplace", name: "Digital plans", detail: "Streaming & more", icon: Store, tone: "violet" },
   { id: "sms", name: "Virtual numbers", detail: "SMS & verification", icon: MessageSquareCode, tone: "mint" },
+  { id: "email_verification", name: "Email verification", detail: "Temporary email & OTP", icon: Mail, tone: "cyan" },
   { id: "social", name: "Social boost", detail: "Grow your reach", icon: TrendingUp, tone: "coral" },
 ];
 
