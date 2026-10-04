@@ -210,8 +210,8 @@ export default function Signup() {
           }}
         >
 
-            {error && <div className="signup-error" role="alert">{error}</div>}
-            {success && <div className="signup-legal-notice" role="status">{success}</div>}
+            {error && <div className="signup-error" role="alert" aria-live="assertive">{error}</div>}
+            {success && <div className="signup-success" role="status" aria-live="polite">{success}</div>}
 
             {/* NAME ROW */}
 
@@ -233,6 +233,7 @@ export default function Signup() {
                     type="text"
                     placeholder="First name"
                     autoComplete="given-name"
+                    required
                   />
                 </div>
 
@@ -254,6 +255,7 @@ export default function Signup() {
                     type="text"
                     placeholder="Last name"
                     autoComplete="family-name"
+                    required
                   />
                 </div>
 
@@ -280,6 +282,7 @@ export default function Signup() {
                   type="email"
                   placeholder="Enter your email address"
                   autoComplete="email"
+                  required
                 />
 
               </div>
@@ -305,6 +308,7 @@ export default function Signup() {
                   type="tel"
                   placeholder="Enter your phone number"
                   autoComplete="tel"
+                  required
                 />
 
               </div>
@@ -334,6 +338,7 @@ export default function Signup() {
                   }
                   placeholder="Create a password"
                   autoComplete="new-password"
+                  required
                 />
 
                 <button
@@ -382,6 +387,7 @@ export default function Signup() {
                   }
                   placeholder="Confirm your password"
                   autoComplete="new-password"
+                  required
                 />
 
                 <button
