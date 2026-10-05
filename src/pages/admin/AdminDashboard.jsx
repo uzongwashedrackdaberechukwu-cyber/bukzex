@@ -6,6 +6,7 @@ import {
   ShoppingBag,
   Layers3,
   ArrowLeftRight,
+  Bitcoin,
   Settings,
   LogOut,
   Menu,
@@ -34,6 +35,7 @@ import AdminDeposits from "./AdminDeposits";
 import AdminOrders from "./AdminOrders";
 import AdminServices from "./AdminServices";
 import AdminTransactions from "./AdminTransactions";
+import AdminCrypto from "./AdminCrypto";
 import AdminSettings from "./AdminSettings";
 
 import "./AdminDashboard.css";
@@ -68,6 +70,11 @@ const navigation = [
     id: "transactions",
     label: "Transactions",
     icon: ArrowLeftRight,
+  },
+  {
+    id: "crypto",
+    label: "Crypto",
+    icon: Bitcoin,
   },
 ];
 
@@ -639,6 +646,9 @@ export default function AdminDashboard() {
 
           {activeSection === "transactions" && (
             <AdminTransactions />
+          )}
+          {activeSection === "crypto" && (
+            <AdminCrypto />
           )}
 
           {activeSection === "settings" && (

@@ -37,3 +37,79 @@
 .admin-marketplace-price input { width:100%; min-width:0; padding:9px; border:1px solid rgba(142,160,196,.25); border-radius:8px; background:#0c1424; color:#f5f7fb; font:inherit; }
 .admin-marketplace-publish { display:flex; gap:6px; align-items:center; color:#dce2ee; font-size:.82rem; }
 @media(max-width:650px) { .admin-marketplace-row { grid-template-columns:1fr 1fr; } .admin-marketplace-name { grid-column:1/-1; } .admin-marketplace-publish { justify-content:flex-start; } }
+
+/* Cleaner service price rows and consistent native checkbox sizing */
+.admin-marketplace-row {
+  grid-template-columns: minmax(0, 1fr) minmax(130px, 170px) auto;
+  gap: 14px;
+  padding: 14px;
+  border-color: rgba(188, 207, 224, .14);
+  background: rgba(4, 10, 22, .26);
+}
+.admin-marketplace-name {
+  align-items: flex-start;
+}
+.admin-marketplace-name strong {
+  color: #edf2f7;
+  font-size: .92rem;
+  line-height: 1.4;
+}
+.admin-marketplace-name small {
+  color: #91a1b1;
+  font-size: .76rem;
+}
+.admin-marketplace-price {
+  gap: 7px;
+  color: #aebbc7;
+  font-size: .76rem;
+  font-weight: 700;
+}
+.admin-marketplace-price input {
+  box-sizing: border-box;
+  min-height: 42px;
+  padding: 9px 11px;
+  border-color: rgba(188, 207, 224, .18);
+  font-size: .9rem;
+}
+.admin-marketplace-publish {
+  min-height: 42px;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid rgba(188, 207, 224, .14);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, .025);
+  white-space: nowrap;
+}
+.admin-marketplace-publish input,
+.admin-shadex-toggle input {
+  box-sizing: border-box;
+  width: 17px;
+  min-width: 17px;
+  height: 17px;
+  margin: 0;
+  padding: 0;
+  accent-color: #e7c66b;
+  flex: 0 0 17px;
+}
+@media (max-width: 650px) {
+  .admin-marketplace-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px;
+  }
+  .admin-marketplace-name {
+    grid-column: 1 / -1;
+  }
+  .admin-marketplace-price {
+    min-width: 0;
+  }
+  .admin-marketplace-publish {
+    align-self: end;
+    justify-content: flex-start;
+    min-width: 0;
+    padding: 0 9px;
+    font-size: .75rem;
+  }
+}

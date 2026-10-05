@@ -313,6 +313,15 @@ export default function Customer() {
             </div>
           )}
 
+          <Link to="/customer/crypto" className="customer-crypto-promo">
+            <span className="customer-crypto-promo-icon">₿</span>
+            <span className="customer-crypto-promo-copy">
+              <strong>Crypto wallet</strong>
+              <small>Deposit supported crypto and request a bank withdrawal.</small>
+            </span>
+            <span className="customer-crypto-promo-action">Open wallet <ArrowRight size={16} /></span>
+          </Link>
+
           <section className="customer-dashboard-grid">
 
             <div className="customer-dashboard-card wallet-card">
@@ -383,14 +392,6 @@ export default function Customer() {
 
           </section>
 
-          <Link to="/customer/crypto" className="customer-crypto-promo">
-            <span className="customer-crypto-promo-icon">₿</span>
-            <span className="customer-crypto-promo-copy">
-              <strong>Crypto wallet</strong>
-              <small>Deposit supported crypto and request a bank withdrawal.</small>
-            </span>
-            <span className="customer-crypto-promo-action">Open wallet <ArrowRight size={16} /></span>
-          </Link>
 
 
           <section className="customer-service-preview">

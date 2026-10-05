@@ -8,7 +8,8 @@
   "secrets": {
     "required": [
       "SHADEX_API_KEY",
-      "FIREBASE_SERVICE_ACCOUNT_JSON"
+      "FIREBASE_SERVICE_ACCOUNT_JSON",
+      "SHADEX_CRYPTO_WEBHOOK_SECRET"
     ]
   },
   "assets": {
