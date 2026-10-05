@@ -110,6 +110,11 @@ export async function getCryptoRoutes() {
   return Array.isArray(data?.routes) ? data.routes : [];
 }
 
+export async function getCryptoAdminRoutes() {
+  const data = await callBukzExWorkerGet("/api/crypto/admin-routes");
+  return Array.isArray(data?.routes) ? data.routes : [];
+}
+
 export async function getCryptoActivity() {
   const data = await callBukzExWorkerGet("/api/crypto/activity");
   return Array.isArray(data?.requests) ? data.requests : [];

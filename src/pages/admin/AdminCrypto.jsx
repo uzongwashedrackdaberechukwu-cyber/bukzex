@@ -8,12 +8,16 @@ import {
 } from "lucide-react";
 import {
   collection,
+  doc,
   getDocs,
   limit,
   orderBy,
   query,
+  serverTimestamp,
+  setDoc,
 } from "firebase/firestore";
 import { db } from "../../lib/firebase";
+import { getCryptoAdminRoutes } from "../../services/api";
 import "./AdminCrypto.css";
 
 function formatDate(value) {
@@ -54,6 +58,12 @@ export default function AdminCrypto() {
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [routes, setRoutes] = useState([]);
+  const [markupValues, setMarkupValues] = useState({});
+  const [pricingLoading, setPricingLoading] = useState(true);
+  const [pricingSaving, setPricingSaving] = useState("");
+  const [pricingError, setPricingError] = useState("");
+  const [pricingMessage, setPricingMessage] = useState("");
 
   async function loadRequests() {
     setLoading(true);
@@ -72,8 +82,53 @@ export default function AdminCrypto() {
     }
   }
 
+  async function loadPricing() {
+    setPricingLoading(true);
+    setPricingError("");
+    setPricingMessage("");
+    try {
+      const [routeRows, priceSnapshot] = await Promise.all([
+        getCryptoAdminRoutes(),
+        getDocs(collection(db, "crypto_route_pricing")),
+      ]);
+      const saved = {};
+      priceSnapshot.docs.forEach((item) => {
+        saved[item.id] = Number(item.data().markup_percent ?? 0);
+      });
+      setRoutes(routeRows);
+      setMarkupValues(saved);
+    } catch (err) {
+      setPricingError(err?.message || "Could not load crypto rates and markup settings.");
+    } finally {
+      setPricingLoading(false);
+    }
+  }
+
+  async function saveMarkup(route) {
+    const markup = Number(markupValues[route.id]);
+    if (!Number.isFinite(markup) || markup < 0) {
+      setPricingError("Enter a valid markup percentage of zero or more.");
+      return;
+    }
+    setPricingSaving(route.id);
+    setPricingError("");
+    setPricingMessage("");
+    try {
+      await setDoc(doc(db, "crypto_route_pricing", route.id), {
+        markup_percent: markup,
+        updated_at: serverTimestamp(),
+      });
+      setPricingMessage("BukzEx markup saved.");
+    } catch (err) {
+      setPricingError(err?.message || "Could not save this markup. Check admin access and Firestore rules.");
+    } finally {
+      setPricingSaving("");
+    }
+  }
+
   useEffect(() => {
     loadRequests();
+    loadPricing();
   }, []);
 
   const visibleRequests = useMemo(() => {
@@ -113,6 +168,68 @@ export default function AdminCrypto() {
           Refresh
         </button>
       </div>
+
+      <section className="admin-crypto-pricing">
+        <div className="admin-crypto-pricing-heading">
+          <div>
+            <span className="admin-section-kicker">BUKZEX PRICING</span>
+            <h3>Crypto route markups</h3>
+            <p>See the base rate and set the markup used to calculate BukzEx’s customer rate.</p>
+          </div>
+          <button type="button" onClick={loadPricing} disabled={pricingLoading}>
+            Refresh rates
+          </button>
+        </div>
+        {pricingError && <p className="admin-crypto-error" role="alert">{pricingError}</p>}
+        {pricingMessage && <p className="admin-crypto-pricing-success" role="status">{pricingMessage}</p>}
+        {pricingLoading ? (
+          <div className="admin-crypto-empty">Loading crypto rates…</div>
+        ) : routes.length === 0 ? (
+          <div className="admin-crypto-empty">No crypto routes are available.</div>
+        ) : (
+          <div className="admin-crypto-pricing-list">
+            {routes.map((route) => {
+              const baseRate = Number(route.rate_ngn_per_usd || 0);
+              const markup = Number(markupValues[route.id] ?? 0);
+              const customerRate = baseRate * (1 + markup / 100);
+              const formatRate = (value) => `₦${value.toLocaleString("en-NG", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}`;
+              return (
+                <article className="admin-crypto-pricing-row" key={route.id}>
+                  <div className="admin-crypto-pricing-route">
+                    <strong>{route.asset_name} {route.asset_code} · {route.network_name}</strong>
+                    <small>{route.network_code}</small>
+                    <span>Base rate: {formatRate(baseRate)} / USD</span>
+                    <b>BukzEx rate: {formatRate(customerRate)} / USD</b>
+                  </div>
+                  <label>
+                    Markup (%)
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={markupValues[route.id] ?? "0"}
+                      onChange={(event) => setMarkupValues((current) => ({
+                        ...current,
+                        [route.id]: event.target.value,
+                      }))}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => saveMarkup(route)}
+                    disabled={pricingSaving === route.id}
+                  >
+                    {pricingSaving === route.id ? "Saving…" : "Save markup"}
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       <div className="admin-crypto-stats">
         <article><span>Recent requests</span><strong>{requests.length}</strong></article>
@@ -209,6 +326,13 @@ export default function AdminCrypto() {
               <div><span>Updated</span><strong>{formatDate(selected.updated_at)}</strong></div>
               <div><span>Shadex request ID</span><strong>{selected.shadex_request_id || "—"}</strong></div>
               {selected.kind === "deposit" && <>
+                {selected.credited_amount_minor != null && <>
+                  <div><span>Base credit</span><strong>₦{(Number(selected.provider_credit_minor || 0) / 100).toFixed(2)}</strong></div>
+                  <div><span>BukzEx markup</span><strong>{Number(selected.markup_percent || 0).toFixed(2)}% · ₦{(Number(selected.markup_credit_minor || 0) / 100).toFixed(2)}</strong></div>
+                  <div><span>Customer credited</span><strong>₦{(Number(selected.credited_amount_minor || 0) / 100).toFixed(2)}</strong></div>
+                  <div><span>Base rate</span><strong>₦{Number(selected.quoted_rate_ngn_per_usd || 0).toFixed(2)} / USD</strong></div>
+                  <div><span>BukzEx rate</span><strong>₦{Number(selected.bukzex_rate_ngn_per_usd || 0).toFixed(2)} / USD</strong></div>
+                </>}
                 <div><span>Route ID</span><strong>{selected.route_id || "—"}</strong></div>
                 <div className="full"><span>Transaction hash</span><strong>{selected.transaction_hash || "—"}</strong></div>
               </>}

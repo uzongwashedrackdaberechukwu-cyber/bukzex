@@ -54,3 +54,21 @@
 .admin-crypto-details .full strong{display:block;margin-top:5px;text-align:left}
 .admin-crypto-note{margin:14px 0 0;padding:10px 11px;border:1px solid rgba(231,198,107,.15);border-radius:9px;background:rgba(231,198,107,.06);color:#c6b978;font-size:9px;line-height:1.5}
 @media(max-width:600px){.admin-crypto-header{align-items:flex-start}.admin-crypto-header h2{font-size:19px}.admin-crypto-header p{max-width:260px}.admin-crypto-stats{gap:7px}.admin-crypto-stats article{padding:10px}.admin-crypto-stats span{font-size:9px}.admin-crypto-stats strong{font-size:17px}.admin-crypto-request{padding:12px}.admin-crypto-request-meta{grid-template-columns:1fr;gap:9px}.admin-crypto-request-meta strong{font-size:10px}}
+
+
+.admin-crypto-pricing{margin:0 0 24px;padding:20px;border:1px solid rgba(148,163,184,.2);border-radius:18px;background:rgba(15,31,48,.72)}
+.admin-crypto-pricing-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}
+.admin-crypto-pricing-heading h3{margin:5px 0;color:#f5f8fc;font-size:19px}
+.admin-crypto-pricing-heading p{margin:0;color:#aab8c7;font-size:13px;line-height:1.5}
+.admin-crypto-pricing-heading button,.admin-crypto-pricing-row button{min-height:40px;padding:0 14px;border:1px solid rgba(231,198,107,.32);border-radius:10px;background:rgba(231,198,107,.1);color:#f1d88f;font-weight:750;cursor:pointer}
+.admin-crypto-pricing-heading button:disabled,.admin-crypto-pricing-row button:disabled{opacity:.6;cursor:wait}
+.admin-crypto-pricing-list{display:grid;gap:10px}
+.admin-crypto-pricing-row{display:grid;grid-template-columns:minmax(0,1fr) 140px auto;align-items:center;gap:14px;padding:14px;border:1px solid rgba(148,163,184,.16);border-radius:13px;background:rgba(3,14,26,.38)}
+.admin-crypto-pricing-route{display:grid;gap:5px}
+.admin-crypto-pricing-route strong{color:#f3f6fa;font-size:14px}
+.admin-crypto-pricing-route small,.admin-crypto-pricing-route span{color:#aab8c7;font-size:12px}
+.admin-crypto-pricing-route b{color:#8fe0c8;font-size:13px}
+.admin-crypto-pricing-row label{display:grid;gap:6px;color:#dbe5ed;font-size:12px;font-weight:700}
+.admin-crypto-pricing-row input{width:100%;height:40px;padding:0 10px;border:1px solid rgba(148,163,184,.25);border-radius:9px;background:#071827;color:#fff}
+.admin-crypto-pricing-success{color:#67d6ad;font-size:13px;font-weight:700}
+@media(max-width:650px){.admin-crypto-pricing{padding:15px}.admin-crypto-pricing-row{grid-template-columns:1fr 110px;gap:11px}.admin-crypto-pricing-row>button{grid-column:1/-1}.admin-crypto-pricing-heading{flex-direction:column}}

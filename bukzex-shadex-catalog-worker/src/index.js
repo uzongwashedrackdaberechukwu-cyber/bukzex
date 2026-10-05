@@ -273,7 +273,7 @@ async function refundOnce(env, uid, idempotencyKey, message) {
     createWrite(env, `wallet_transactions/refund_${uid}_${idempotencyKey}`, {
       user_id: uid, transaction_type: "refund", amount, currency: request.data.currency,
       status: "completed", source_id: request.data.order_id,
-      description: "Refund: ShadexGoLtd could not accept this purchase", created_at: now,
+      description: "Refund: supplier could not accept this purchase", created_at: now,
     }),
   ]);
 }
@@ -613,7 +613,7 @@ async function refundCryptoWithdrawalBeforeAcceptance(env, uid, requestPath, req
     }, wallet.updateTime),
     updateWrite(env, requestPath, {
       status: "failed_refunded",
-      admin_note: String(reason || "ShadexGoLtd did not accept the withdrawal.").slice(0, 220),
+      admin_note: String(reason || "The service did not accept the withdrawal.").slice(0, 220),
       updated_at: now,
     }, requestDoc.updateTime),
     createWrite(env, "wallet_transactions/crypto_refund_" + uid + "_" + idempotencyKey, {
@@ -660,9 +660,15 @@ async function submitCryptoDeposit(request, env, uid) {
       return { request: prior, duplicate: true };
     }
   } else {
+    const pricing = await firestoreGet(env, docResource(env, 'crypto_route_pricing/' + routeId));
+    const markupPercent = Number(pricing?.data?.markup_percent ?? 0);
+    if (!Number.isFinite(markupPercent) || markupPercent < 0) {
+      throw new HttpError(503, 'Crypto pricing settings are invalid.');
+    }
     const now = new Date().toISOString();
     const record = {
       ...submittedData,
+      markup_percent: markupPercent,
       user_id: uid,
       kind: "deposit",
       idempotency_key: key,
@@ -684,7 +690,8 @@ async function submitCryptoDeposit(request, env, uid) {
   });
 
   if (!result.response.ok || result.payload?.success !== true) {
-    const message = safeMessage(result.payload, "ShadexGoLtd could not accept the deposit request.");
+    const providerMessage = safeMessage(result.payload, "Crypto deposit request was rejected.");
+    const message = "Your deposit request could not be accepted. Please check the details or contact BukzEx support.";
     if (result.response.status >= 500) {
       return { request: saved.data, message: "The request is being checked. Refresh crypto activity before retrying." };
     }
@@ -692,7 +699,7 @@ async function submitCryptoDeposit(request, env, uid) {
     if (fresh && fresh.data.status === "submitting") {
       await firestoreCommit(env, [updateWrite(env, requestPath, {
         status: "failed",
-        admin_note: message,
+        admin_note: providerMessage,
         updated_at: new Date().toISOString(),
       }, fresh.updateTime)]);
     }
@@ -701,7 +708,7 @@ async function submitCryptoDeposit(request, env, uid) {
 
   const deposit = result.payload.data?.deposit;
   const requestId = String(deposit?.id || "");
-  if (!UUID.test(requestId)) throw new HttpError(503, "ShadexGoLtd accepted the request, but BukzEx could not confirm its reference.");
+  if (!UUID.test(requestId)) throw new HttpError(503, "The deposit was accepted, but BukzEx could not confirm its reference.");
   const fresh = await firestoreGet(env, docResource(env, requestPath));
   if (!fresh) throw new HttpError(503, "The deposit was accepted; BukzEx is still saving its request reference.");
   await saveCryptoApiResult(env, requestPath, fresh, requestId, "deposit");
@@ -711,7 +718,7 @@ async function submitCryptoDeposit(request, env, uid) {
       shadex_request_id: requestId,
       status: "pending",
     },
-    message: "Deposit request received. Your BukzEx balance is credited after ShadexGoLtd confirms the deposit.",
+    message: "Deposit request received. Your BukzEx balance is credited after confirmation.",
   };
 }
 
@@ -797,18 +804,19 @@ async function submitCryptoWithdrawal(request, env, uid) {
   });
 
   if (!result.response.ok || result.payload?.success !== true) {
-    const message = safeMessage(result.payload, "ShadexGoLtd could not accept the withdrawal request.");
+    const providerMessage = safeMessage(result.payload, "Crypto withdrawal request was rejected.");
+    const message = "Your withdrawal request could not be accepted. Please try again or contact BukzEx support.";
     if (result.response.status >= 500) {
       return { request: saved.data, message: "Your funds are reserved while the request is checked. Refresh crypto activity before retrying." };
     }
     const fresh = await firestoreGet(env, docResource(env, requestPath));
-    if (fresh) await refundCryptoWithdrawalBeforeAcceptance(env, uid, requestPath, fresh, amountMinor, key, message);
+    if (fresh) await refundCryptoWithdrawalBeforeAcceptance(env, uid, requestPath, fresh, amountMinor, key, providerMessage);
     throw new HttpError(result.response.status, message + " Any reserved funds have been returned to your BukzEx wallet.");
   }
 
   const withdrawal = result.payload.data?.withdrawal;
   const requestId = String(withdrawal?.id || "");
-  if (!UUID.test(requestId)) throw new HttpError(503, "ShadexGoLtd accepted the withdrawal, but BukzEx could not confirm its reference.");
+  if (!UUID.test(requestId)) throw new HttpError(503, "The withdrawal was accepted, but BukzEx could not confirm its reference.");
   const fresh = await firestoreGet(env, docResource(env, requestPath));
   if (!fresh) throw new HttpError(503, "The withdrawal was accepted; BukzEx is still saving its request reference.");
   await saveCryptoApiResult(env, requestPath, fresh, requestId, "withdrawal");
@@ -822,14 +830,47 @@ async function submitCryptoWithdrawal(request, env, uid) {
   };
 }
 
+async function getBukzExCryptoRoutes(env, adminView = false) {
+  const result = await callShadex(env, "/crypto/routes", "GET", "", null);
+  if (!result.response.ok || result.payload?.success !== true) {
+    throw new HttpError(result.response.status || 503, "Crypto routes are unavailable.");
+  }
+  const data = result.payload.data;
+  const routes = Array.isArray(data?.routes) ? data.routes : Array.isArray(data) ? data : [];
+  const pricedRoutes = await Promise.all(routes.map(async (route) => {
+    const routeId = String(route.id || "");
+    const baseRate = Number(route.rate_ngn_per_usd);
+    if (!routeId || !Number.isFinite(baseRate) || baseRate <= 0) {
+      throw new HttpError(503, "A crypto route has invalid pricing information.");
+    }
+    const saved = await firestoreGet(env, docResource(env, "crypto_route_pricing/" + routeId));
+    const markup = Number(saved?.data?.markup_percent ?? 0);
+    if (!Number.isFinite(markup) || markup < 0) {
+      throw new HttpError(503, "Crypto pricing settings are invalid.");
+    }
+    const bukzexRate = Number((baseRate * (1 + markup / 100)).toFixed(2));
+    if (adminView) {
+      return {
+        ...route,
+        rate_ngn_per_usd: baseRate,
+        markup_percent: markup,
+        bukzex_rate_ngn_per_usd: bukzexRate,
+      };
+    }
+    return { ...route, rate_ngn_per_usd: bukzexRate };
+  }));
+  return { routes: pricedRoutes };
+}
+
 async function handleCryptoApi(request, env, url) {
   const uid = await requireCryptoUser(request, env);
+  if (request.method === "GET" && url.pathname === "/api/crypto/admin-routes") {
+    const admin = await firestoreGet(env, docResource(env, "admins/" + uid));
+    if (!admin) throw new HttpError(403, "Administrator access required.");
+    return getBukzExCryptoRoutes(env, true);
+  }
   if (request.method === "GET" && url.pathname === "/api/crypto/routes") {
-    const result = await callShadex(env, "/crypto/routes", "GET", "", null);
-    if (!result.response.ok || result.payload?.success !== true) {
-      throw new HttpError(result.response.status || 503, safeMessage(result.payload, "Crypto routes are unavailable."));
-    }
-    return result.payload.data;
+    return getBukzExCryptoRoutes(env, false);
   }
   if (request.method === "GET" && url.pathname === "/api/crypto/activity") {
     return { requests: await cryptoActivity(env, uid) };
@@ -919,8 +960,15 @@ async function handleCryptoWebhook(request, env) {
   const writes = [];
 
   if (eventType === "crypto.deposit.confirmed") {
-    const creditMinor = Number(data.quoted_credit_minor);
-    if (current.kind !== "deposit" || !Number.isSafeInteger(creditMinor) || creditMinor <= 0) {
+    const sourceCreditMinor = Number(data.quoted_credit_minor);
+    const markupPercent = Number(current.markup_percent || 0);
+    const markupCreditMinor = Math.round(sourceCreditMinor * markupPercent / 100);
+    const creditMinor = sourceCreditMinor + markupCreditMinor;
+    const providerRate = Number(data.quoted_rate_ngn_per_usd || 0);
+    const bukzexRate = providerRate > 0 ? Number((providerRate * (1 + markupPercent / 100)).toFixed(2)) : 0;
+    if (current.kind !== "deposit" || !Number.isSafeInteger(sourceCreditMinor) || sourceCreditMinor <= 0
+      || !Number.isFinite(markupPercent) || markupPercent < 0
+      || !Number.isSafeInteger(creditMinor) || creditMinor <= 0) {
       throw new HttpError(400, "Invalid confirmed deposit amount.");
     }
     if (current.status !== "pending") throw new HttpError(409, "Deposit status has already changed.");
@@ -935,8 +983,12 @@ async function handleCryptoWebhook(request, env) {
       updated_at: now,
     }, wallet.updateTime));
     requestPatch.status = "confirmed";
+    requestPatch.provider_credit_minor = sourceCreditMinor;
+    requestPatch.markup_percent = markupPercent;
+    requestPatch.markup_credit_minor = markupCreditMinor;
     requestPatch.credited_amount_minor = creditMinor;
-    requestPatch.quoted_rate_ngn_per_usd = Number(data.quoted_rate_ngn_per_usd || 0);
+    requestPatch.quoted_rate_ngn_per_usd = providerRate;
+    requestPatch.bukzex_rate_ngn_per_usd = bukzexRate;
     writes.push(createWrite(env, "wallet_transactions/crypto_deposit_" + eventId, {
       user_id: uid,
       transaction_type: "deposit",
@@ -1007,7 +1059,7 @@ async function handleCryptoWebhook(request, env) {
       && await firestoreGet(env, docResource(env, receiptPath))) {
       return { duplicate: true };
     }
-    throw new HttpError(503, "BukzEx could not safely apply the crypto update; ShadexGoLtd should retry the webhook.");
+    throw new HttpError(503, "BukzEx could not safely apply the crypto update; the webhook should be retried.");
   }
   return { received: true };
 }
