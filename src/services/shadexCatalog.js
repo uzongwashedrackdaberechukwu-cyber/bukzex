@@ -14,7 +14,7 @@ async function readResponse(response, fallback) {
   try {
     payload = await response.json();
   } catch {
-    throw new Error("ShadexGoLtd returned an unreadable response.");
+    throw new Error("The service returned an unreadable response.");
   }
 
   if (!response.ok || payload?.success !== true || !payload?.data) {
@@ -26,7 +26,7 @@ async function readResponse(response, fallback) {
 
 export async function getShadexCatalogue(serviceId) {
   const path = CATALOGUE_PATHS[serviceId];
-  if (!path) throw new Error("This service has no ShadexGoLtd catalogue route.");
+  if (!path) throw new Error("This service is temporarily unavailable.");
 
   const response = await fetch(`${WORKER_URL}/api/catalog/${path}`, {
     headers: { Accept: "application/json" },

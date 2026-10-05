@@ -134,7 +134,7 @@ export default function CryptoWallet() {
             <a href="#assets">Deposit crypto <ArrowRight size={16} /></a>
             <button onClick={() => setWithdrawOpen(true)}>Withdraw to bank</button>
           </div>
-          <p>Deposits are credited after ShadexGoLtd confirms them.</p>
+          <p>Deposits are credited after confirmation.</p>
         </section>
 
         {error && <p className="bx-crypto-message error" role="alert">{error}</p>}
