@@ -26,6 +26,7 @@ import ServicePurchase from "./pages/ServicePurchase";
 import CustomerOrders from "./pages/CustomerOrders";
 import CustomerProfile from "./pages/CustomerProfile";
 import CustomerSettings from "./pages/CustomerSettings";
+import CryptoWallet from "./pages/CryptoWallet";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -84,6 +85,11 @@ function App() {
           <Route
             path="/customer/services/:serviceId"
             element={<ServicePurchase />}
+          />
+
+          <Route
+            path="/customer/crypto"
+            element={<CryptoWallet />}
           />
 
           <Route

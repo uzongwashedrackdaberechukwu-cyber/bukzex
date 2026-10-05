@@ -176,7 +176,7 @@ export default function AdminServices() {
           const saved = overrides[row.id];
           nextPrices[`${item.id}:${row.id}`] = {
             amount: saved?.amount_minor != null ? priceInMajor(saved) : priceInMajor(row.price),
-            enabled: saved?.is_active !== false,
+            enabled: saved?.is_active != null ? Boolean(saved.is_active) : Number(row.price?.amount_minor ?? 0) > 0,
           };
         }
       }
@@ -246,7 +246,8 @@ export default function AdminServices() {
       if (!entry?.amount?.trim()) continue;
       const unit = Number(row.price?.minor_unit ?? 2);
       const amount = Number(entry.amount);
-      if (!Number.isFinite(amount) || amount <= 0) {
+      const isActive = Boolean(entry.enabled);
+      if (!Number.isFinite(amount) || amount < 0 || (isActive && amount <= 0)) {
         setError(`Enter a valid BukzEx price for ${row.title}.`);
         return;
       }
@@ -256,7 +257,7 @@ export default function AdminServices() {
         amount_minor: Math.round(amount * (10 ** unit)),
         currency: String(row.price?.currency || "NGN"),
         minor_unit: unit,
-        is_active: Boolean(entry.enabled),
+        is_active: isActive,
       };
     }
     if (!Object.keys(nextOverrides).length) {

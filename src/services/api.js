@@ -92,6 +92,43 @@ export async function refreshDigitalServiceOrder(orderId) {
   return callBukzExWorker("/api/checkout/order-refresh", { order_id: orderId });
 }
 
+async function callBukzExWorkerGet(path) {
+  const user = requireUser();
+  const token = await user.getIdToken();
+  const response = await fetch(`${WORKER_URL}${path}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || result?.success !== true) {
+    throw new Error(result?.error?.message || "BukzEx could not load crypto information.");
+  }
+  return result.data;
+}
+
+export async function getCryptoRoutes() {
+  const data = await callBukzExWorkerGet("/api/crypto/routes");
+  return Array.isArray(data?.routes) ? data.routes : [];
+}
+
+export async function getCryptoActivity() {
+  const data = await callBukzExWorkerGet("/api/crypto/activity");
+  return Array.isArray(data?.requests) ? data.requests : [];
+}
+
+export async function submitCryptoDeposit(payload) {
+  return callBukzExWorker("/api/crypto/deposits", {
+    ...payload,
+    idempotency_key: payload.idempotency_key || globalThis.crypto.randomUUID(),
+  });
+}
+
+export async function submitCryptoWithdrawal(payload) {
+  return callBukzExWorker("/api/crypto/withdrawals", {
+    ...payload,
+    idempotency_key: payload.idempotency_key || globalThis.crypto.randomUUID(),
+  });
+}
+
 async function callBukzExWorker(path, payload) {
   const user = requireUser();
   const token = await user.getIdToken();

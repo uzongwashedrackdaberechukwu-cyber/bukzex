@@ -194,7 +194,10 @@ export default function Signup() {
 
               if (needsConfirmation) {
                 if (firebaseUser && !firebaseUser.emailVerified && !result?.needsEmailConfirmation) {
-                  await sendEmailVerification(firebaseUser);
+                  await sendEmailVerification(firebaseUser, {
+                    url: window.location.origin + "/login?emailVerified=1",
+                    handleCodeInApp: false,
+                  });
                 }
                 if (firebaseUser) await signOut(auth);
                 setSuccess(`We sent a verification link to ${email.trim()}. Open that email and confirm your address before signing in.`);

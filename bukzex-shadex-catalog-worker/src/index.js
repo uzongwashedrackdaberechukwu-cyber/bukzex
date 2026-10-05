@@ -89,7 +89,7 @@ async function verifyFirebaseToken(request, env) {
   const publicKey = await crypto.subtle.importKey("jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
   const valid = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", publicKey, decodeBase64Url(parts[2]), new TextEncoder().encode(`${parts[0]}.${parts[1]}`));
   if (!valid) throw new HttpError(401, "Your sign-in could not be verified. Sign in again.");
-  return { uid: claims.sub };
+  return { uid: claims.sub, emailVerified: claims.email_verified === true };
 }
 
 async function serviceAccountToken(env) {
@@ -521,6 +521,497 @@ async function refreshOrder(request, env) {
   };
 }
 
+
+async function requireCryptoUser(request, env) {
+  const identity = await verifyFirebaseToken(request, env);
+  if (!identity.emailVerified) {
+    throw new HttpError(403, "Verify your BukzEx email before using crypto services.");
+  }
+  return identity.uid;
+}
+
+function cryptoIdempotencyKey(request) {
+  const value = String(request.headers.get("Idempotency-Key") || "").trim();
+  if (!UUID.test(value)) {
+    throw new HttpError(400, "A UUID Idempotency-Key is required.");
+  }
+  return value;
+}
+
+async function cryptoActivity(env, uid) {
+  const token = await serviceAccountToken(env);
+  const parent = docResource(env, "").replace(/\/$/, "");
+  const response = await fetch(FIRESTORE_URL + "/" + parent + ":runQuery", {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + token,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      structuredQuery: {
+        from: [{ collectionId: "crypto_requests" }],
+        where: {
+          fieldFilter: {
+            field: { fieldPath: "user_id" },
+            op: "EQUAL",
+            value: { stringValue: uid },
+          },
+        },
+        limit: 50,
+      },
+    }),
+  });
+  const rows = await response.json().catch(() => []);
+  if (!response.ok || !Array.isArray(rows)) {
+    throw new HttpError(503, "Crypto activity could not be loaded.");
+  }
+  return rows
+    .filter((row) => row.document)
+    .map((row) => ({
+      id: row.document.name.split("/").pop(),
+      ...decodeFields(row.document.fields || {}),
+    }))
+    .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
+}
+
+async function saveCryptoApiResult(env, requestPath, requestDoc, requestId, kind) {
+  const now = new Date().toISOString();
+  const mappingPath = "crypto_shadex_requests/" + requestId;
+  const existingMapping = await firestoreGet(env, docResource(env, mappingPath));
+  if (existingMapping && existingMapping.data.user_id !== requestDoc.user_id) {
+    throw new HttpError(409, "The Shadex request is already linked to another BukzEx account.");
+  }
+  const writes = [
+    updateWrite(env, requestPath, {
+      shadex_request_id: requestId,
+      status: "pending",
+      updated_at: now,
+    }, requestDoc.updateTime),
+  ];
+  if (!existingMapping) {
+    writes.push(createWrite(env, mappingPath, {
+      user_id: requestDoc.user_id,
+      request_path: requestPath,
+      kind,
+      created_at: now,
+    }));
+  }
+  await firestoreCommit(env, writes);
+}
+
+async function refundCryptoWithdrawalBeforeAcceptance(env, uid, requestPath, requestDoc, amountMinor, idempotencyKey, reason) {
+  if (!requestDoc || requestDoc.data.shadex_request_id || requestDoc.data.status !== "submitting") return;
+  const walletPath = "wallets/" + uid;
+  const wallet = await firestoreGet(env, docResource(env, walletPath));
+  if (!wallet) throw new HttpError(503, "The withdrawal failed, but its refund is awaiting wallet recovery.");
+  const amount = Number(amountMinor) / 100;
+  const now = new Date().toISOString();
+  await firestoreCommit(env, [
+    updateWrite(env, walletPath, {
+      balance: Number((Number(wallet.data.balance || 0) + amount).toFixed(2)),
+      updated_at: now,
+    }, wallet.updateTime),
+    updateWrite(env, requestPath, {
+      status: "failed_refunded",
+      admin_note: String(reason || "ShadexGoLtd did not accept the withdrawal.").slice(0, 220),
+      updated_at: now,
+    }, requestDoc.updateTime),
+    createWrite(env, "wallet_transactions/crypto_refund_" + uid + "_" + idempotencyKey, {
+      user_id: uid,
+      transaction_type: "refund",
+      amount,
+      amount_minor: Number(amountMinor),
+      currency: "NGN",
+      status: "completed",
+      source_id: requestDoc.data.idempotency_key,
+      description: "Crypto withdrawal request refund",
+      created_at: now,
+    }),
+  ]);
+}
+
+async function submitCryptoDeposit(request, env, uid) {
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object") throw new HttpError(400, "Request body must be valid JSON.");
+  const key = cryptoIdempotencyKey(request);
+  const routeId = String(body.route_id || "").trim();
+  const amountText = String(body.amount_usd ?? "").trim();
+  const transactionHash = String(body.transaction_hash || "").trim();
+  if (!UUID.test(routeId)) throw new HttpError(400, "Choose a valid crypto route.");
+  if (!/^[0-9]+(?:\.[0-9]{1,8})?$/.test(amountText) || Number(amountText) <= 0) {
+    throw new HttpError(400, "Enter a valid crypto deposit amount in USD.");
+  }
+  if (transactionHash.length < 8 || transactionHash.length > 200) {
+    throw new HttpError(400, "Enter a valid transaction hash.");
+  }
+
+  const requestPath = "crypto_requests/" + uid + "_" + key;
+  let saved = await firestoreGet(env, docResource(env, requestPath));
+  const submittedData = { route_id: routeId, amount_usd: Number(amountText), transaction_hash: transactionHash };
+  if (saved) {
+    const prior = saved.data;
+    if (prior.user_id !== uid || prior.kind !== "deposit"
+      || prior.route_id !== routeId
+      || Number(prior.amount_usd) !== Number(amountText)
+      || prior.transaction_hash !== transactionHash) {
+      throw new HttpError(409, "This payment reference was already used for different deposit details.");
+    }
+    if (prior.shadex_request_id || ["confirmed", "rejected", "failed"].includes(prior.status)) {
+      return { request: prior, duplicate: true };
+    }
+  } else {
+    const now = new Date().toISOString();
+    const record = {
+      ...submittedData,
+      user_id: uid,
+      kind: "deposit",
+      idempotency_key: key,
+      status: "submitting",
+      currency: "NGN",
+      created_at: now,
+      updated_at: now,
+    };
+    await firestoreCommit(env, [createWrite(env, requestPath, record)]);
+    saved = await firestoreGet(env, docResource(env, requestPath));
+    if (!saved) throw new HttpError(503, "BukzEx could not save the deposit request.");
+  }
+
+  const result = await callShadex(env, "/crypto/deposits", "POST", key, {
+    customer_reference: uid,
+    route_id: routeId,
+    amount_usd: amountText,
+    transaction_hash: transactionHash,
+  });
+
+  if (!result.response.ok || result.payload?.success !== true) {
+    const message = safeMessage(result.payload, "ShadexGoLtd could not accept the deposit request.");
+    if (result.response.status >= 500) {
+      return { request: saved.data, message: "The request is being checked. Refresh crypto activity before retrying." };
+    }
+    const fresh = await firestoreGet(env, docResource(env, requestPath));
+    if (fresh && fresh.data.status === "submitting") {
+      await firestoreCommit(env, [updateWrite(env, requestPath, {
+        status: "failed",
+        admin_note: message,
+        updated_at: new Date().toISOString(),
+      }, fresh.updateTime)]);
+    }
+    throw new HttpError(result.response.status, message);
+  }
+
+  const deposit = result.payload.data?.deposit;
+  const requestId = String(deposit?.id || "");
+  if (!UUID.test(requestId)) throw new HttpError(503, "ShadexGoLtd accepted the request, but BukzEx could not confirm its reference.");
+  const fresh = await firestoreGet(env, docResource(env, requestPath));
+  if (!fresh) throw new HttpError(503, "The deposit was accepted; BukzEx is still saving its request reference.");
+  await saveCryptoApiResult(env, requestPath, fresh, requestId, "deposit");
+  return {
+    request: {
+      ...fresh.data,
+      shadex_request_id: requestId,
+      status: "pending",
+    },
+    message: "Deposit request received. Your BukzEx balance is credited after ShadexGoLtd confirms the deposit.",
+  };
+}
+
+async function submitCryptoWithdrawal(request, env, uid) {
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object") throw new HttpError(400, "Request body must be valid JSON.");
+  const key = cryptoIdempotencyKey(request);
+  const amountMinor = Number(body.amount_minor);
+  const bankCode = String(body.bank_code || "").trim();
+  const bankName = String(body.bank_name || "").trim();
+  const accountName = String(body.account_name || "").trim();
+  const accountNumber = String(body.account_number || "").replace(/\D/g, "");
+  if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) throw new HttpError(400, "Enter a valid withdrawal amount.");
+  if (!bankCode || !bankName || !accountName || !/^\d{10}$/.test(accountNumber)) {
+    throw new HttpError(400, "Enter the bank and valid 10-digit account details.");
+  }
+
+  const requestPath = "crypto_requests/" + uid + "_" + key;
+  let saved = await firestoreGet(env, docResource(env, requestPath));
+  const sameRequest = (row) => row.user_id === uid && row.kind === "withdrawal"
+    && Number(row.amount_minor) === amountMinor
+    && row.bank_code === bankCode && row.bank_name === bankName
+    && row.account_name === accountName && row.account_number === accountNumber;
+
+  if (saved) {
+    if (!sameRequest(saved.data)) throw new HttpError(409, "This payment reference was already used for different withdrawal details.");
+    if (saved.data.shadex_request_id || ["paid", "rejected_refunded", "failed_refunded"].includes(saved.data.status)) {
+      return { request: saved.data, duplicate: true };
+    }
+  } else {
+    const walletPath = "wallets/" + uid;
+    const wallet = await firestoreGet(env, docResource(env, walletPath));
+    if (!wallet || String(wallet.data.currency || "NGN") !== "NGN") throw new HttpError(409, "Your BukzEx NGN wallet could not be found.");
+    const balance = Number(wallet.data.balance || 0);
+    if (!Number.isFinite(balance) || Math.round(balance * 100) < amountMinor) {
+      throw new HttpError(402, "Your BukzEx wallet balance is too low for this withdrawal.");
+    }
+    const now = new Date().toISOString();
+    const amount = amountMinor / 100;
+    const record = {
+      user_id: uid,
+      kind: "withdrawal",
+      idempotency_key: key,
+      amount_minor: amountMinor,
+      currency: "NGN",
+      bank_code: bankCode,
+      bank_name: bankName,
+      account_name: accountName,
+      account_number: accountNumber,
+      status: "submitting",
+      created_at: now,
+      updated_at: now,
+    };
+    await firestoreCommit(env, [
+      updateWrite(env, walletPath, {
+        balance: Number((balance - amount).toFixed(2)),
+        updated_at: now,
+      }, wallet.updateTime),
+      createWrite(env, requestPath, record),
+      createWrite(env, "wallet_transactions/crypto_withdrawal_" + uid + "_" + key, {
+        user_id: uid,
+        transaction_type: "withdrawal",
+        amount,
+        amount_minor: amountMinor,
+        currency: "NGN",
+        status: "completed",
+        source_id: uid + "_" + key,
+        description: "Crypto withdrawal request",
+        created_at: now,
+      }),
+    ]);
+    saved = await firestoreGet(env, docResource(env, requestPath));
+    if (!saved) throw new HttpError(503, "BukzEx could not save the withdrawal request.");
+  }
+
+  const result = await callShadex(env, "/crypto/withdrawals", "POST", key, {
+    customer_reference: uid,
+    amount_minor: amountMinor,
+    bank_code: bankCode,
+    bank_name: bankName,
+    account_name: accountName,
+    account_number: accountNumber,
+  });
+
+  if (!result.response.ok || result.payload?.success !== true) {
+    const message = safeMessage(result.payload, "ShadexGoLtd could not accept the withdrawal request.");
+    if (result.response.status >= 500) {
+      return { request: saved.data, message: "Your funds are reserved while the request is checked. Refresh crypto activity before retrying." };
+    }
+    const fresh = await firestoreGet(env, docResource(env, requestPath));
+    if (fresh) await refundCryptoWithdrawalBeforeAcceptance(env, uid, requestPath, fresh, amountMinor, key, message);
+    throw new HttpError(result.response.status, message + " Any reserved funds have been returned to your BukzEx wallet.");
+  }
+
+  const withdrawal = result.payload.data?.withdrawal;
+  const requestId = String(withdrawal?.id || "");
+  if (!UUID.test(requestId)) throw new HttpError(503, "ShadexGoLtd accepted the withdrawal, but BukzEx could not confirm its reference.");
+  const fresh = await firestoreGet(env, docResource(env, requestPath));
+  if (!fresh) throw new HttpError(503, "The withdrawal was accepted; BukzEx is still saving its request reference.");
+  await saveCryptoApiResult(env, requestPath, fresh, requestId, "withdrawal");
+  return {
+    request: {
+      ...fresh.data,
+      shadex_request_id: requestId,
+      status: "pending",
+    },
+    message: "Withdrawal request received.",
+  };
+}
+
+async function handleCryptoApi(request, env, url) {
+  const uid = await requireCryptoUser(request, env);
+  if (request.method === "GET" && url.pathname === "/api/crypto/routes") {
+    const result = await callShadex(env, "/crypto/routes", "GET", "", null);
+    if (!result.response.ok || result.payload?.success !== true) {
+      throw new HttpError(result.response.status || 503, safeMessage(result.payload, "Crypto routes are unavailable."));
+    }
+    return result.payload.data;
+  }
+  if (request.method === "GET" && url.pathname === "/api/crypto/activity") {
+    return { requests: await cryptoActivity(env, uid) };
+  }
+  if (request.method === "POST" && url.pathname === "/api/crypto/deposits") {
+    return submitCryptoDeposit(request, env, uid);
+  }
+  if (request.method === "POST" && url.pathname === "/api/crypto/withdrawals") {
+    return submitCryptoWithdrawal(request, env, uid);
+  }
+  throw new HttpError(404, "Crypto route not found.");
+}
+
+function equalHex(left, right) {
+  if (left.length !== right.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < left.length; i++) mismatch |= left.charCodeAt(i) ^ right.charCodeAt(i);
+  return mismatch === 0;
+}
+
+async function handleCryptoWebhook(request, env) {
+  if (!env.SHADEX_CRYPTO_WEBHOOK_SECRET) throw new HttpError(503, "Crypto webhook is not configured.");
+  const timestampText = String(request.headers.get("X-Shadex-Timestamp") || "");
+  const signatureHeader = String(request.headers.get("X-Shadex-Signature") || "");
+  const timestamp = Number(timestampText);
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  if (!/^\d+$/.test(timestampText) || !Number.isSafeInteger(timestamp)
+    || Math.abs(nowSeconds - timestamp) > 300 || !/^v1=[0-9a-f]{64}$/i.test(signatureHeader)) {
+    throw new HttpError(401, "Invalid or expired webhook signature.");
+  }
+
+  const rawBody = await request.text();
+  if (rawBody.length > 128000) throw new HttpError(413, "Webhook body is too large.");
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(env.SHADEX_CRYPTO_WEBHOOK_SECRET),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signed = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(timestampText + "." + rawBody)
+  );
+  const expected = Array.from(new Uint8Array(signed)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  if (!equalHex(expected, signatureHeader.slice(3).toLowerCase())) {
+    throw new HttpError(401, "Invalid webhook signature.");
+  }
+
+  let event;
+  try { event = JSON.parse(rawBody); }
+  catch { throw new HttpError(400, "Invalid webhook JSON."); }
+
+  const eventId = String(event?.id || "");
+  const eventType = String(event?.type || "");
+  const data = event?.data || {};
+  const headerEventId = String(request.headers.get("X-Shadex-Event-Id") || "");
+  const headerEventType = String(request.headers.get("X-Shadex-Event") || "");
+  const allowed = [
+    "crypto.deposit.confirmed",
+    "crypto.deposit.rejected",
+    "crypto.withdrawal.processing",
+    "crypto.withdrawal.paid",
+    "crypto.withdrawal.rejected",
+  ];
+  if (!UUID.test(eventId) || headerEventId !== eventId || headerEventType !== eventType || !allowed.includes(eventType)) {
+    throw new HttpError(400, "Unsupported or invalid Shadex crypto event.");
+  }
+
+  const shadexRequestId = String(data.id || "");
+  const uid = String(data.customer_reference || "");
+  if (!UUID.test(shadexRequestId) || !uid) throw new HttpError(400, "Crypto event is missing its request reference.");
+  const mapping = await firestoreGet(env, docResource(env, "crypto_shadex_requests/" + shadexRequestId));
+  if (!mapping || mapping.data.user_id !== uid) throw new HttpError(503, "BukzEx could not match this event to its customer request.");
+
+  const requestDoc = await firestoreGet(env, docResource(env, mapping.data.request_path));
+  if (!requestDoc || requestDoc.data.shadex_request_id !== shadexRequestId) {
+    throw new HttpError(503, "BukzEx customer request is not ready for this event.");
+  }
+  const receiptPath = "crypto_webhook_events/" + eventId;
+  if (await firestoreGet(env, docResource(env, receiptPath))) return { duplicate: true };
+
+  const current = requestDoc.data;
+  const now = new Date().toISOString();
+  const requestPatch = { status: eventType.split(".").pop(), reviewed_at: data.reviewed_at || now, updated_at: now };
+  const writes = [];
+
+  if (eventType === "crypto.deposit.confirmed") {
+    const creditMinor = Number(data.quoted_credit_minor);
+    if (current.kind !== "deposit" || !Number.isSafeInteger(creditMinor) || creditMinor <= 0) {
+      throw new HttpError(400, "Invalid confirmed deposit amount.");
+    }
+    if (current.status !== "pending") throw new HttpError(409, "Deposit status has already changed.");
+    const walletPath = "wallets/" + uid;
+    const wallet = await firestoreGet(env, docResource(env, walletPath));
+    if (!wallet || String(wallet.data.currency || "NGN") !== "NGN") throw new HttpError(503, "BukzEx customer wallet is unavailable.");
+    const credit = creditMinor / 100;
+    const balance = Number(wallet.data.balance || 0);
+    if (!Number.isFinite(balance)) throw new HttpError(503, "BukzEx customer wallet balance is invalid.");
+    writes.push(updateWrite(env, walletPath, {
+      balance: Number((balance + credit).toFixed(2)),
+      updated_at: now,
+    }, wallet.updateTime));
+    requestPatch.status = "confirmed";
+    requestPatch.credited_amount_minor = creditMinor;
+    requestPatch.quoted_rate_ngn_per_usd = Number(data.quoted_rate_ngn_per_usd || 0);
+    writes.push(createWrite(env, "wallet_transactions/crypto_deposit_" + eventId, {
+      user_id: uid,
+      transaction_type: "deposit",
+      amount: credit,
+      amount_minor: creditMinor,
+      currency: "NGN",
+      status: "completed",
+      source_id: shadexRequestId,
+      description: "Confirmed crypto deposit",
+      created_at: now,
+    }));
+  } else if (eventType === "crypto.deposit.rejected") {
+    if (current.kind !== "deposit") throw new HttpError(400, "Deposit event does not match the request.");
+    requestPatch.status = "rejected";
+    requestPatch.admin_note = data.admin_note || null;
+  } else {
+    if (current.kind !== "withdrawal" || Number(current.amount_minor) !== Number(data.amount_minor)) {
+      throw new HttpError(400, "Withdrawal event does not match the request.");
+    }
+    if (eventType === "crypto.withdrawal.processing") {
+      if (["paid", "rejected_refunded"].includes(current.status)) return { ignored: true };
+      requestPatch.status = "processing";
+    } else if (eventType === "crypto.withdrawal.paid") {
+      if (current.status === "rejected_refunded") return { ignored: true };
+      requestPatch.status = "paid";
+    } else {
+      if (current.status === "paid") return { ignored: true };
+      if (current.status !== "rejected_refunded") {
+        const walletPath = "wallets/" + uid;
+        const wallet = await firestoreGet(env, docResource(env, walletPath));
+        if (!wallet || String(wallet.data.currency || "NGN") !== "NGN") throw new HttpError(503, "BukzEx customer wallet is unavailable for refund.");
+        const amount = Number(current.amount_minor) / 100;
+        const balance = Number(wallet.data.balance || 0);
+        writes.push(updateWrite(env, walletPath, {
+          balance: Number((balance + amount).toFixed(2)),
+          updated_at: now,
+        }, wallet.updateTime));
+        writes.push(createWrite(env, "wallet_transactions/crypto_refund_" + eventId, {
+          user_id: uid,
+          transaction_type: "refund",
+          amount,
+          amount_minor: Number(current.amount_minor),
+          currency: "NGN",
+          status: "completed",
+          source_id: shadexRequestId,
+          description: "Rejected crypto withdrawal refund",
+          created_at: now,
+        }));
+      }
+      requestPatch.status = "rejected_refunded";
+      requestPatch.admin_note = data.admin_note || null;
+    }
+  }
+
+  writes.push(updateWrite(env, mapping.data.request_path, requestPatch, requestDoc.updateTime));
+  writes.push(createWrite(env, receiptPath, {
+    event_id: eventId,
+    event_type: eventType,
+    shadex_request_id: shadexRequestId,
+    user_id: uid,
+    processed_at: now,
+  }));
+
+  try {
+    await firestoreCommit(env, writes);
+  } catch (error) {
+    if (error instanceof HttpError && error.status === 409
+      && await firestoreGet(env, docResource(env, receiptPath))) {
+      return { duplicate: true };
+    }
+    throw new HttpError(503, "BukzEx could not safely apply the crypto update; ShadexGoLtd should retry the webhook.");
+  }
+  return { received: true };
+}
+
 export default {
   async fetch(request, env) {
     const cors = corsHeaders(request, env);
@@ -531,6 +1022,22 @@ export default {
     }
     if (origin && !cors.has("Access-Control-Allow-Origin")) return json({ error: "origin_not_allowed" }, 403, cors);
     const url = new URL(request.url);
+    if (request.method === "POST" && url.pathname === "/api/webhooks/shadex-crypto") {
+      try {
+        return json({ success: true, data: await handleCryptoWebhook(request, env) }, 200, cors);
+      } catch (error) {
+        const status = error instanceof HttpError ? error.status : 500;
+        return json({ success: false, error: { message: error instanceof HttpError ? error.message : "Crypto webhook failed." } }, status, cors);
+      }
+    }
+    if (url.pathname.startsWith("/api/crypto/")) {
+      try {
+        return json({ success: true, data: await handleCryptoApi(request, env, url) }, 200, cors);
+      } catch (error) {
+        const status = error instanceof HttpError ? error.status : 500;
+        return json({ success: false, error: { message: error instanceof HttpError ? error.message : "Crypto request failed." } }, status, cors);
+      }
+    }
     if (request.method === "GET" && url.pathname === "/api/catalog/email-verification/domains") {
       const serviceId = String(url.searchParams.get("service_id") || "").trim();
       if (!serviceId) return json({ success: false, error: { message: "service_id is required." } }, 400, cors);

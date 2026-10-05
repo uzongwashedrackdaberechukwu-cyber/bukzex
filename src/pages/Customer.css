@@ -305,3 +305,12 @@
     min-height: 155px;
   }
 }
+
+.customer-crypto-promo{display:flex;align-items:center;gap:16px;margin:0 0 38px;padding:19px 21px;border:1px solid rgba(231,198,107,.3);border-radius:21px;background:radial-gradient(circle at 90% 10%,rgba(231,198,107,.15),transparent 34%),linear-gradient(120deg,#122d45,#0b1e30);color:#f5f7fa;text-decoration:none;box-shadow:0 15px 35px rgba(0,0,0,.14);transition:transform .2s,border-color .2s}
+.customer-crypto-promo:hover{transform:translateY(-2px);border-color:rgba(231,198,107,.65)}
+.customer-crypto-promo-icon{width:52px;height:52px;display:grid;place-items:center;flex:none;border-radius:16px;background:linear-gradient(145deg,#f4dc91,#bf9038);color:#142238;font-size:27px;font-weight:900}
+.customer-crypto-promo-copy{display:grid;gap:5px;flex:1}
+.customer-crypto-promo-copy strong{font-size:16px}
+.customer-crypto-promo-copy small{color:#a9b8c6;font-size:12px}
+.customer-crypto-promo-action{display:flex;align-items:center;gap:7px;color:#efd27b;font-size:12px;font-weight:800;white-space:nowrap}
+@media(max-width:600px){.customer-crypto-promo{align-items:flex-start;gap:12px;padding:15px}.customer-crypto-promo-icon{width:44px;height:44px}.customer-crypto-promo-copy strong{font-size:14px}.customer-crypto-promo-copy small{font-size:10px;line-height:1.5}.customer-crypto-promo-action{font-size:0}.customer-crypto-promo-action svg{width:19px;height:19px}}

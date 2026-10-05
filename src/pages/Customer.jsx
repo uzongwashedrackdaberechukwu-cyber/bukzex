@@ -383,6 +383,16 @@ export default function Customer() {
 
           </section>
 
+          <Link to="/customer/crypto" className="customer-crypto-promo">
+            <span className="customer-crypto-promo-icon">₿</span>
+            <span className="customer-crypto-promo-copy">
+              <strong>Crypto wallet</strong>
+              <small>Deposit supported crypto and request a bank withdrawal.</small>
+            </span>
+            <span className="customer-crypto-promo-action">Open wallet <ArrowRight size={16} /></span>
+          </Link>
+
+
           <section className="customer-service-preview">
             <div className="customer-section-heading">
               <div><span className="customer-section-kicker">ONE ACCOUNT · MORE POSSIBILITIES</span><h2>What do you need today?</h2><p>Choose a service to see live options and prices.</p></div>

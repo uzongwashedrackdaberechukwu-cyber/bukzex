@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { sendEmailVerification, signOut } from "firebase/auth";
+import { reload, sendEmailVerification, signOut } from "firebase/auth";
 import { auth } from "../lib/firebase";
 import WhatsAppSupport from "../components/WhatsAppSupport";
 import { loginUser, requestPasswordReset } from "../services/auth";
@@ -72,10 +72,14 @@ export default function Login() {
       );
 
       const firebaseUser = auth.currentUser;
+      if (firebaseUser) await reload(firebaseUser);
       if (firebaseUser && !firebaseUser.emailVerified) {
         let notice = "Your email is not confirmed yet.";
         try {
-          await sendEmailVerification(firebaseUser);
+          await sendEmailVerification(firebaseUser, {
+            url: window.location.origin + "/login?emailVerified=1",
+            handleCodeInApp: false,
+          });
           notice += " We sent a fresh verification link. Check your inbox and spam folder.";
         } catch {
           notice += " Sign in again after confirming the link sent during registration.";
