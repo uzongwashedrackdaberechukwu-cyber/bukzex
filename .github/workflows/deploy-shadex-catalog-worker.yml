@@ -1,0 +1,27 @@
+name: Deploy BukzEx Shadex Catalog Worker
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "bukzex-shadex-catalog-worker/**"
+      - ".github/workflows/deploy-shadex-catalog-worker.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy catalog Worker
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: bukzex-shadex-catalog-worker
+          command: deploy src/index.js --config ./wrangler.jsonc --name bukzex-shadex-catalog
