@@ -1,9 +1,10 @@
-BUKZEX PWA SETUP
+BUKZEX PWA INSTALL BUTTON UPDATE
 
-From the BukzEx project root, run:
+Replace the existing pwa-setup.mjs with this package, then run from the BukzEx project root:
   node pwa-setup.mjs
   npm run build
 
-Then commit and push the updated index.html, public/manifest.webmanifest, public/sw.js, public/icons/, pwa-setup.mjs and README-PWA.txt.
+Commit and push the changed index.html and pwa-setup.mjs. Once Cloudflare finishes deploying, share this link:
+  https://bukzex.shadexgoltd.com/?install=1
 
-The service worker caches the app shell and same-origin static assets for offline display. Wallet, sign-in, checkout, orders, catalogue/API requests, and Firebase still need an internet connection.
+The page shows an Install BukzEx button. The visitor taps it and confirms the browser install prompt. If their browser does not expose the prompt yet, the page shows the Chrome menu instructions.
