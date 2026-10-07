@@ -359,6 +359,8 @@
   margin: 5px 0 0;
   color: var(--primary);
   font-size: 20px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .admin-order-modal-header button {
@@ -377,19 +379,19 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1px;
-  background: var(--border);
+  background: rgba(188, 207, 224, .1);
 }
 
 .admin-order-details > div {
   min-width: 0;
   padding: 16px;
-  background: var(--white);
+  background: #0b1d2c;
 }
 
 .admin-order-details span {
   display: block;
   margin-bottom: 6px;
-  color: var(--muted);
+  color: #9eacbb;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: .04em;
@@ -397,7 +399,7 @@
 
 .admin-order-details strong {
   display: block;
-  color: var(--primary);
+  color: #edf2f7;
   font-size: 14px;
   overflow-wrap: anywhere;
 }
