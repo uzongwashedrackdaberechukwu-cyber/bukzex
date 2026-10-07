@@ -30,6 +30,9 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [resetNotice, setResetNotice] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
+  const loginParams = new URLSearchParams(location.search);
+  const emailWasVerified = loginParams.get("emailVerified") === "1";
+  const passwordWasReset = loginParams.get("passwordReset") === "1";
 
   async function handlePasswordReset() {
     setError("");
@@ -228,6 +231,18 @@ export default function Login() {
                 </button>
               </div>
             </div>
+
+            {emailWasVerified && (
+              <div className="login-notice success" role="status" aria-live="polite">
+                Your email address is confirmed. You can now sign in.
+              </div>
+            )}
+
+            {passwordWasReset && (
+              <div className="login-notice success" role="status" aria-live="polite">
+                Your password has been changed. You can now sign in.
+              </div>
+            )}
 
             {resetNotice && (
               <div className="login-notice success" role="status" aria-live="polite">
