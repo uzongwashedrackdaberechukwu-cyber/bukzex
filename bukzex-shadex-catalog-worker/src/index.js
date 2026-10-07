@@ -250,7 +250,13 @@ async function callShadex(env, path, method, idempotencyKey, body) {
 }
 
 function safeMessage(payload, fallback) {
-  return String(payload?.error?.message || payload?.message || fallback).slice(0, 220);
+  return String(
+    payload?.error?.message ||
+    payload?.message ||
+    payload?.data?.error?.message ||
+    payload?.data?.message ||
+    fallback
+  ).slice(0, 220);
 }
 
 async function refundOnce(env, uid, idempotencyKey, message) {
