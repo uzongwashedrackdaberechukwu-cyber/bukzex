@@ -12,6 +12,24 @@ function customerPrice(id, overrides) {
   return saved;
 }
 
+function uniqueMarketplaceProducts(rows, overrides) {
+  const byName = new Map();
+  for (const product of Array.isArray(rows) ? rows : []) {
+    const key = [
+      String(product.service_slug || product.service_name || "").trim().toLowerCase(),
+      String(product.name || product.title || "").trim().toLowerCase().replace(/\s+/g, " "),
+      product.duration ?? "",
+      String(product.duration_unit || "").trim().toLowerCase(),
+    ].join("|");
+    const existing = byName.get(key);
+    // Prefer the duplicate whose BukzEx retail price is already configured.
+    if (!existing || (!customerPrice(existing.id, overrides) && customerPrice(product.id, overrides))) {
+      byName.set(key, product);
+    }
+  }
+  return [...byName.values()].filter((product) => Boolean(customerPrice(product.id, overrides)));
+}
+
 function priceState(id, overrides) {
   const saved = overrides[String(id)];
   if (saved?.is_active === false) return "paused";
@@ -141,7 +159,7 @@ export default function ShadexCataloguePanel({ serviceId, selectedId = "", onSel
         <div><span className="shadex-catalogue-eyebrow">BUKZEX CATALOGUE</span><h2>Choose an option</h2></div>
         <small>{currency}{data.market?.countryCode ? ` · ${data.market.countryCode}` : ""}</small>
       </div>
-      <p className="shadex-catalogue-intro">Available services appear here. Options marked “Price pending” cannot be purchased until BukzEx sets their price.</p>
+      <p className="shadex-catalogue-intro">Only active options with a saved BukzEx price are shown here.</p>
 
       {serviceId === "bills" && <>
         <NestedPlans rows={data.electricity?.providers} label="Electricity" overrides={overrides} selectedId={selectedId} onSelect={onSelect} />
@@ -149,11 +167,10 @@ export default function ShadexCataloguePanel({ serviceId, selectedId = "", onSel
       </>}
 
       {serviceId === "marketplace" && (() => {
-        const products = data.products || [];
+        const products = uniqueMarketplaceProducts(data.products, overrides);
         return expandableList("Digital subscriptions", products, (product) => {
-          const state = priceState(product.id, overrides);
           const amount = customerPrice(product.id, overrides);
-          return <SelectableItem key={product.id} item={{ id: product.id, name: product.title || product.name || "Digital service", logo_url: product.logo_url || product.image_url, price: amount, provider_product_id: product.provider_product_id, service_slug: product.service_slug }} selectedId={selectedId} onSelect={onSelect} availability={state} brandName={product.service_name || product.title || product.name}>
+          return <SelectableItem key={product.id} item={{ id: product.id, name: product.title || product.name || "Digital service", logo_url: product.logo_url || product.image_url, price: amount, provider_product_id: product.provider_product_id, service_slug: product.service_slug }} selectedId={selectedId} onSelect={onSelect} availability="ready" brandName={product.service_name || product.title || product.name}>
             <strong>{product.title || product.name || "Digital service"}</strong><span>{money(amount)}</span>
           </SelectableItem>;
         });

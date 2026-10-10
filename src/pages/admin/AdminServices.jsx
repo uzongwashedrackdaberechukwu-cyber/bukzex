@@ -34,6 +34,21 @@ function priceDocumentId(itemId) {
   return encodeURIComponent(String(itemId));
 }
 
+function uniqueMarketplacePlans(products) {
+  const seen = new Set();
+  return (Array.isArray(products) ? products : []).filter((product) => {
+    const key = [
+      String(product.service_slug || product.service_name || "").trim().toLowerCase(),
+      String(product.name || product.title || "").trim().toLowerCase().replace(/\s+/g, " "),
+      product.duration ?? "",
+      String(product.duration_unit || "").trim().toLowerCase(),
+    ].join("|");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function editableItems(serviceId, data) {
   if (!data) return [];
   if (serviceId === "vtu") {
@@ -88,7 +103,7 @@ function editableItems(serviceId, data) {
     ]);
   }
   if (serviceId === "marketplace") {
-    return (data.products || []).map((product) => ({
+    return uniqueMarketplacePlans(data.products).map((product) => ({
       id: String(product.id), title: product.title || product.name || "Digital service", price: priceOf(product),
     })).filter((item) => item.price);
   }
