@@ -8,6 +8,7 @@ const CATALOG_ROUTES = new Map([
   ["/api/catalog/bills", "/bills/products"],
   ["/api/catalog/marketplace", "/marketplace/products"],
   ["/api/catalog/otp", "/otp/services"],
+  ["/api/catalog/rental", "/rentals/services"],
   ["/api/catalog/social-boost", "/social-boost/services"],
   ["/api/catalog/email-verification/services", "/email-verification/services"],
 ]);
@@ -15,6 +16,7 @@ const ORDER_ROUTES = {
   vtu: "/vtu/orders",
   bills: "/bills/orders",
   sms: "/otp/orders",
+  rental: "/rentals/orders",
   email_verification: "/email-verification/orders",
   social: "/social-boost/orders",
   marketplace: "/digital-services/orders",
@@ -223,6 +225,7 @@ function mapProviderBody(serviceKey, itemId, inputs, recipientType, data, reques
   }];
   if (serviceKey === "email_verification") return [ORDER_ROUTES.email_verification, { service_id: itemId, domain_name: inputs.domain_name }];
   if (serviceKey === "sms") return [ORDER_ROUTES.sms, { service_id: itemId }];
+  if (serviceKey === "rental") return [ORDER_ROUTES.rental, { catalog_id: itemId, months: Number(inputs.months), app_name: String(inputs.app_name || "").trim() }];
   if (serviceKey === "social") return [ORDER_ROUTES.social, { package_id: itemId, target_link: inputs.target_link }];
   return [ORDER_ROUTES.marketplace, {
     plan_id: itemId,
@@ -366,6 +369,14 @@ async function purchase(request, env) {
       minorUnit = Number(savedPrice.minor_unit ?? 2);
       currency = String(savedPrice.currency || "NGN");
       chargeMajor = amountMinor / (10 ** minorUnit);
+      if (serviceKey === "rental") {
+        const months = Number(inputs.months);
+        if (!Number.isInteger(months) || months < 1 || months > 12 ||
+            !String(inputs.app_name || "").trim()) {
+          throw new HttpError(400, "Select a valid rental application and duration.");
+        }
+        chargeMajor *= months;
+      }
       serviceName = String(savedPrice.item_name || inputs.item_name || "BukzEx service");
     }
     currency ||= "NGN";
@@ -440,6 +451,11 @@ async function purchase(request, env) {
   await firestoreCommit(env, [
     updateWrite(env, orderPath, {
       supplier_order_id: supplierOrderId || null,
+      ...(serviceKey === "rental" ? {
+        phone_number: upstream.phone_number || null,
+        rental_months: Number(upstream.months || inputs.months),
+        rental_app_name: String(upstream.app_name || inputs.app_name || ""),
+      } : {}),
       service_email: serviceEmail ? String(serviceEmail).slice(0, 320) : null,
       email_address: upstream.email_address ? String(upstream.email_address).slice(0, 320) : null,
       otp_code: upstream.otp_code ? String(upstream.otp_code).slice(0, 100) : null,
