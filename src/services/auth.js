@@ -96,7 +96,7 @@ export async function getRegisteredUsers() {
   );
 
   return result.docs.map((profileDoc) =>
-    toProfile(profileDoc.data(), profileDoc.data().email || "", "customer")
+    toProfile({ id: profileDoc.id, ...profileDoc.data() }, profileDoc.data().email || "", "customer")
   );
 }
 

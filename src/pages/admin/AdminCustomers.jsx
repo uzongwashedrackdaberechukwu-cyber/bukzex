@@ -8,9 +8,12 @@ import {
   Eye,
   X,
   ShieldCheck,
+  WalletCards,
+  LoaderCircle,
 } from "lucide-react";
 
 import { getRegisteredUsers } from "../../services/auth";
+import { creditCustomerWallet } from "../../services/api";
 
 import "./AdminCustomers.css";
 
@@ -24,12 +27,86 @@ export default function AdminCustomers() {
     useState(null);
   const [allCustomers, setAllCustomers] = useState([]);
   const [error, setError] = useState("");
+  const [creditAmount, setCreditAmount] = useState("");
+  const [creditReason, setCreditReason] = useState("");
+  const [creditKey, setCreditKey] = useState("");
+  const [crediting, setCrediting] = useState(false);
+  const [creditError, setCreditError] = useState("");
+  const [creditNotice, setCreditNotice] = useState("");
 
   useEffect(() => {
     getRegisteredUsers()
       .then((users) => setAllCustomers(users.filter((user) => user.role !== "admin")))
       .catch((err) => setError(err.message || "Unable to load customers."));
   }, []);
+
+  function openCustomer(customer) {
+    setCreditAmount("");
+    setCreditReason("");
+    setCreditKey("");
+    setCreditError("");
+    setCreditNotice("");
+    setSelectedCustomer(customer);
+  }
+
+  function closeCustomer() {
+    if (creditKey && !creditNotice) {
+      setCreditError("This credit attempt may have reached the server. Retry the same request first; its reference prevents a duplicate credit.");
+      return;
+    }
+    setSelectedCustomer(null);
+    setCreditAmount("");
+    setCreditReason("");
+    setCreditKey("");
+    setCreditError("");
+    setCreditNotice("");
+  }
+
+  async function handleWalletCredit(event) {
+    event.preventDefault();
+    if (!selectedCustomer?.id) {
+      setCreditError("Customer account ID is missing.");
+      return;
+    }
+    if (creditKey) {
+      // Keep the same idempotency key and frozen form values after an
+      // uncertain network response so retrying cannot double-credit.
+    } else {
+      const amount = Number(creditAmount);
+      if (!Number.isFinite(amount) || amount <= 0 || amount > 10000000) {
+        setCreditError("Enter an amount between ₦0.01 and ₦10,000,000.");
+        return;
+      }
+      if (Math.round(amount * 100) < 1 || Math.abs(amount * 100 - Math.round(amount * 100)) > 0.00001) {
+        setCreditError("Enter an amount with no more than two decimal places.");
+        return;
+      }
+      if (creditReason.trim().length < 5) {
+        setCreditError("Enter a reason of at least five characters for the audit record.");
+        return;
+      }
+    }
+
+    const amountMinor = Math.round(Number(creditAmount) * 100);
+    const reason = creditReason.trim();
+    const key = creditKey || globalThis.crypto.randomUUID();
+    setCreditKey(key);
+    setCrediting(true);
+    setCreditError("");
+    setCreditNotice("");
+    try {
+      const result = await creditCustomerWallet(selectedCustomer.id, amountMinor, reason, key);
+      setCreditNotice(`Credited ₦${(Number(result.amount_minor || amountMinor) / 100).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. New wallet balance: ₦${Number(result.balance || 0).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. ${result.duplicate ? "This was an idempotent retry; no duplicate credit was added." : "The credit is recorded in the transaction ledger and admin audit log."}`);
+      setCreditAmount("");
+      setCreditReason("");
+      setCreditKey("");
+    } catch (err) {
+      if ([400, 403, 404].includes(Number(err?.status))) setCreditKey("");
+      setCreditError(err?.message || "Wallet credit could not be confirmed. Retry the same request before starting another credit.");
+    } finally {
+      setCrediting(false);
+    }
+  }
 
   const customers = useMemo(() => {
     return allCustomers.filter((user) => {
@@ -172,9 +249,7 @@ export default function AdminCustomers() {
                       <button
                         type="button"
                         className="admin-customer-view"
-                        onClick={() =>
-                          setSelectedCustomer(customer)
-                        }
+                        onClick={() => openCustomer(customer)}
                       >
                         <Eye size={15} />
                         View
@@ -191,7 +266,7 @@ export default function AdminCustomers() {
       {selectedCustomer && (
         <div
           className="admin-customer-modal-overlay"
-          onClick={() => setSelectedCustomer(null)}
+          onClick={closeCustomer}
         >
           <section
             className="admin-customer-modal"
@@ -210,9 +285,8 @@ export default function AdminCustomers() {
 
               <button
                 type="button"
-                onClick={() =>
-                  setSelectedCustomer(null)
-                }
+                onClick={closeCustomer}
+                disabled={crediting}
                 aria-label="Close customer details"
               >
                 <X size={19} />
@@ -265,9 +339,47 @@ export default function AdminCustomers() {
               </div>
             </div>
 
+            <form className="admin-wallet-credit-form" onSubmit={handleWalletCredit}>
+              <div className="admin-wallet-credit-heading">
+                <span className="admin-wallet-credit-icon"><WalletCards size={18} /></span>
+                <div><strong>Credit customer wallet</strong><small>NGN wallet · audited administrator action</small></div>
+              </div>
+              <label htmlFor="admin-credit-amount">Credit amount (₦)</label>
+              <input
+                id="admin-credit-amount"
+                type="number"
+                min="0.01"
+                max="10000000"
+                step="0.01"
+                inputMode="decimal"
+                placeholder="0.00"
+                value={creditAmount}
+                disabled={Boolean(creditKey) || crediting}
+                onChange={(event) => setCreditAmount(event.target.value)}
+                required
+              />
+              <label htmlFor="admin-credit-reason">Reason / reference</label>
+              <textarea
+                id="admin-credit-reason"
+                rows="2"
+                maxLength="240"
+                placeholder="e.g. Verified bank transfer reference"
+                value={creditReason}
+                disabled={Boolean(creditKey) || crediting}
+                onChange={(event) => setCreditReason(event.target.value)}
+                required
+              />
+              {creditKey && !creditNotice && <small className="admin-wallet-credit-retry-note">This attempt is locked to the same reference. Retry it to safely resolve an uncertain response.</small>}
+              {creditError && <p className="admin-wallet-credit-message error" role="alert">{creditError}</p>}
+              {creditNotice && <p className="admin-wallet-credit-message success" role="status">{creditNotice}</p>}
+              <button type="submit" className="admin-wallet-credit-submit" disabled={crediting || !creditAmount || !creditReason.trim()}>
+                {crediting ? <><LoaderCircle size={15} className="admin-wallet-credit-spinner" /> Applying credit…</> : creditKey ? "Retry same credit safely" : "Credit wallet"}
+              </button>
+            </form>
+
             <div className="admin-customer-secure">
               <ShieldCheck size={16} />
-              Customer account information
+              Wallet changes are server-validated, idempotent and audit-logged.
             </div>
           </section>
         </div>

@@ -52,6 +52,14 @@ const services = [
     tag: "OTP & SMS",
   },
   {
+    id: "rental",
+    icon: Smartphone,
+    title: "Virtual Number Rentals",
+    description: "Rent supported virtual numbers for longer periods, billed by month.",
+    accent: "violet",
+    tag: "Number rentals",
+  },
+  {
     id: "social",
     icon: TrendingUp,
     title: "Social Media Boost",

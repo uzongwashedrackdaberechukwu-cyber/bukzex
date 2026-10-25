@@ -8,9 +8,10 @@ import {
   Eye,
   X,
   Trash2,
+  XCircle,
 } from "lucide-react";
 
-import { deleteOrder, getOrders, updateOrder } from "../../services/api";
+import { cancelAdminOrder, deleteOrder, getOrders, updateOrder } from "../../services/api";
 import "./AdminOrders.css";
 
 function formatMoney(value) {
@@ -37,6 +38,18 @@ function isUnpaidAndRemovable(order) {
     && (!paymentStatus || ["unpaid", "failed", "rejected"].includes(paymentStatus));
 }
 
+function canCancelOrder(order) {
+  const status = String(order?.status || "").toLowerCase();
+  if (["completed", "success", "successful", "fulfilled", "refunded", "cancelled", "canceled"].includes(status)) return false;
+  if (order?.provider === "ShadexGoLtd") {
+    return Boolean(order.supplier_order_id)
+      && ["sms", "email_verification"].includes(String(order.service_key || ""))
+      && ["pending", "processing", "active", "waiting", "allocating"].includes(status);
+  }
+  const paymentStatus = String(order?.payment_status || "").toLowerCase();
+  return status === "pending" && (!paymentStatus || ["unpaid", "failed", "rejected"].includes(paymentStatus));
+}
+
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
   const [search, setSearch] = useState("");
@@ -46,6 +59,7 @@ export default function AdminOrders() {
   const [error, setError] = useState("");
   const [updating, setUpdating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   async function loadOrders() {
     try {
@@ -77,6 +91,27 @@ export default function AdminOrders() {
       setError(err.message || "Unable to update this order.");
     } finally {
       setUpdating(false);
+    }
+  }
+
+  async function handleCancel(order) {
+    if (!order?.id || !canCancelOrder(order)) return;
+    const supplierOrder = order.provider === "ShadexGoLtd";
+    const message = supplierOrder
+      ? "Request cancellation from ShadexGoLtd? BukzEx will only refund your customer after the supplier confirms the cancellation and refund."
+      : "Cancel this unpaid pending order? No wallet refund is needed because no payment was taken.";
+    if (!window.confirm(message)) return;
+
+    try {
+      setCancelling(true);
+      setError("");
+      await cancelAdminOrder(order.id, "Cancelled by administrator from BukzEx admin.");
+      setSelectedOrder(null);
+      await loadOrders();
+    } catch (err) {
+      setError(err.message || "Unable to safely cancel this order.");
+    } finally {
+      setCancelling(false);
     }
   }
 
@@ -118,6 +153,10 @@ export default function AdminOrders() {
         order.email,
         order.customer,
         order.customerName,
+        order.user_id,
+        order.provider,
+        order.supplier_order_id,
+        order.payment_status,
         order.details,
       ]
         .filter(Boolean)
@@ -130,7 +169,7 @@ export default function AdminOrders() {
   const stats = useMemo(() => {
     const pending = orders.filter(
       (order) =>
-        String(order.status || "").toLowerCase() === "pending"
+        ["pending", "processing", "waiting", "allocating"].includes(String(order.status || "").toLowerCase())
     ).length;
 
     const completed = orders.filter((order) =>
@@ -197,7 +236,7 @@ export default function AdminOrders() {
           </div>
 
           <div>
-            <span>Pending</span>
+            <span>Pending / Processing</span>
             <strong>{stats.pending}</strong>
           </div>
         </div>
@@ -240,7 +279,7 @@ export default function AdminOrders() {
         </div>
 
         <div className="admin-orders-filters">
-          {["all", "pending", "completed", "rejected"].map(
+          {["all", "pending", "processing", "completed", "failed", "cancelled", "rejected"].map(
             (item) => (
               <button
                 key={item}
@@ -254,9 +293,15 @@ export default function AdminOrders() {
                   ? "All"
                   : item === "pending"
                     ? "Pending"
-                    : item === "rejected"
-                      ? "Rejected"
-                      : "Completed"}
+                    : item === "processing"
+                      ? "Processing"
+                      : item === "failed"
+                        ? "Failed"
+                        : item === "cancelled"
+                          ? "Cancelled"
+                          : item === "rejected"
+                            ? "Rejected"
+                            : "Completed"}
               </button>
             )
           )}
@@ -355,6 +400,16 @@ export default function AdminOrders() {
                         <Eye size={16} />
                         View
                       </button>
+                      {canCancelOrder(order) && (
+                        <button
+                          type="button"
+                          className="admin-order-cancel"
+                          onClick={() => handleCancel(order)}
+                          disabled={cancelling || updating || deleting}
+                        >
+                          <XCircle size={15} /> Cancel
+                        </button>
+                      )}
                       {isUnpaidAndRemovable(order) && (
                         <button
                           type="button"
@@ -452,7 +507,28 @@ export default function AdminOrders() {
                   {selectedOrder.details || "—"}
                 </strong>
               </div>
+              <div>
+                <span>Provider</span>
+                <strong>{selectedOrder.provider || "BukzEx / manual review"}</strong>
+              </div>
+              <div>
+                <span>Payment status</span>
+                <strong>{selectedOrder.payment_status || "Not recorded"}</strong>
+              </div>
+              <div>
+                <span>Fulfilment status</span>
+                <strong>{selectedOrder.fulfillment_status || "Not recorded"}</strong>
+              </div>
+              {selectedOrder.supplier_order_id && <div>
+                <span>Supplier reference</span>
+                <strong>{selectedOrder.supplier_order_id}</strong>
+              </div>}
+              {selectedOrder.user_id && <div>
+                <span>Customer UID</span>
+                <strong>{selectedOrder.user_id}</strong>
+              </div>}
             </div>
+            {error && <div className="admin-orders-error" role="alert">{error}</div>}
             {selectedOrder.status === "pending" && (
               <div className="admin-order-modal-actions">
                 <button type="button" disabled={updating} onClick={() => handleStatusChange("processing")}>Mark Processing</button>
@@ -464,6 +540,21 @@ export default function AdminOrders() {
                 <button type="button" disabled={updating} onClick={() => handleStatusChange("completed")}>Mark Completed</button>
               </div>
             )}
+            {canCancelOrder(selectedOrder) && (
+              <div className="admin-order-modal-actions danger-action">
+                <button
+                  type="button"
+                  disabled={cancelling || updating || deleting}
+                  onClick={() => handleCancel(selectedOrder)}
+                >
+                  <XCircle size={16} />
+                  {cancelling ? "Cancelling safely…" : "Cancel order"}
+                </button>
+              </div>
+            )}
+            {selectedOrder.provider === "ShadexGoLtd" && !canCancelOrder(selectedOrder)
+              && ["pending", "processing", "active", "waiting", "allocating"].includes(String(selectedOrder.status || "").toLowerCase())
+              && <p className="admin-order-cancel-note">This supplier service does not expose a safe cancellation endpoint through the current API. BukzEx will not mark it cancelled or refund it without supplier confirmation.</p>}
             {isUnpaidAndRemovable(selectedOrder) && (
               <div className="admin-order-modal-actions danger-action">
                 <button

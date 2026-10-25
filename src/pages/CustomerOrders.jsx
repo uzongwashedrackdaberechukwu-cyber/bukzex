@@ -51,6 +51,9 @@ function getStatusClass(status) {
   if (
     value.includes("fail") ||
     value.includes("cancel") ||
+    value.includes("reject") ||
+    value.includes("refund") ||
+    value.includes("expired") ||
     value === "failed"
   ) {
     return "failed";
@@ -63,6 +66,55 @@ function isPaidOrder(order) {
   const states = [order?.payment_status, order?.status, order?.fulfillment_status]
     .map((value) => String(value || "").toLowerCase());
   return states.some((value) => ["paid", "confirmed", "complete", "completed", "success", "successful", "fulfilled", "delivered"].includes(value));
+}
+
+function canIssueReceipt(order) {
+  const status = String(order?.status || "").toLowerCase();
+  const fulfillment = String(order?.fulfillment_status || "").toLowerCase();
+  const payment = String(order?.payment_status || "").toLowerCase();
+  const blocked = ["failed", "cancelled", "canceled", "refunded", "rejected", "expired"];
+
+  if ([status, fulfillment, payment].some((value) =>
+    blocked.some((word) => value.includes(word))
+  )) return false;
+
+  const completed = ["completed", "complete", "success", "successful", "fulfilled", "delivered"];
+  return completed.includes(status) || completed.includes(fulfillment);
+}
+
+function receiptText(order) {
+  return [
+    "BUKZEX TRANSACTION RECEIPT",
+    `Service: ${order.serviceName || order.service || "Service Order"}`,
+    `Order reference: ${order.id || order.orderId || "—"}`,
+    `Amount: ${formatAmount(order.amount)}`,
+    `Date: ${formatDate(order.createdAt || order.created_at || order.date)}`,
+    "Status: Completed",
+    "BukzEx transaction receipt. Not a bank-issued receipt.",
+  ].join("\\n");
+}
+
+function printReceipt(order) {
+  const text = receiptText(order);
+  const popup = window.open("", "_blank");
+  if (!popup) {
+    window.alert("Allow pop-ups to print or save this receipt as PDF.");
+    return;
+  }
+
+  const documentRef = popup.document;
+  documentRef.title = "BukzEx Transaction Receipt";
+  const style = documentRef.createElement("style");
+  style.textContent = "body{font-family:Arial,sans-serif;max-width:650px;margin:55px auto;padding:20px;color:#172033}h1{font-size:24px}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:16px/2 Arial,sans-serif}.note{font-size:12px;color:#666}";
+  documentRef.head.appendChild(style);
+  const heading = documentRef.createElement("h1");
+  heading.textContent = "BukzEx Transaction Receipt";
+  documentRef.body.appendChild(heading);
+  const content = documentRef.createElement("pre");
+  content.textContent = text;
+  documentRef.body.appendChild(content);
+  popup.focus();
+  popup.print();
 }
 
 function canDeleteOrder(order) {
@@ -123,11 +175,26 @@ export default function CustomerOrders() {
         ? result
         : result?.orders || result?.data || [];
 
-      const waiting = (Array.isArray(data) ? data : []).filter((order) =>
-        order?.provider === "ShadexGoLtd" && order?.supplier_order_id && ((order?.service_key === "marketplace" && !order?.service_email) || (order?.service_key === "email_verification" && !order?.otp_code && !["expired", "cancelled"].includes(String(order?.status || "").toLowerCase())))
-      );
+      const waiting = (Array.isArray(data) ? data : []).filter((order) => {
+        if (order?.provider !== "ShadexGoLtd") return false;
+        const serviceKey = String(order?.service_key || "");
+        const status = String(order?.status || "").toLowerCase();
+        const terminal = ["failed", "rejected", "cancelled", "canceled", "refunded", "expired"].includes(status);
+        if (terminal) return false;
+        const activeWork = ["pending", "processing", "waiting", "allocating"].includes(status);
+        // Orders without a supplier reference are retried through the same
+        // saved idempotency key by the Worker, recovering uncertain timeouts.
+        if (!order?.supplier_order_id) return activeWork;
+        const waitingForOtp = ["sms", "email_verification"].includes(serviceKey) && !order?.otp_code;
+        const missingDigitalAccount = serviceKey === "marketplace" && !order?.service_email;
+        return activeWork || waitingForOtp || missingDigitalAccount;
+      });
       if (waiting.length) {
-        await Promise.allSettled(waiting.map((order) => refreshDigitalServiceOrder(order.id)));
+        const refreshResults = await Promise.allSettled(waiting.map((order) => refreshDigitalServiceOrder(order.id)));
+        const refreshFailures = refreshResults.filter((item) => item.status === "rejected").length;
+        if (refreshFailures) {
+          setError(`${refreshFailures} supplier status update${refreshFailures === 1 ? "" : "s"} could not be confirmed. Your order records and wallet history are preserved. BukzEx support may need to check the ShadexGoLtd API read permissions.`);
+        }
         result = await getOrders();
         data = Array.isArray(result) ? result : result?.orders || result?.data || [];
       }
@@ -350,6 +417,19 @@ export default function CustomerOrders() {
                     )
                   ) : (
                     <p className="customer-order-locked-details">Service details and OTP support appear here after payment is confirmed and the order is fulfilled.</p>
+                  )}
+                  {canIssueReceipt(order) && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 14 }}>
+                      <button type="button" className="customer-order-otp-link"
+                        onClick={() => printReceipt(order)}>
+                        Print / Save receipt as PDF
+                      </button>
+                      <a className="customer-order-otp-link"
+                        href={`https://wa.me/?text=${encodeURIComponent(receiptText(order))}`}
+                        target="_blank" rel="noopener noreferrer">
+                        <MessageCircle size={16} /> Share receipt via WhatsApp
+                      </a>
+                    </div>
                   )}
                   {canDeleteOrder(order) && (
                     <button

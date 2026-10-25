@@ -88,6 +88,22 @@ export async function purchaseShadexService(payload) {
   return callBukzExWorker("/api/checkout/purchase", payload);
 }
 
+export async function cancelAdminOrder(orderId, reason = "Cancelled by administrator") {
+  return callBukzExWorker("/api/admin/orders/cancel", {
+    order_id: String(orderId || ""),
+    reason,
+  });
+}
+
+export async function creditCustomerWallet(userId, amountMinor, reason, idempotencyKey) {
+  return callBukzExWorker("/api/admin/wallet-credit", {
+    user_id: String(userId || ""),
+    amount_minor: Number(amountMinor),
+    reason: String(reason || ""),
+    idempotency_key: String(idempotencyKey || ""),
+  });
+}
+
 export async function refreshDigitalServiceOrder(orderId) {
   return callBukzExWorker("/api/checkout/order-refresh", { order_id: orderId });
 }
@@ -148,7 +164,9 @@ async function callBukzExWorker(path, payload) {
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok || result?.success !== true) {
-    throw new Error(result?.error?.message || "BukzEx could not complete this request. Please try again.");
+    const error = new Error(result?.error?.message || "BukzEx could not complete this request. Please try again.");
+    error.status = response.status;
+    throw error;
   }
   return result.data;
 }

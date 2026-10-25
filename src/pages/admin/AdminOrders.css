@@ -469,3 +469,42 @@
     font-size: 24px;
   }
 }
+
+
+.admin-order-cancel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 31px;
+  padding: 0 9px;
+  border: 1px solid #FECACA;
+  border-radius: 8px;
+  background: #FFF5F5;
+  color: #B91C1C;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+}
+.admin-order-cancel:hover:not(:disabled) { border-color: #F87171; background: #FEE2E2; }
+.admin-order-cancel:disabled { opacity: .55; cursor: not-allowed; }
+.admin-order-cancel-note {
+  margin: 12px 0 0;
+  padding: 11px 12px;
+  border: 1px solid #FDE68A;
+  border-radius: 10px;
+  background: #FFFBEB;
+  color: #92400E;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.admin-order-status.processing,
+.admin-order-status.waiting,
+.admin-order-status.allocating,
+.admin-order-status.active { background: #E8F0FF; color: #1D4ED8; }
+.admin-order-status.failed,
+.admin-order-status.rejected,
+.admin-order-status.cancelled,
+.admin-order-status.canceled,
+.admin-order-status.refunded,
+.admin-order-status.expired { background: #FEF2F2; color: #B91C1C; }
+.admin-order-row-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }

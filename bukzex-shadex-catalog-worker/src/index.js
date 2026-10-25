@@ -239,17 +239,24 @@ function mapProviderBody(serviceKey, itemId, inputs, recipientType, data, reques
 }
 
 async function callShadex(env, path, method, idempotencyKey, body) {
-  if (!env.SHADEX_API_KEY) throw new HttpError(503, "Service ordering is not configured yet.");
-  const response = await fetch(`${UPSTREAM}${path}`, {
-    method,
-    headers: {
-      Authorization: `Bearer ${env.SHADEX_API_KEY}`,
-      Accept: "application/json",
-      ...(method === "POST" ? { "Content-Type": "application/json", "Idempotency-Key": idempotencyKey } : {}),
-    },
-    ...(method === "POST" ? { body: JSON.stringify(body) } : {}),
-  });
-  return { response, payload: await response.json().catch(() => null) };
+  if (!env.SHADEX_API_KEY) throw new HttpError(503, "ShadexGoLtd API access is not configured.");
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+  try {
+    const response = await fetch(`${UPSTREAM}${path}`, {
+      method,
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${env.SHADEX_API_KEY}`,
+        Accept: "application/json",
+        ...(method === "POST" ? { "Content-Type": "application/json", ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}) } : {}),
+      },
+      ...(method === "POST" ? { body: JSON.stringify(body ?? {}) } : {}),
+    });
+    return { response, payload: await response.json().catch(() => null) };
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function safeMessage(payload, fallback) {
@@ -262,29 +269,217 @@ function safeMessage(payload, fallback) {
   ).slice(0, 220);
 }
 
-async function refundOnce(env, uid, idempotencyKey, message) {
+async function refundOnce(env, uid, idempotencyKey, message, terminalStatus = "failed") {
   const requestPath = `shadex_purchase_requests/${uid}_${idempotencyKey}`;
   const request = await firestoreGet(env, docResource(env, requestPath));
   if (!request || request.data.status === "refunded") return;
-  if (request.data.status !== "processing") return;
+  // A confirmed supplier failure may arrive after the first API call returned
+  // "processing". Only this function's confirmed-failure callers may refund.
+  if (!["processing", "completed"].includes(String(request.data.status))) return;
   const [wallet, order] = await Promise.all([
     firestoreGet(env, docResource(env, `wallets/${uid}`)),
     firestoreGet(env, docResource(env, `orders/${request.data.order_id}`)),
   ]);
-  if (!wallet || !order) throw new HttpError(503, "The supplier rejected the order; refund confirmation is pending. Contact BukzEx Customer Care.");
+  if (!wallet || !order) throw new HttpError(503, "The supplier failure is confirmed, but the BukzEx refund is pending. Contact Customer Care.");
+  const ledgerPath = `wallet_transactions/refund_${uid}_${idempotencyKey}`;
+  const existingLedger = await firestoreGet(env, docResource(env, ledgerPath));
   const amount = amountMajor(request.data.amount_minor, request.data.minor_unit);
-  const restored = Number((Number(wallet.data.balance || 0) + amount).toFixed(request.data.minor_unit));
+  const now = new Date().toISOString();
+  const writes = [
+    updateWrite(env, requestPath, { status: "refunded", message, updated_at: now }, request.updateTime),
+    updateWrite(env, `orders/${request.data.order_id}`, {
+      status: terminalStatus,
+      payment_status: "refunded",
+      fulfillment_status: terminalStatus === "cancelled" ? "cancelled" : "failed",
+      admin_note: message,
+      updated_at: now,
+    }, order.updateTime),
+  ];
+  // If a previous commit succeeded but its response was lost, never credit the
+  // wallet twice. The ledger document is the idempotency authority.
+  if (!existingLedger) {
+    const restored = Number((Number(wallet.data.balance || 0) + amount).toFixed(request.data.minor_unit));
+    writes.unshift(updateWrite(env, `wallets/${uid}`, { balance: restored, updated_at: now }, wallet.updateTime));
+    writes.push(createWrite(env, ledgerPath, {
+      user_id: uid, transaction_type: "refund", amount, amount_minor: Number(request.data.amount_minor),
+      currency: request.data.currency, status: "completed", source_id: request.data.order_id,
+      description: message || "Refund: supplier could not complete this purchase", created_at: now,
+    }));
+  }
+  await firestoreCommit(env, writes);
+}
+
+
+function supplierOrderState(serviceKey, upstream) {
+  const providerStatus = String(upstream?.status || "processing").trim().toLowerCase();
+  const failed = ["failed", "rejected", "cancelled", "canceled", "refunded"].includes(providerStatus);
+  const terminal = failed || providerStatus === "expired";
+  const hasOtp = Boolean(upstream?.otp_code);
+  const otpService = ["sms", "email_verification"].includes(serviceKey);
+  const waitsForOtp = otpService && !hasOtp;
+  const activeDelivery = providerStatus === "active" && !otpService;
+  const fulfilled = !failed && (
+    ["completed", "complete", "success", "successful", "fulfilled", "delivered"].includes(providerStatus)
+    || activeDelivery
+    || (otpService && hasOtp)
+  );
+
+  let status = "processing";
+  if (failed) status = providerStatus === "canceled" ? "cancelled" : providerStatus;
+  else if (providerStatus === "expired") status = "expired";
+  else if (providerStatus === "active" && waitsForOtp) status = "active";
+  else if (fulfilled) status = serviceKey === "rental" && providerStatus === "active" ? "active" : "completed";
+
+  return {
+    providerStatus,
+    failed,
+    terminal,
+    fulfilled,
+    status: providerStatus === "canceled" ? "cancelled" : status,
+    fulfillmentStatus: failed ? (["cancelled", "canceled"].includes(providerStatus) ? "cancelled" : "failed") : providerStatus === "expired" ? "failed" : fulfilled ? "fulfilled" : "processing",
+  };
+}
+
+async function submitSavedPurchaseToShadex(env, uid, orderId, requestRow) {
+  const saved = requestRow?.data;
+  if (!saved || saved.user_id !== uid) throw new HttpError(503, "BukzEx could not recover the saved purchase request.");
+  if (["refunded", "cancelled", "cancel_requested"].includes(String(saved.status || "").toLowerCase())) {
+    throw new HttpError(409, "This purchase is cancelled or refunded. Start a new checkout if you still need the service.");
+  }
+
+  const serviceKey = String(saved.service_key || "");
+  const itemId = String(saved.item_id || "");
+  const inputs = saved.request_data && typeof saved.request_data === "object" ? saved.request_data : {};
+  const idempotencyKey = String(saved.idempotency_key || "");
+  if (!UUID.test(idempotencyKey) || !ORDER_ROUTES[serviceKey] || !itemId) {
+    throw new HttpError(503, "The saved checkout reference is incomplete. Contact BukzEx Customer Care before retrying.");
+  }
+
+  const [path, providerBody] = mapProviderBody(
+    serviceKey,
+    itemId,
+    inputs,
+    String(saved.recipient_type || "self"),
+    {
+      recipient_name: saved.recipient_name || "",
+      recipient_phone: saved.recipient_phone || "",
+      recipient_email: saved.recipient_email || "",
+    },
+    Number(inputs.amount || 0),
+  );
+
+  let result;
+  try {
+    result = await callShadex(env, path, "POST", idempotencyKey, providerBody);
+  } catch {
+    return {
+      order_id: orderId,
+      status: "processing",
+      message: "Your order is saved and awaiting ShadexGoLtd confirmation. Your wallet payment remains reserved; do not pay again. Refresh My Purchases shortly.",
+    };
+  }
+
+  if (!result.response.ok || result.payload?.success !== true) {
+    const message = safeMessage(result.payload, "ShadexGoLtd has not confirmed this order yet.");
+    // 409 is deliberately not refunded: it can mean an idempotency replay or
+    // an existing supplier order. Reconcile with the same key before deciding.
+    if ([400, 401, 402, 403, 422].includes(result.response.status)) {
+      await refundOnce(env, uid, idempotencyKey, message);
+      throw new HttpError(422, `${message} Your BukzEx wallet has been refunded.`);
+    }
+    return {
+      order_id: orderId,
+      status: "processing",
+      message: "Your order is saved and awaiting ShadexGoLtd confirmation. Your wallet payment remains reserved; do not pay again. Refresh My Purchases shortly.",
+    };
+  }
+
+  const upstream = result.payload.data?.order || result.payload.data || {};
+  const supplierOrderId = String(upstream.id || upstream.order_id || "");
+  if (!supplierOrderId) {
+    const orderPath = `orders/${orderId}`;
+    const latest = await firestoreGet(env, docResource(env, orderPath));
+    if (latest) {
+      await firestoreCommit(env, [updateWrite(env, orderPath, {
+        supplier_status: "reference_pending",
+        supplier_message: "Supplier accepted the request but did not return an order reference.",
+        updated_at: new Date().toISOString(),
+      }, latest.updateTime)]);
+    }
+    return {
+      order_id: orderId,
+      status: "processing",
+      message: "ShadexGoLtd received the request, but its order reference is still being confirmed. Your wallet payment remains reserved. Refresh My Purchases shortly.",
+    };
+  }
+
+  const state = supplierOrderState(serviceKey, upstream);
+  if (state.failed) {
+    await refundOnce(
+      env,
+      uid,
+      idempotencyKey,
+      safeMessage(result.payload, `ShadexGoLtd reported this order as ${state.status}.`),
+      state.status === "cancelled" ? "cancelled" : "failed",
+    );
+    return {
+      order_id: orderId,
+      status: state.status,
+      payment_status: "refunded",
+      message: "ShadexGoLtd confirmed that the order could not be completed. Your BukzEx wallet has been refunded.",
+    };
+  }
+
+  const orderPath = `orders/${orderId}`;
+  const requestPath = `shadex_purchase_requests/${uid}_${idempotencyKey}`;
+  const [latestOrder, latestRequest] = await Promise.all([
+    firestoreGet(env, docResource(env, orderPath)),
+    firestoreGet(env, docResource(env, requestPath)),
+  ]);
+  if (!latestOrder || !latestRequest) {
+    throw new HttpError(503, "ShadexGoLtd accepted the order, but BukzEx is still saving its reference. Refresh My Purchases shortly.");
+  }
+
+  const serviceEmail = upstream.login_email || upstream.service_email || upstream.email_address || null;
   const now = new Date().toISOString();
   await firestoreCommit(env, [
-    updateWrite(env, `wallets/${uid}`, { balance: restored, updated_at: now }, wallet.updateTime),
-    updateWrite(env, requestPath, { status: "refunded", message, updated_at: now }, request.updateTime),
-    updateWrite(env, `orders/${request.data.order_id}`, { status: "failed", payment_status: "refunded", fulfillment_status: "failed", admin_note: message, updated_at: now }, order.updateTime),
-    createWrite(env, `wallet_transactions/refund_${uid}_${idempotencyKey}`, {
-      user_id: uid, transaction_type: "refund", amount, currency: request.data.currency,
-      status: "completed", source_id: request.data.order_id,
-      description: "Refund: supplier could not accept this purchase", created_at: now,
-    }),
+    updateWrite(env, orderPath, {
+      supplier_order_id: supplierOrderId,
+      ...(serviceKey === "rental" ? {
+        phone_number: upstream.phone_number || null,
+        rental_months: Number(upstream.months || inputs.months),
+        rental_app_name: String(upstream.app_name || inputs.app_name || ""),
+      } : {}),
+      service_email: serviceEmail ? String(serviceEmail).slice(0, 320) : null,
+      email_address: upstream.email_address ? String(upstream.email_address).slice(0, 320) : null,
+      otp_code: upstream.otp_code ? String(upstream.otp_code).slice(0, 100) : null,
+      domain_name: serviceKey === "email_verification" ? String(upstream.domain_name || inputs.domain_name || "").slice(0, 160) : null,
+      expires_at: upstream.expires_at || null,
+      status: state.status,
+      fulfillment_status: state.fulfillmentStatus,
+      supplier_status: state.providerStatus,
+      supplier_message: null,
+      support_url: SUPPORT_URL,
+      updated_at: now,
+    }, latestOrder.updateTime),
+    updateWrite(env, requestPath, {
+      status: state.fulfilled ? "completed" : "processing",
+      supplier_order_id: supplierOrderId,
+      updated_at: now,
+    }, latestRequest.updateTime),
   ]);
+
+  return {
+    order_id: orderId,
+    status: state.status,
+    service_email: serviceEmail || null,
+    email_address: upstream.email_address || null,
+    otp_code: upstream.otp_code || null,
+    expires_at: upstream.expires_at || null,
+    message: state.fulfilled
+      ? "Your purchase is ready in My Purchases."
+      : "Your order has been accepted by ShadexGoLtd and is still processing. Your wallet payment is reserved; track progress in My Purchases.",
+  };
 }
 
 async function purchase(request, env) {
@@ -333,11 +528,9 @@ async function purchase(request, env) {
       || JSON.stringify(prior.request_data || {}) !== JSON.stringify(inputs)) {
       throw new HttpError(409, "This payment reference was already used for different checkout details.");
     }
-    if (prior.status === "refunded") throw new HttpError(409, "This payment was refunded. Start a new checkout.");
-    amountMinor = Number(prior.amount_minor);
-    minorUnit = Number(prior.minor_unit);
-    currency = String(prior.currency || "NGN");
-    serviceName = String(prior.service_name || "BukzEx service");
+    if (["refunded", "cancelled", "cancel_requested", "failed", "expired"].includes(String(prior.status || "").toLowerCase())) {
+      throw new HttpError(409, "This purchase is no longer active. Check My Purchases or contact BukzEx Customer Care before starting another checkout.");
+    }
   } else {
     const service = await firestoreGet(env, docResource(env, `services/${serviceKey}`));
     const wallet = await firestoreGet(env, docResource(env, walletPath));
@@ -418,66 +611,319 @@ async function purchase(request, env) {
   }
 
   const existingOrder = await firestoreGet(env, docResource(env, orderPath));
-  if (existingOrder?.data.fulfillment_status === "fulfilled" || existingOrder?.data.status === "active" || existingOrder?.data.status === "completed") {
-    return { order_id: orderId, status: existingOrder.data.status, service_email: existingOrder.data.service_email || null, message: "This purchase is already in your BukzEx Stack." };
+  if (existingOrder?.data.supplier_order_id) {
+    return {
+      order_id: orderId,
+      status: existingOrder.data.status || "processing",
+      payment_status: existingOrder.data.payment_status || null,
+      fulfillment_status: existingOrder.data.fulfillment_status || null,
+      service_email: existingOrder.data.service_email || null,
+      email_address: existingOrder.data.email_address || null,
+      otp_code: existingOrder.data.otp_code || null,
+      message: "This purchase has already been submitted to ShadexGoLtd. Check My Purchases for the latest status.",
+    };
+  }
+  if (["completed", "active"].includes(String(existingOrder?.data.status || "").toLowerCase())
+      && existingOrder?.data.fulfillment_status === "fulfilled") {
+    return {
+      order_id: orderId,
+      status: existingOrder.data.status,
+      service_email: existingOrder.data.service_email || null,
+      email_address: existingOrder.data.email_address || null,
+      otp_code: existingOrder.data.otp_code || null,
+      message: "This purchase is already available in My Purchases.",
+    };
   }
 
-  const requestedAmount = Number(inputs.amount || 0);
-  const [path, body] = mapProviderBody(serviceKey, itemId, inputs, recipientType, { ...data, recipient_name: recipientName, recipient_phone: recipientPhone, recipient_email: recipientEmail }, requestedAmount);
-  let result;
-  try { result = await callShadex(env, path, "POST", idempotencyKey, body); }
-  catch { return { order_id: orderId, status: "processing", message: "Your payment is reserved while BukzEx confirms the service. Check My Stack before trying again." }; }
+  const requestRow = await firestoreGet(env, docResource(env, reqPath));
+  return submitSavedPurchaseToShadex(env, uid, orderId, requestRow);
+}
 
-  if (!result.response.ok || result.payload?.success !== true) {
-    if ([400, 401, 402, 403, 409, 422].includes(result.response.status)) {
-      const message = safeMessage(result.payload, "The service provider could not accept this order.");
-      await refundOnce(env, uid, idempotencyKey, message);
-      throw new HttpError(422, `${message} Your BukzEx wallet has been refunded.`);
+
+async function requireAdminIdentity(request, env) {
+  const identity = await verifyFirebaseToken(request, env);
+  const admin = await firestoreGet(env, docResource(env, `admins/${identity.uid}`));
+  if (!admin) throw new HttpError(403, "Administrator access required.");
+  return identity;
+}
+
+async function adminWalletCredit(request, env) {
+  const identity = await requireAdminIdentity(request, env);
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object") throw new HttpError(400, "Credit details must be valid JSON.");
+
+  const targetUid = String(body.user_id || "").trim();
+  const amountMinor = Number(body.amount_minor);
+  const idempotencyKey = String(body.idempotency_key || request.headers.get("Idempotency-Key") || "").trim();
+  const reason = String(body.reason || "").trim().slice(0, 240);
+
+  if (!targetUid || targetUid.length > 128) throw new HttpError(400, "Choose a valid customer account.");
+  if (!UUID.test(idempotencyKey)) throw new HttpError(400, "A UUID credit reference is required.");
+  if (!Number.isSafeInteger(amountMinor) || amountMinor < 1 || amountMinor > 1000000000) {
+    throw new HttpError(400, "Enter a credit amount between ₦0.01 and ₦10,000,000.");
+  }
+  if (reason.length < 5) throw new HttpError(400, "Enter a reason for this wallet credit (at least 5 characters).");
+
+  const profile = await firestoreGet(env, docResource(env, `profiles/${targetUid}`));
+  if (!profile) throw new HttpError(404, "The selected customer profile was not found.");
+
+  const walletPath = `wallets/${targetUid}`;
+  const ledgerPath = `wallet_transactions/admin_credit_${identity.uid}_${idempotencyKey}`;
+  const auditPath = `admin_wallet_credit_audit/${identity.uid}_${idempotencyKey}`;
+  const existingLedger = await firestoreGet(env, docResource(env, ledgerPath));
+  if (existingLedger) {
+    if (existingLedger.data.user_id !== targetUid
+      || Number(existingLedger.data.amount_minor) !== amountMinor
+      || existingLedger.data.admin_uid !== identity.uid) {
+      throw new HttpError(409, "This credit reference was already used for different details.");
     }
-    return { order_id: orderId, status: "processing", message: "Your payment is reserved while BukzEx confirms the service. Check My Stack before trying again." };
+    const wallet = await firestoreGet(env, docResource(env, walletPath));
+    return {
+      transaction_id: ledgerPath.split("/").pop(),
+      user_id: targetUid,
+      amount_minor: amountMinor,
+      balance: Number(wallet?.data?.balance || 0),
+      duplicate: true,
+      message: "This wallet credit was already applied. No additional credit was added.",
+    };
   }
 
-  const upstream = result.payload.data?.order || result.payload.data || {};
-  const supplierOrderId = String(upstream.id || upstream.order_id || "");
-  const serviceEmail = upstream.login_email || upstream.service_email || upstream.email_address || null;
-  const providerStatus = String(upstream.status || "processing").toLowerCase();
-  const completed = ["active", "completed", "success", "successful"].includes(providerStatus);
+  const wallet = await firestoreGet(env, docResource(env, walletPath));
+  if (wallet && String(wallet.data.currency || "NGN").toUpperCase() !== "NGN") {
+    throw new HttpError(409, "Manual credit is only supported for NGN wallets.");
+  }
+  const currentBalance = Number(wallet?.data?.balance || 0);
+  if (!Number.isFinite(currentBalance) || currentBalance < 0) {
+    throw new HttpError(409, "The customer wallet balance is invalid. Review it before crediting.");
+  }
+  const amount = amountMinor / 100;
+  const balance = Number((currentBalance + amount).toFixed(2));
   const now = new Date().toISOString();
-  const [order, requestRow] = await Promise.all([
-    firestoreGet(env, docResource(env, orderPath)),
-    firestoreGet(env, docResource(env, reqPath)),
-  ]);
-  if (!order || !requestRow) throw new HttpError(503, "The supplier accepted the order; stack update is pending. Refresh My Stack shortly.");
-  await firestoreCommit(env, [
-    updateWrite(env, orderPath, {
-      supplier_order_id: supplierOrderId || null,
-      ...(serviceKey === "rental" ? {
-        phone_number: upstream.phone_number || null,
-        rental_months: Number(upstream.months || inputs.months),
-        rental_app_name: String(upstream.app_name || inputs.app_name || ""),
-      } : {}),
-      service_email: serviceEmail ? String(serviceEmail).slice(0, 320) : null,
-      email_address: upstream.email_address ? String(upstream.email_address).slice(0, 320) : null,
-      otp_code: upstream.otp_code ? String(upstream.otp_code).slice(0, 100) : null,
-      domain_name: serviceKey === "email_verification" ? String(upstream.domain_name || inputs.domain_name || "").slice(0, 160) : null,
-      expires_at: upstream.expires_at || null,
-      status: completed ? "completed" : "processing",
-      fulfillment_status: completed ? "fulfilled" : "processing",
-      supplier_status: providerStatus, support_url: SUPPORT_URL, updated_at: now,
-    }, order.updateTime),
-    updateWrite(env, reqPath, {
-      status: "completed", supplier_order_id: supplierOrderId || null, updated_at: now,
-    }, requestRow.updateTime),
-  ]);
+  const writes = [
+    wallet
+      ? updateWrite(env, walletPath, { balance, updated_at: now }, wallet.updateTime)
+      : createWrite(env, walletPath, { user_id: targetUid, balance, currency: "NGN", updated_at: now }),
+    createWrite(env, ledgerPath, {
+      user_id: targetUid,
+      transaction_type: "admin_credit",
+      amount,
+      amount_minor: amountMinor,
+      currency: "NGN",
+      status: "completed",
+      source_id: idempotencyKey,
+      description: `Administrator wallet credit: ${reason}`,
+      admin_uid: identity.uid,
+      created_at: now,
+    }),
+    createWrite(env, auditPath, {
+      admin_uid: identity.uid,
+      customer_uid: targetUid,
+      amount_minor: amountMinor,
+      currency: "NGN",
+      reason,
+      transaction_id: ledgerPath.split("/").pop(),
+      idempotency_key: idempotencyKey,
+      created_at: now,
+    }),
+  ];
+  await firestoreCommit(env, writes);
+
   return {
-    order_id: orderId, status: completed ? "completed" : "processing",
-    service_email: serviceEmail || null,
-    email_address: upstream.email_address || null,
-    otp_code: upstream.otp_code || null,
-    expires_at: upstream.expires_at || null,
-    message: serviceEmail
-      ? "Payment complete. Your service email is in My Stack. Contact BukzEx Customer Care for password or OTP help."
-      : "Payment complete. Your order is in My Stack. Contact BukzEx Customer Care for delivery or OTP help.",
+    transaction_id: ledgerPath.split("/").pop(),
+    user_id: targetUid,
+    amount_minor: amountMinor,
+    balance,
+    duplicate: false,
+    message: "Wallet credited successfully and the action was recorded in the admin audit log.",
+  };
+}
+
+async function refundBukzExOrderAfterSupplierCancellation(env, orderId, customerUid, idempotencyKey, adminUid, reason) {
+  const orderPath = `orders/${orderId}`;
+  const requestPath = `shadex_purchase_requests/${customerUid}_${idempotencyKey}`;
+  const ledgerPath = `wallet_transactions/refund_${customerUid}_${idempotencyKey}`;
+  const auditPath = `admin_order_cancellation_audit/${adminUid}_${idempotencyKey}`;
+  const [order, savedRequest, wallet, existingLedger] = await Promise.all([
+    firestoreGet(env, docResource(env, orderPath)),
+    firestoreGet(env, docResource(env, requestPath)),
+    firestoreGet(env, docResource(env, `wallets/${customerUid}`)),
+    firestoreGet(env, docResource(env, ledgerPath)),
+  ]);
+  if (!order || !savedRequest || !wallet) throw new HttpError(503, "Supplier cancellation was confirmed, but BukzEx could not load the wallet/order records for refund.");
+  if (order.data.payment_status === "refunded" || savedRequest.data.status === "refunded") {
+    return { duplicate: true, status: "cancelled", payment_status: "refunded" };
+  }
+
+  const amountMinor = Number(savedRequest.data.amount_minor ?? order.data.amount_minor);
+  if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) throw new HttpError(503, "The original purchase amount is invalid; refund requires manual review.");
+  const now = new Date().toISOString();
+  const writes = [
+    updateWrite(env, orderPath, {
+      status: "cancelled",
+      payment_status: "refunded",
+      fulfillment_status: "cancelled",
+      cancellation_reason: reason,
+      admin_note: reason,
+      updated_at: now,
+    }, order.updateTime),
+    updateWrite(env, requestPath, {
+      status: "refunded",
+      message: "Supplier cancellation confirmed; BukzEx customer refund applied.",
+      updated_at: now,
+    }, savedRequest.updateTime),
+    createWrite(env, auditPath, {
+      admin_uid: adminUid,
+      customer_uid: customerUid,
+      order_id: orderId,
+      supplier_order_id: order.data.supplier_order_id || null,
+      reason,
+      idempotency_key: idempotencyKey,
+      created_at: now,
+    }),
+  ];
+
+  if (!existingLedger) {
+    const amount = amountMinor / 100;
+    const restored = Number((Number(wallet.data.balance || 0) + amount).toFixed(2));
+    writes.unshift(updateWrite(env, `wallets/${customerUid}`, { balance: restored, updated_at: now }, wallet.updateTime));
+    writes.push(createWrite(env, ledgerPath, {
+      user_id: customerUid,
+      transaction_type: "refund",
+      amount,
+      amount_minor: amountMinor,
+      currency: "NGN",
+      status: "completed",
+      source_id: orderId,
+      description: `Refund after supplier-confirmed cancellation: ${reason}`,
+      admin_uid: adminUid,
+      created_at: now,
+    }));
+  }
+
+  await firestoreCommit(env, writes);
+  return { duplicate: Boolean(existingLedger), status: "cancelled", payment_status: "refunded" };
+}
+
+async function adminCancelOrder(request, env) {
+  const identity = await requireAdminIdentity(request, env);
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object") throw new HttpError(400, "Cancellation details must be valid JSON.");
+
+  const orderId = String(body.order_id || "").trim();
+  const reason = String(body.reason || "Cancelled by administrator").trim().slice(0, 240);
+  if (!orderId || orderId.length > 500) throw new HttpError(400, "Choose a valid order.");
+  if (reason.length < 5) throw new HttpError(400, "Enter a cancellation reason.");
+
+  const orderPath = `orders/${orderId}`;
+  const order = await firestoreGet(env, docResource(env, orderPath));
+  if (!order) throw new HttpError(404, "Order not found.");
+  const currentStatus = String(order.data.status || "").toLowerCase();
+  if (["cancelled", "canceled"].includes(currentStatus)) {
+    return {
+      order_id: orderId,
+      status: "cancelled",
+      payment_status: order.data.payment_status || "unpaid",
+      duplicate: true,
+      message: "This order has already been cancelled.",
+    };
+  }
+  if (["completed", "active", "success", "successful", "fulfilled"].includes(currentStatus)) {
+    throw new HttpError(409, "This order is already fulfilled and cannot be cancelled through BukzEx.");
+  }
+
+  if (order.data.provider !== "ShadexGoLtd") {
+    const paymentStatus = String(order.data.payment_status || "").toLowerCase();
+    if (currentStatus !== "pending" || !["", "unpaid", "failed", "rejected"].includes(paymentStatus)) {
+      throw new HttpError(409, "Only an unpaid pending order can be cancelled locally.");
+    }
+    const now = new Date().toISOString();
+    await firestoreCommit(env, [
+      updateWrite(env, orderPath, {
+        status: "cancelled",
+        fulfillment_status: "cancelled",
+        cancellation_reason: reason,
+        admin_note: reason,
+        cancelled_by: identity.uid,
+        updated_at: now,
+      }, order.updateTime),
+      createWrite(env, `admin_order_cancellation_audit/${identity.uid}_${orderId}`, {
+        admin_uid: identity.uid,
+        order_id: orderId,
+        customer_uid: order.data.user_id || null,
+        reason,
+        payment_status: paymentStatus || "unpaid",
+        created_at: now,
+      }),
+    ]);
+    return { order_id: orderId, status: "cancelled", payment_status: paymentStatus || "unpaid", duplicate: false };
+  }
+
+  const customerUid = String(order.data.user_id || "");
+  const prefix = `shadex_${customerUid}_`;
+  if (!customerUid || !orderId.startsWith(prefix)) throw new HttpError(409, "This supplier order has an unsupported reference format.");
+  const idempotencyKey = orderId.slice(prefix.length);
+  if (!UUID.test(idempotencyKey)) throw new HttpError(409, "This supplier order reference cannot be safely reconciled.");
+  const supplierOrderId = String(order.data.supplier_order_id || "");
+  if (!supplierOrderId) {
+    throw new HttpError(409, "ShadexGoLtd has not confirmed this order reference yet. Refresh the order first; no cancellation or refund was applied.");
+  }
+
+  const serviceKey = String(order.data.service_key || "");
+  let cancelPath;
+  if (serviceKey === "sms") cancelPath = `/otp/orders/${encodeURIComponent(supplierOrderId)}/cancel`;
+  else if (serviceKey === "email_verification") cancelPath = `/email-verification/orders/${encodeURIComponent(supplierOrderId)}/cancel`;
+  else {
+    throw new HttpError(409, "ShadexGoLtd does not expose a cancellation endpoint for this service. The order was not marked cancelled and no refund was issued.");
+  }
+
+  let result = null;
+  let cancellationError = "";
+  try {
+    result = await callShadex(env, cancelPath, "POST", idempotencyKey, {});
+  } catch {
+    cancellationError = "Cancellation response timed out.";
+  }
+
+  let supplierOrder = result?.payload?.data?.order || result?.payload?.data;
+  let supplierStatus = String(supplierOrder?.status || "").toLowerCase();
+  const cancellationAccepted = Boolean(result?.response?.ok && result?.payload?.success === true);
+
+  // A retry may arrive after ShadexGoLtd already cancelled/refunded the order
+  // but before BukzEx committed its own customer refund. Read the supplier's
+  // authoritative order state before deciding whether to credit the customer.
+  if (!cancellationAccepted || supplierStatus !== "refunded") {
+    const statusPath = serviceKey === "sms"
+      ? `/otp/orders/${encodeURIComponent(supplierOrderId)}/refresh`
+      : `/email-verification/orders/${encodeURIComponent(supplierOrderId)}/refresh`;
+    try {
+      const check = await callShadex(env, statusPath, "POST", "", {});
+      const checkedOrder = check.payload?.data?.order || check.payload?.data;
+      const checkedStatus = String(checkedOrder?.status || "").toLowerCase();
+      if (check.response.ok && check.payload?.success === true && checkedStatus === "refunded") {
+        supplierOrder = checkedOrder;
+        supplierStatus = checkedStatus;
+      }
+    } catch {
+      // Keep the customer funds untouched while supplier state is uncertain.
+    }
+  }
+
+  if (supplierStatus !== "refunded") {
+    if (!cancellationAccepted) {
+      throw new HttpError(409, safeMessage(result?.payload, cancellationError || "ShadexGoLtd could not confirm cancellation. No BukzEx refund was issued."));
+    }
+    throw new HttpError(503, "ShadexGoLtd has not confirmed the supplier refund yet. BukzEx has not issued a customer refund; refresh the order or contact support.");
+  }
+
+  const refund = await refundBukzExOrderAfterSupplierCancellation(
+    env, orderId, customerUid, idempotencyKey, identity.uid, reason,
+  );
+  return {
+    order_id: orderId,
+    status: refund.status,
+    payment_status: refund.payment_status,
+    duplicate: refund.duplicate,
+    message: "Supplier cancellation and BukzEx wallet refund have been confirmed.",
   };
 }
 
@@ -485,53 +931,114 @@ async function refreshOrder(request, env) {
   const { uid } = await verifyFirebaseToken(request, env);
   const body = await request.json().catch(() => ({}));
   const orderId = String(body.order_id || "");
-  if (!orderId.startsWith(`shadex_${uid}_`)) throw new HttpError(404, "This BukzEx order was not found.");
-  const path = `orders/${orderId}`;
-  const order = await firestoreGet(env, docResource(env, path));
+  const orderPrefix = `shadex_${uid}_`;
+  if (!orderId.startsWith(orderPrefix)) throw new HttpError(404, "This BukzEx order was not found.");
+  const orderPath = `orders/${orderId}`;
+  const order = await firestoreGet(env, docResource(env, orderPath));
   if (!order || order.data.user_id !== uid) throw new HttpError(404, "This BukzEx order was not found.");
 
-  const emailVerification = order.data.service_key === "email_verification";
-  const supplierOrderId = String(order.data.supplier_order_id || "");
+  const idempotencyKey = orderId.slice(orderPrefix.length);
+  if (!UUID.test(idempotencyKey)) throw new HttpError(404, "This BukzEx order reference is invalid.");
+  const requestPath = `shadex_purchase_requests/${uid}_${idempotencyKey}`;
+  const requestRow = await firestoreGet(env, docResource(env, requestPath));
+  if (!requestRow) throw new HttpError(503, "BukzEx could not recover the saved supplier request.");
+
+  const serviceKey = String(order.data.service_key || requestRow.data.service_key || "");
+  const supplierOrderId = String(order.data.supplier_order_id || requestRow.data.supplier_order_id || "");
   if (!supplierOrderId) {
+    if (["refunded", "cancelled", "cancel_requested", "failed", "expired"].includes(String(requestRow.data.status || "").toLowerCase())) {
+      return {
+        order_id: orderId,
+        status: order.data.status,
+        payment_status: order.data.payment_status || null,
+        service_email: order.data.service_email || null,
+        email_address: order.data.email_address || null,
+        otp_code: order.data.otp_code || null,
+        expires_at: order.data.expires_at || null,
+      };
+    }
+    // Recover requests whose first POST timed out or whose supplier response
+    // was accepted but not saved. Reuse the original idempotency key.
+    return submitSavedPurchaseToShadex(env, uid, orderId, requestRow);
+  }
+
+  let refreshPath;
+  let method = "GET";
+  if (serviceKey === "email_verification") {
+    refreshPath = `/email-verification/orders/${encodeURIComponent(supplierOrderId)}/refresh`;
+    method = "POST";
+  } else if (serviceKey === "sms") {
+    refreshPath = `/otp/orders/${encodeURIComponent(supplierOrderId)}/refresh`;
+    method = "POST";
+  } else if (serviceKey === "rental") {
+    refreshPath = `/rentals/orders/${encodeURIComponent(supplierOrderId)}`;
+  } else {
+    refreshPath = `/orders/${encodeURIComponent(supplierOrderId)}`;
+  }
+
+  let result;
+  try {
+    result = await callShadex(env, refreshPath, method, "", method === "POST" ? {} : null);
+  } catch {
+    throw new HttpError(503, "ShadexGoLtd status is temporarily unavailable. Your order remains saved; try refreshing again shortly.");
+  }
+
+  const upstream = result.payload?.data?.order || result.payload?.data;
+  if (!result.response.ok || !upstream) {
+    const providerCode = String(result.payload?.error?.code || "");
+    if (result.response.status === 403 && (providerCode === "insufficient_scope" || /permission|scope/i.test(safeMessage(result.payload, "")))) {
+      throw new HttpError(503, "BukzEx can submit orders, but this API key cannot refresh this order. Enable the required ShadexGoLtd read/refresh permission for this service.");
+    }
+    throw new HttpError(503, "ShadexGoLtd status is temporarily unavailable. Your order remains saved; try refreshing again shortly.");
+  }
+
+  const state = supplierOrderState(serviceKey, upstream);
+  if (state.failed) {
+    await refundOnce(
+      env,
+      uid,
+      idempotencyKey,
+      safeMessage(result.payload, `ShadexGoLtd confirmed that this order is ${state.status}.`),
+      state.status === "cancelled" ? "cancelled" : "failed",
+    );
     return {
       order_id: orderId,
-      status: order.data.status,
-      email_address: order.data.email_address || null,
-      otp_code: order.data.otp_code || null,
-      expires_at: order.data.expires_at || null,
-      service_email: order.data.service_email || null,
+      status: state.status,
+      payment_status: "refunded",
+      message: "ShadexGoLtd confirmed that the order could not be completed. Your BukzEx wallet has been refunded.",
     };
   }
 
-  const refreshPath = emailVerification
-    ? `/email-verification/orders/${encodeURIComponent(supplierOrderId)}/refresh`
-    : `/orders/${encodeURIComponent(supplierOrderId)}`;
-  const method = emailVerification ? "POST" : "GET";
-  const { response, payload } = await callShadex(env, refreshPath, method, "", emailVerification ? {} : null);
-  const upstream = payload?.data?.order || payload?.data;
-  if (!response.ok || !upstream) throw new HttpError(503, "The order status is temporarily unavailable. Try again shortly.");
-
   const serviceEmail = upstream.login_email || upstream.service_email || upstream.email_address || null;
-  const active = Boolean(serviceEmail) && String(upstream.status).toLowerCase() === "active";
-  const emailStatus = String(upstream.status || order.data.status || "waiting").toLowerCase();
-  const status = emailVerification ? emailStatus : active ? "active" : "processing";
   const now = new Date().toISOString();
+  const latestOrder = await firestoreGet(env, docResource(env, orderPath));
+  const latestRequest = await firestoreGet(env, docResource(env, requestPath));
+  if (!latestOrder || !latestRequest) throw new HttpError(503, "The supplier status was received, but BukzEx could not save it yet.");
 
-  await firestoreCommit(env, [updateWrite(env, path, {
-    service_email: serviceEmail ? String(serviceEmail).slice(0, 320) : null,
-    email_address: upstream.email_address ? String(upstream.email_address).slice(0, 320) : null,
-    otp_code: upstream.otp_code ? String(upstream.otp_code).slice(0, 100) : null,
-    domain_name: upstream.domain_name || order.data.domain_name || null,
-    expires_at: upstream.expires_at || order.data.expires_at || null,
-    status,
-    fulfillment_status: emailVerification
-      ? (upstream.otp_code ? "fulfilled" : emailStatus)
-      : active ? "fulfilled" : "processing",
-    stack_id: upstream.stack_id || null,
-    service_starts_at: upstream.starts_at || null,
-    service_ends_at: upstream.ends_at || null,
-    updated_at: now,
-  }, order.updateTime)]);
+  const status = state.status;
+  await firestoreCommit(env, [
+    updateWrite(env, orderPath, {
+      service_email: serviceEmail ? String(serviceEmail).slice(0, 320) : null,
+      email_address: upstream.email_address ? String(upstream.email_address).slice(0, 320) : null,
+      otp_code: upstream.otp_code ? String(upstream.otp_code).slice(0, 100) : null,
+      phone_number: upstream.phone_number || latestOrder.data.phone_number || null,
+      domain_name: upstream.domain_name || latestOrder.data.domain_name || null,
+      expires_at: upstream.expires_at || latestOrder.data.expires_at || null,
+      status,
+      supplier_status: state.providerStatus,
+      fulfillment_status: state.fulfillmentStatus,
+      failure_reason: upstream.failure_reason || latestOrder.data.failure_reason || null,
+      stack_id: upstream.stack_id || null,
+      service_starts_at: upstream.starts_at || null,
+      service_ends_at: upstream.ends_at || null,
+      updated_at: now,
+    }, latestOrder.updateTime),
+    updateWrite(env, requestPath, {
+      status: state.terminal ? "expired" : state.fulfilled ? "completed" : "processing",
+      supplier_order_id: supplierOrderId,
+      updated_at: now,
+    }, latestRequest.updateTime),
+  ]);
 
   return {
     order_id: orderId,
@@ -540,9 +1047,13 @@ async function refreshOrder(request, env) {
     email_address: upstream.email_address || null,
     otp_code: upstream.otp_code || null,
     expires_at: upstream.expires_at || null,
+    message: state.fulfilled
+      ? "Your purchase is ready in My Purchases."
+      : state.terminal
+        ? "This supplier order has expired. Contact BukzEx Customer Care to review the outcome."
+        : "Your order is still processing. Refresh My Purchases for the latest update.",
   };
 }
-
 
 async function requireCryptoUser(request, env) {
   const identity = await verifyFirebaseToken(request, env);
@@ -1102,6 +1613,22 @@ export default {
       } catch (error) {
         const status = error instanceof HttpError ? error.status : 500;
         return json({ success: false, error: { message: error instanceof HttpError ? error.message : "Crypto webhook failed." } }, status, cors);
+      }
+    }
+    if (request.method === "POST" && url.pathname === "/api/admin/wallet-credit") {
+      try {
+        return json({ success: true, data: await adminWalletCredit(request, env) }, 200, cors);
+      } catch (error) {
+        const status = error instanceof HttpError ? error.status : 500;
+        return json({ success: false, error: { message: error instanceof HttpError ? error.message : "BukzEx could not safely apply the wallet credit." } }, status, cors);
+      }
+    }
+    if (request.method === "POST" && url.pathname === "/api/admin/orders/cancel") {
+      try {
+        return json({ success: true, data: await adminCancelOrder(request, env) }, 200, cors);
+      } catch (error) {
+        const status = error instanceof HttpError ? error.status : 500;
+        return json({ success: false, error: { message: error instanceof HttpError ? error.message : "BukzEx could not safely cancel this order." } }, status, cors);
       }
     }
     if (url.pathname.startsWith("/api/crypto/")) {

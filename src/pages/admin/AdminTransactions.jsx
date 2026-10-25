@@ -42,17 +42,32 @@ export default function AdminTransactions() {
 
       const result = await getWalletTransactions();
       const rows = result.transactions || [];
-      setTransactions(rows.map((row) => ({
-        id: row.id,
-        type: row.transaction_type === "deposit" ? "deposit" : "purchase",
-        label: row.transaction_type === "deposit" ? "Wallet Deposit" : row.transaction_type,
-        reference: row.source_id,
-        amount: Number(row.amount || 0),
-        status: row.status,
-        createdAt: row.created_at,
-        customer: row.user_id,
-        details: row.description,
-      })));
+      setTransactions(rows.map((row) => {
+        const rawType = String(row.transaction_type || "").toLowerCase();
+        const type = rawType === "deposit" ? "deposit"
+          : rawType === "admin_credit" ? "credit"
+            : rawType === "refund" ? "refund"
+              : rawType === "withdrawal" ? "withdrawal"
+                : "purchase";
+        const labels = {
+          deposit: "Wallet Deposit",
+          credit: "Administrator Wallet Credit",
+          refund: "Wallet Refund",
+          withdrawal: "Wallet Withdrawal",
+          purchase: "Service Purchase",
+        };
+        return {
+          id: row.id,
+          type,
+          label: labels[type],
+          reference: row.source_id,
+          amount: Number(row.amount || 0),
+          status: row.status,
+          createdAt: row.created_at,
+          customer: row.user_id,
+          details: row.description,
+        };
+      }));
     } catch (err) {
       setError(
         err.message ||
@@ -107,17 +122,16 @@ export default function AdminTransactions() {
       );
 
     const purchases = transactions
-      .filter(
-        (item) => item.type === "purchase"
-      )
-      .reduce(
-        (sum, item) => sum + item.amount,
-        0
-      );
+      .filter((item) => item.type === "purchase")
+      .reduce((sum, item) => sum + item.amount, 0);
+    const credits = transactions
+      .filter((item) => item.type === "credit")
+      .reduce((sum, item) => sum + item.amount, 0);
 
     return {
       deposits,
       purchases,
+      credits,
       count: transactions.length,
     };
   }, [transactions]);
@@ -168,6 +182,10 @@ export default function AdminTransactions() {
             {formatMoney(totals.purchases)}
           </strong>
         </div>
+        <div className="admin-transaction-stat credit">
+          <span>Admin Wallet Credits</span>
+          <strong>{formatMoney(totals.credits)}</strong>
+        </div>
       </div>
 
       <div className="admin-transactions-toolbar">
@@ -189,6 +207,9 @@ export default function AdminTransactions() {
             ["all", "All"],
             ["deposit", "Deposits"],
             ["purchase", "Purchases"],
+            ["credit", "Wallet credits"],
+            ["refund", "Refunds"],
+            ["withdrawal", "Withdrawals"],
           ].map(([value, label]) => (
             <button
               type="button"

@@ -185,3 +185,86 @@
   .shadex-social-platform-grid { grid-template-columns: 1fr; }
   .shadex-social-platform summary { min-height: 74px; }
 }
+
+
+/* Searchable, spacious marketplace catalogue */
+.shadex-marketplace-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 16px;
+}
+.shadex-marketplace-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(100%, 520px);
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid rgba(148,163,184,.22);
+  border-radius: 14px;
+  background: rgba(7,18,31,.72);
+  color: #91a4bb;
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+.shadex-marketplace-search:focus-within {
+  border-color: rgba(217,189,104,.72);
+  box-shadow: 0 0 0 3px rgba(217,189,104,.10);
+}
+.shadex-marketplace-search input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #f4f7fb;
+  font: inherit;
+  font-size: 13px;
+}
+.shadex-marketplace-search input::placeholder { color: #71839a; }
+.shadex-marketplace-search button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255,255,255,.06);
+  color: #aebbd0;
+  cursor: pointer;
+}
+.shadex-marketplace-result-count {
+  flex: 0 0 auto;
+  color: #9aa9bc;
+  font-size: 11px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.shadex-catalogue-panel.marketplace .shadex-catalogue-list {
+  gap: 10px;
+}
+.shadex-catalogue-panel.marketplace .shadex-catalogue-selectable {
+  min-height: 82px;
+  padding: 15px 16px;
+  border-radius: 15px;
+}
+.shadex-catalogue-panel.marketplace .shadex-catalogue-selectable .shadex-catalogue-item-copy > strong {
+  font-size: 14px;
+  line-height: 1.45;
+}
+.shadex-catalogue-panel.marketplace .shadex-catalogue-selectable .shadex-catalogue-item-copy > span {
+  color: #e8d28b;
+  font-size: 13px;
+  font-weight: 750;
+}
+@media (max-width: 600px) {
+  .shadex-marketplace-tools { align-items: stretch; flex-direction: column; gap: 8px; }
+  .shadex-marketplace-search { width: 100%; min-height: 46px; }
+  .shadex-marketplace-result-count { text-align: right; }
+  .shadex-catalogue-panel.marketplace .shadex-catalogue-selectable {
+    min-height: 74px;
+    padding: 12px;
+  }
+}

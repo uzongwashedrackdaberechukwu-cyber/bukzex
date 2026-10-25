@@ -5,6 +5,7 @@ const CATALOGUE_PATHS = {
   bills: "bills",
   marketplace: "marketplace",
   sms: "otp",
+  rental: "rental",
   social: "social-boost",
   email_verification: "email-verification/services",
 };

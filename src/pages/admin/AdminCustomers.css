@@ -54,3 +54,62 @@
 .admin-customers [role=alert]{padding:10px 12px;color:#ffaaaa;font-size:11px}
 @media(max-width:600px){.admin-customers-header{align-items:flex-start}.admin-customers-header h2{font-size:19px}.admin-customers-header p{max-width:230px}.admin-customers-count{min-width:88px;padding:10px}.admin-customers-table{min-width:700px}.admin-customer-modal{padding:17px}}
 @media(prefers-reduced-motion:reduce){.admin-customers *{scroll-behavior:auto!important;transition:none!important}}
+
+
+/* Wallet controls: clear separation, accessible contrast and audit feedback */
+.admin-wallet-credit-form {
+  display: grid;
+  gap: 9px;
+  margin-top: 20px;
+  padding: 15px;
+  border: 1px solid rgba(231,198,107,.22);
+  border-radius: 13px;
+  background: linear-gradient(145deg, rgba(6,23,37,.9), rgba(10,31,47,.9));
+}
+.admin-wallet-credit-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.admin-wallet-credit-icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 11px; background: rgba(231,198,107,.11); color: #e7c66b; }
+.admin-wallet-credit-heading strong { display: block; color: #f5f8fc; font-size: 12px; }
+.admin-wallet-credit-heading small { display: block; margin-top: 4px; color: #91a4b8; font-size: 9px; }
+.admin-wallet-credit-form > label { margin-top: 3px; color: #c4cfdb; font-size: 10px; font-weight: 750; }
+.admin-wallet-credit-form > input,
+.admin-wallet-credit-form > textarea {
+  width: 100%;
+  min-height: 40px;
+  padding: 10px 11px;
+  border: 1px solid rgba(188,207,224,.18);
+  border-radius: 9px;
+  outline: none;
+  background: rgba(2,12,23,.65);
+  color: #f7f9fc;
+  font: inherit;
+  font-size: 12px;
+  resize: vertical;
+}
+.admin-wallet-credit-form > input:focus,
+.admin-wallet-credit-form > textarea:focus { border-color: rgba(231,198,107,.7); box-shadow: 0 0 0 3px rgba(231,198,107,.09); }
+.admin-wallet-credit-form > input:disabled,
+.admin-wallet-credit-form > textarea:disabled { opacity: .65; cursor: not-allowed; }
+.admin-wallet-credit-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  margin-top: 3px;
+  border: 1px solid rgba(231,198,107,.45);
+  border-radius: 10px;
+  background: linear-gradient(135deg, #e7c66b, #c9a94f);
+  color: #102335;
+  font-size: 11px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.admin-wallet-credit-submit:hover:not(:disabled) { filter: brightness(1.04); }
+.admin-wallet-credit-submit:disabled { opacity: .6; cursor: not-allowed; }
+.admin-wallet-credit-message { margin: 2px 0; padding: 10px; border-radius: 9px; font-size: 10px; line-height: 1.55; overflow-wrap: anywhere; }
+.admin-wallet-credit-message.error { border: 1px solid rgba(248,113,113,.22); background: rgba(127,29,29,.14); color: #ffb0b0; }
+.admin-wallet-credit-message.success { border: 1px solid rgba(52,211,153,.2); background: rgba(16,185,129,.08); color: #a7f3d0; }
+.admin-wallet-credit-retry-note { color: #e7c66b; font-size: 9px; line-height: 1.5; }
+.admin-wallet-credit-spinner { animation: admin-wallet-credit-spin 1s linear infinite; }
+@keyframes admin-wallet-credit-spin { to { transform: rotate(360deg); } }
+@media (max-width: 600px) { .admin-wallet-credit-form { padding: 12px; } }

@@ -16,7 +16,7 @@ import {
 
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { doc, getDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { auth, db } from "../lib/firebase";
 import ServiceBrandMark from "../components/ServiceBrandMark";
 
@@ -52,6 +52,12 @@ const serviceMap = {
     icon: MessageSquareCode,
     description: "Request an available virtual messaging service.",
     placeholder: "Enter the required service details",
+  },
+  rental: {
+    title: "Virtual Number Rentals",
+    icon: Smartphone,
+    description: "Rent a supported virtual number for your selected application and duration.",
+    placeholder: "Choose a number, application and rental duration",
   },
   email_verification: {
     title: "Email Verification",
@@ -106,7 +112,7 @@ export default function ServicePurchase() {
   const navigate = useNavigate();
   const location = useLocation();
   const service = serviceMap[serviceId];
-  const catalogueOnly = ["bills", "marketplace", "sms", "social", "email_verification"].includes(serviceId);
+  const catalogueOnly = ["bills", "marketplace", "sms", "rental", "social", "email_verification"].includes(serviceId);
   const isCheckoutPage = location.pathname.endsWith("/checkout");
 
   const [walletBalance, setWalletBalance] = useState(0);
@@ -142,6 +148,8 @@ export default function ServicePurchase() {
   const [emailDomain, setEmailDomain] = useState("");
   const [emailDomainsLoading, setEmailDomainsLoading] = useState(false);
   const [emailDomainsError, setEmailDomainsError] = useState("");
+  const [rentalMonths, setRentalMonths] = useState("1");
+  const [rentalAppName, setRentalAppName] = useState("");
 
   useEffect(() => {
     if (location.state?.selectedCatalogueItem) {
@@ -153,6 +161,16 @@ export default function ServicePurchase() {
       catch { setSelectedCatalogueItem(null); }
     }
   }, [isCheckoutPage, location.state, serviceId]);
+
+  useEffect(() => {
+    if (serviceId !== "rental" || !selectedCatalogueItem?.id) return;
+    const minimum = Math.max(1, Number(selectedCatalogueItem.minimum_months || 1));
+    const maximum = Math.min(12, Math.max(minimum, Number(selectedCatalogueItem.maximum_months || 12)));
+    setRentalMonths((current) => {
+      const value = Number(current);
+      return Number.isInteger(value) && value >= minimum && value <= maximum ? String(value) : String(minimum);
+    });
+  }, [serviceId, selectedCatalogueItem?.id]);
 
   useEffect(() => {
     async function loadWallet() {
@@ -170,12 +188,24 @@ export default function ServicePurchase() {
 
   useEffect(() => {
     let active = true;
-    getDoc(doc(db, "services", serviceId))
-      .then((snapshot) => {
-        if (active && snapshot.exists()) {
-          setMarkup(Number(snapshot.data().price_markup_percent || 0));
-          setPriceOverrides(snapshot.data().bukzex_prices || {});
-        }
+    Promise.all([
+      getDoc(doc(db, "services", serviceId)),
+      getDocs(collection(db, "services", serviceId, "prices")),
+    ])
+      .then(([serviceSnapshot, pricesSnapshot]) => {
+        if (!active) return;
+        const legacy = serviceSnapshot.exists() ? serviceSnapshot.data().bukzex_prices || {} : {};
+        const savedPrices = Object.fromEntries(pricesSnapshot.docs.map((priceDoc) => {
+          const price = priceDoc.data();
+          let decodedId = priceDoc.id;
+          try { decodedId = decodeURIComponent(priceDoc.id); } catch {}
+          return [String(price.item_id || decodedId), price];
+        }));
+        setMarkup(Number(serviceSnapshot.data()?.price_markup_percent || 0));
+        // AdminServices writes canonical prices to this subcollection. Merge
+        // them over legacy document prices so customer VTU plans use the same
+        // prices that the Worker validates at checkout.
+        setPriceOverrides({ ...legacy, ...savedPrices });
       })
       .catch(() => {});
     return () => { active = false; };
@@ -338,6 +368,19 @@ export default function ServicePurchase() {
       setError("Enter a bill amount of at least ₦100.");
       return;
     }
+    if (serviceId === "rental") {
+      const months = Number(rentalMonths);
+      const minimum = Math.max(1, Number(selectedCatalogueItem?.minimum_months || 1));
+      const maximum = Math.min(12, Math.max(minimum, Number(selectedCatalogueItem?.maximum_months || 12)));
+      if (!rentalAppName.trim()) {
+        setError("Enter the application you want to use with this virtual number.");
+        return;
+      }
+      if (!Number.isInteger(months) || months < minimum || months > maximum) {
+        setError(`Choose a rental duration between ${minimum} and ${maximum} month${maximum === 1 ? "" : "s"}.`);
+        return;
+      }
+    }
 
     const itemId = serviceId === "vtu"
       ? (vtuType === "data" ? planId : "airtime")
@@ -369,14 +412,39 @@ export default function ServicePurchase() {
           item_name: selectedCatalogueItem?.name || "",
           target_link: targetLink.trim(),
           domain_name: emailDomain,
+          ...(serviceId === "rental" ? { months: Number(rentalMonths), app_name: rentalAppName.trim() } : {}),
         },
       });
       const balance = await getWalletBalance();
       setWalletBalance(Number(balance?.balance || 0));
-      setSuccess("Payment complete. Your purchase is now in My Stack.");
-      sessionStorage.removeItem(requestStorageKey);
-      sessionStorage.removeItem(`bukzex:selected:${serviceId}`);
-      window.setTimeout(() => navigate("/customer/orders"), 900);
+
+      const orderStatus = String(result?.status || "processing").toLowerCase();
+      const refunded = String(result?.payment_status || "").toLowerCase() === "refunded";
+      const terminalFailure = ["failed", "rejected", "cancelled", "canceled", "refunded", "expired"].includes(orderStatus);
+      const waitingForOtp = ["sms", "email_verification"].includes(serviceId)
+        && !result?.otp_code
+        && ["active", "processing", "pending", "waiting", "allocating"].includes(orderStatus);
+      const completed = ["completed", "complete", "success", "successful", "fulfilled", "delivered"].includes(orderStatus)
+        || (orderStatus === "active" && !waitingForOtp);
+
+      if (terminalFailure) {
+        if (refunded) sessionStorage.removeItem(requestStorageKey);
+        setError(result?.message || (refunded
+          ? "The supplier could not complete this order. Your BukzEx wallet has been refunded."
+          : "This order needs a supplier outcome review. Do not place another order for the same service until BukzEx Customer Care confirms the payment outcome."));
+        return;
+      }
+
+      if (completed) {
+        setSuccess(result?.message || "Your purchase is ready in My Purchases.");
+        sessionStorage.removeItem(requestStorageKey);
+        sessionStorage.removeItem(`bukzex:selected:${serviceId}`);
+      } else {
+        // Keep the same idempotency key while the supplier outcome is uncertain.
+        // Retrying with a new key could charge the customer twice.
+        setSuccess(result?.message || "Your order has been received and is awaiting supplier confirmation. Your wallet payment remains reserved; do not pay again. Track progress in My Purchases.");
+      }
+      window.setTimeout(() => navigate("/customer/orders"), completed ? 900 : 1400);
     } catch (err) {
       const message = String(err?.message || "").toLowerCase();
       if (message.includes("wallet has been refunded") || message.includes("payment reference was already used")) {
@@ -424,6 +492,10 @@ export default function ServicePurchase() {
             selectedId={String(selectedCatalogueItem?.id || "")}
             onSelect={(item) => {
               setSelectedCatalogueItem(item);
+              if (serviceId === "rental") {
+                setRentalMonths(String(Math.max(1, Number(item.minimum_months || 1))));
+                setRentalAppName("");
+              }
               sessionStorage.setItem(`bukzex:selected:${serviceId}`, JSON.stringify(item));
               setDetails("");
               const price = item.price;
@@ -459,6 +531,21 @@ export default function ServicePurchase() {
               <label htmlFor="friend-phone" className="friend-phone-label">Friend’s phone number</label>
               <input id="friend-phone" type="tel" value={recipientPhone} onChange={(event) => setRecipientPhone(event.target.value)} placeholder="Enter their phone number" />
             </div>}
+            {serviceId === "rental" && <>
+              <div className="service-form-field">
+                <label htmlFor="rental-app-name">Application / service</label>
+                <input id="rental-app-name" value={rentalAppName} onChange={(event) => setRentalAppName(event.target.value)} placeholder="e.g. WhatsApp, Telegram" maxLength={80} />
+              </div>
+              <div className="service-form-field">
+                <label htmlFor="rental-months">Rental duration</label>
+                <select id="rental-months" value={rentalMonths} onChange={(event) => setRentalMonths(event.target.value)}>
+                  {Array.from({ length: Math.max(1, Math.min(12, Number(selectedCatalogueItem.maximum_months || 12)) - Math.max(1, Number(selectedCatalogueItem.minimum_months || 1)) + 1) }, (_, index) => Math.max(1, Number(selectedCatalogueItem.minimum_months || 1)) + index).map((months) => (
+                    <option key={months} value={months}>{months} month{months === 1 ? "" : "s"}</option>
+                  ))}
+                </select>
+                <small className="service-price-hint">Billed monthly. The total below updates with your selected duration.</small>
+              </div>
+            </>}
             {serviceId === "email_verification" && <div className="service-form-field">
               <label htmlFor="email-domain">Email type</label>
               <select id="email-domain" value={emailDomain} onChange={(event) => setEmailDomain(event.target.value)} disabled={emailDomainsLoading || !emailDomains.length}>
@@ -476,7 +563,7 @@ export default function ServicePurchase() {
             {serviceId === "social" && <div className="service-form-field"><label htmlFor="social-target-link">Link to the post or account</label><input id="social-target-link" type="url" value={targetLink} onChange={(event) => setTargetLink(event.target.value)} placeholder="https://…" /></div>}
             <div className="service-purchase-total">
               <div><span>Available wallet balance</span><strong>{loading ? "Loading…" : `₦${walletBalance.toLocaleString()}`}</strong></div>
-              <div><span>Price</span><strong>{selectedCatalogueItem.variable_amount ? "Enter amount" : selectedCatalogueItem.price ? priceLabel(selectedCatalogueItem, 0, selectedCatalogueItem.price) : "Price unavailable"}</strong></div>
+              <div><span>{serviceId === "rental" ? "Rental price" : "Price"}</span><strong>{selectedCatalogueItem.variable_amount ? "Enter amount" : serviceId === "rental" && selectedCatalogueItem.price ? (() => { const unit = Number(selectedCatalogueItem.price.minor_unit ?? 2); const monthly = Number(selectedCatalogueItem.price.amount_minor) / (10 ** unit); const currency = selectedCatalogueItem.price.currency || "NGN"; return `${currency} ${monthly.toLocaleString(undefined, { maximumFractionDigits: 2 })}/month · Total ${currency} ${(monthly * Number(rentalMonths || selectedCatalogueItem.minimum_months || 1)).toLocaleString(undefined, { maximumFractionDigits: 2 })}`; })() : selectedCatalogueItem.price ? priceLabel(selectedCatalogueItem, 0, selectedCatalogueItem.price) : "Price unavailable"}</strong></div>
             </div>
             <p className="service-request-notice">Payment is securely deducted from your BukzEx wallet. Your purchase and available delivery details will appear in My Stack. Contact BukzEx Customer Care for OTP or password assistance.</p>
             {error && <div className="service-form-message error"><AlertCircle size={17} /><span>{error}</span></div>}

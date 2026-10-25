@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { db } from "../lib/firebase";
-import { AlertCircle, CheckCircle2, Clock3, LoaderCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock3, LoaderCircle, Search, X } from "lucide-react";
 import ServiceBrandMark from "../components/ServiceBrandMark";
 import { getShadexCatalogue } from "../services/shadexCatalog";
 import "./ShadexCataloguePanel.css";
@@ -117,6 +117,7 @@ export default function ShadexCataloguePanel({ serviceId, selectedId = "", onSel
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [overrides, setOverrides] = useState({});
+  const [marketplaceSearch, setMarketplaceSearch] = useState("");
 
   useEffect(() => {
     let live = true;
@@ -154,7 +155,7 @@ export default function ShadexCataloguePanel({ serviceId, selectedId = "", onSel
 
   const currency = data.market?.currency || "NGN";
   return (
-    <section className="shadex-catalogue-panel">
+    <section className={`shadex-catalogue-panel ${serviceId === "marketplace" ? "marketplace" : ""}`}>
       <div className="shadex-catalogue-heading">
         <div><span className="shadex-catalogue-eyebrow">BUKZEX CATALOGUE</span><h2>Choose an option</h2></div>
         <small>{currency}{data.market?.countryCode ? ` · ${data.market.countryCode}` : ""}</small>
@@ -167,11 +168,62 @@ export default function ShadexCataloguePanel({ serviceId, selectedId = "", onSel
       </>}
 
       {serviceId === "marketplace" && (() => {
-        const products = uniqueMarketplaceProducts(data.products, overrides);
-        return expandableList("Digital subscriptions", products, (product) => {
-          const amount = customerPrice(product.id, overrides);
-          return <SelectableItem key={product.id} item={{ id: product.id, name: product.title || product.name || "Digital service", logo_url: product.logo_url || product.image_url, price: amount, provider_product_id: product.provider_product_id, service_slug: product.service_slug }} selectedId={selectedId} onSelect={onSelect} availability="ready" brandName={product.service_name || product.title || product.name}>
-            <strong>{product.title || product.name || "Digital service"}</strong><span>{money(amount)}</span>
+        const query = marketplaceSearch.trim().toLowerCase();
+        const allProducts = uniqueMarketplaceProducts(data.products, overrides);
+        const products = allProducts.filter((product) => [
+          product.title, product.name, product.service_name, product.category_name,
+          product.short_description, product.service_slug,
+        ].filter(Boolean).join(" ").toLowerCase().includes(query));
+        return <>
+          <div className="shadex-marketplace-tools">
+            <div className="shadex-marketplace-search">
+              <Search size={18} aria-hidden="true" />
+              <input
+                type="search"
+                value={marketplaceSearch}
+                onChange={(event) => setMarketplaceSearch(event.target.value)}
+                placeholder="Search Netflix, Spotify and more…"
+                aria-label="Search digital subscriptions"
+              />
+              {marketplaceSearch && <button type="button" onClick={() => setMarketplaceSearch("")} aria-label="Clear search"><X size={16} /></button>}
+            </div>
+            <span className="shadex-marketplace-result-count">{products.length} of {allProducts.length} options</span>
+          </div>
+          {products.length
+            ? expandableList("Digital subscriptions", products, (product) => {
+                const amount = customerPrice(product.id, overrides);
+                return <SelectableItem key={product.id} item={{ id: product.id, name: product.title || product.name || "Digital service", logo_url: product.logo_url || product.image_url, price: amount, provider_product_id: product.provider_product_id, service_slug: product.service_slug }} selectedId={selectedId} onSelect={onSelect} availability="ready" brandName={product.service_name || product.title || product.name}>
+                  <strong>{product.title || product.name || "Digital service"}</strong><span>{money(amount)}</span>
+                </SelectableItem>;
+              })
+            : <div className="shadex-empty-state"><span className="shadex-empty-icon"><Search size={19} /></span><div><strong>No matching subscriptions</strong><p>Try a different service name or clear your search.</p></div></div>}
+        </>;
+      })()}
+
+      {serviceId === "rental" && (() => {
+        const services = (data.services || []).filter((item) => Boolean(customerPrice(item.id, overrides)));
+        return expandableList("Virtual number rentals", services, (item) => {
+          const amount = customerPrice(item.id, overrides);
+          return <SelectableItem
+            key={item.id}
+            item={{
+              id: item.id,
+              name: `${item.country_name || item.country_code || "Virtual number"} rental`,
+              logo_url: item.logo_url,
+              price: amount,
+              country_code: item.country_code,
+              country_name: item.country_name,
+              minimum_months: Number(item.minimum_months || 1),
+              maximum_months: Number(item.maximum_months || 12),
+              stock_count: Number(item.stock_count || 0),
+            }}
+            selectedId={selectedId}
+            onSelect={onSelect}
+            availability="ready"
+            brandName={item.country_name || item.country_code || "Virtual number"}
+          >
+            <strong>{item.country_name || item.country_code || "Virtual number"} rental</strong>
+            <span>{money(amount)} / month · {item.minimum_months || 1}–{item.maximum_months || 12} months · {item.stock_count ?? 0} available</span>
           </SelectableItem>;
         });
       })()}
@@ -188,12 +240,43 @@ export default function ShadexCataloguePanel({ serviceId, selectedId = "", onSel
 
       {serviceId === "sms" && (() => {
         const services = data.services || [];
-        return expandableList("Virtual SMS / OTP", services, (item) => {
+        const renderSms = (item) => {
           const amount = customerPrice(item.id, overrides);
-          return <SelectableItem key={item.id} item={{ id: item.id, name: item.service_name, logo_url: item.logo_url, price: amount, country_code: item.country_code, country_name: item.country_name, provider_service_id: item.provider_service_id }} selectedId={selectedId} onSelect={onSelect} availability={priceState(item.id, overrides)} brandName={item.service_name}>
-            <strong>{item.service_name}</strong><span>{item.country_name} · {money(amount)}</span>
+          const server = item.provider_server_id || "server2";
+          return <SelectableItem
+            key={item.id}
+            item={{
+              id: item.id,
+              name: item.service_name,
+              logo_url: item.logo_url,
+              price: amount,
+              country_code: item.country_code,
+              country_name: item.country_name,
+              provider_service_id: item.provider_service_id,
+              provider_server_id: server,
+            }}
+            selectedId={selectedId}
+            onSelect={onSelect}
+            availability={priceState(item.id, overrides)}
+            brandName={item.service_name}
+          >
+            <strong>{item.service_name}</strong>
+            <span>{item.country_name} · {money(amount)}</span>
           </SelectableItem>;
-        });
+        };
+
+        return <>
+          {expandableList(
+            "DiscountZAR Server 1",
+            services.filter((item) => item.provider_server_id === "server1"),
+            renderSms,
+          )}
+          {expandableList(
+            "DiscountZAR Server 2",
+            services.filter((item) => !item.provider_server_id || item.provider_server_id === "server2"),
+            renderSms,
+          )}
+        </>;
       })()}
 
       {serviceId === "social" && (() => {
