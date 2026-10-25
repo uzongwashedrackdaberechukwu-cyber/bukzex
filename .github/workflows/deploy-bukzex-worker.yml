@@ -1,4 +1,4 @@
-name: Deploy BukzEx
+name: Deploy BukzEx API Worker
 
 on:
   push:
@@ -6,13 +6,6 @@ on:
       - main
     paths:
       - "bukzex-shadex-catalog-worker/**"
-      - "src/**"
-      - "public/**"
-      - "index.html"
-      - "package.json"
-      - "package-lock.json"
-      - "vite.config.*"
-      - "wrangler.site.jsonc"
       - ".github/workflows/deploy-bukzex-worker.yml"
   workflow_dispatch:
 
@@ -26,31 +19,10 @@ jobs:
       - name: Check out BukzEx
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Deploy BukzEx Shadex API Worker
+        uses: cloudflare/wrangler-action@v4
         with:
-          node-version: 22
-
-      - name: Check deployment files
-        run: |
-          test -f wrangler.site.jsonc || { echo "::error::Missing wrangler.site.jsonc"; exit 1; }
-          test -f bukzex-shadex-catalog-worker/wrangler.jsonc || { echo "::error::Missing API Worker config"; exit 1; }
-          test -f bukzex-shadex-catalog-worker/src/index.js || { echo "::error::Missing API Worker entry"; exit 1; }
-
-      - name: Build BukzEx website
-        run: |
-          npm ci
-          npm run build
-
-      - name: Deploy live BukzEx site Worker
-        run: npx --yes wrangler@latest deploy --config ./wrangler.site.jsonc
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-      - name: Deploy BukzEx API Worker
-        working-directory: bukzex-shadex-catalog-worker
-        run: npx --yes wrangler@latest deploy src/index.js --config ./wrangler.jsonc --name bukzex-shadex-catalog
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: bukzex-shadex-catalog-worker
+          command: deploy src/index.js --config ./wrangler.jsonc --name bukzex-shadex-catalog
