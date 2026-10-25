@@ -15,8 +15,10 @@ import { Link } from "react-router-dom";
 import { deleteMyUnpaidOrder, getOrders, refreshDigitalServiceOrder } from "../services/api";
 import WhatsAppSupport from "../components/WhatsAppSupport";
 import ServiceBrandMark from "../components/ServiceBrandMark";
+import CustomerWorkspaceNav from "../components/CustomerWorkspaceNav";
 
 import "./CustomerOrders.css";
+import "./CustomerExperience2026.css";
 
 function formatAmount(value) {
   const amount = Number(value || 0);
@@ -233,7 +235,9 @@ export default function CustomerOrders() {
   }
 
   return (
-    <main className="customer-orders-page">
+    <>
+      <CustomerWorkspaceNav current="orders" />
+      <main className="customer-orders-page">
       <div className="customer-orders-header">
         <div>
           <Link
@@ -459,6 +463,7 @@ export default function CustomerOrders() {
         </div>
       )}
       <WhatsAppSupport />
-    </main>
+      </main>
+    </>
   );
 }

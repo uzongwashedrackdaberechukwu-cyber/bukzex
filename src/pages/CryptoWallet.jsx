@@ -8,7 +8,9 @@ import {
   submitCryptoDeposit,
   submitCryptoWithdrawal,
 } from "../services/api";
+import CustomerWorkspaceNav from "../components/CustomerWorkspaceNav";
 import "./CryptoWallet.css";
+import "./CustomerExperience2026.css";
 
 const banks = [
   "Access Bank", "Ecobank Nigeria", "Fidelity Bank", "First Bank of Nigeria",
@@ -116,7 +118,9 @@ export default function CryptoWallet() {
   }, {}));
 
   return (
-    <main className="bukzex-crypto">
+    <>
+      <CustomerWorkspaceNav current="crypto" />
+      <main className="bukzex-crypto">
       <header className="bx-crypto-header">
         <Link to="/customer"><ArrowLeft size={17} /> Dashboard</Link>
         <strong>BUKZ<span>EX</span></strong>
@@ -192,6 +196,7 @@ export default function CryptoWallet() {
           <button className="bx-crypto-submit" disabled={busy}>{busy ? "Sending…" : "Request withdrawal"}</button>
         </form>
       </div>}
-    </main>
+      </main>
+    </>
   );
 }

@@ -336,6 +336,8 @@ export default function AdminDashboard() {
             </div>
           </div>
 
+          <div className="admin-topbar-health"><span /> Live operations</div>
+
           <div className="admin-user">
             <div className="admin-user-avatar">
               {session?.firstName?.charAt(0) || "A"}
@@ -364,9 +366,12 @@ export default function AdminDashboard() {
                   <h2>Admin Dashboard</h2>
 
                   <p>
-                    Monitor BukzEx activity and manage
-                    the platform from one place.
+                    Monitor money movement, customer activity and supplier-backed orders from one professional operations workspace.
                   </p>
+                  <div className="admin-welcome-actions">
+                    <button type="button" onClick={() => selectSection("orders")}>Review live orders <ArrowUpRight size={15} /></button>
+                    <button type="button" onClick={() => selectSection("customers")}>Credit a wallet <WalletCards size={15} /></button>
+                  </div>
                 </div>
 
                 <div className="admin-welcome-icon">

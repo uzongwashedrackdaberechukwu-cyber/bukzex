@@ -24,8 +24,10 @@ import { getWalletBalance, purchaseShadexService } from "../services/api";
 import { getEmailVerificationDomains, getVtuCatalogue } from "../services/shadexCatalog";
 import ShadexCataloguePanel from "./ShadexCataloguePanel";
 import WhatsAppSupport from "../components/WhatsAppSupport";
+import CustomerWorkspaceNav from "../components/CustomerWorkspaceNav";
 
 import "./ServicePurchase.css";
+import "./CustomerExperience2026.css";
 import "./ShadexVtu.css";
 
 const serviceMap = {
@@ -314,6 +316,7 @@ export default function ServicePurchase() {
   if (!service) {
     return (
       <main className="service-purchase-page">
+      <CustomerWorkspaceNav current="services" />
         <div className="service-purchase-not-found">
           <AlertCircle size={40} />
           <h1>Service not found</h1>
@@ -458,11 +461,7 @@ export default function ServicePurchase() {
 
   return (
     <main className="service-purchase-page">
-      <header className="service-customer-nav">
-        <Link to="/customer" className="service-customer-brand"><span>B</span><strong>Bukz<span>Ex</span></strong></Link>
-        <nav aria-label="Customer navigation"><Link to="/customer">Home</Link><Link to="/customer/services" className="active">Services</Link><Link to="/customer/orders">My purchases</Link><Link to="/customer/profile">Profile</Link></nav>
-        <Link to="/customer/profile" className="service-customer-account">My account <UserRound size={14} /></Link>
-      </header>
+      <CustomerWorkspaceNav current="services" />
       <div className="service-purchase-container">
         <Link to={isCheckoutPage ? `/customer/services/${serviceId}` : "/customer/services"} className="service-purchase-back">
           <ArrowLeft size={16} /> {isCheckoutPage ? "Back to services" : "Back to Services"}

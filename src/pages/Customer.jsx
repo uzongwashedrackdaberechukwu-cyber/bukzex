@@ -2,9 +2,6 @@ import {
   Layers3,
   ShoppingBag,
   LogOut,
-  Bell,
-  Menu,
-  X,
   WalletCards,
   ArrowRight,
   ArrowLeft,
@@ -33,8 +30,10 @@ import {
 } from "../services/api";
 import { getSession, logoutUser } from "../services/auth";
 import WhatsAppSupport from "../components/WhatsAppSupport";
+import CustomerWorkspaceNav from "../components/CustomerWorkspaceNav";
 
 import "./Customer.css";
+import "./CustomerExperience2026.css";
 
 const serviceLinks = [
   { id: "vtu", name: "Airtime & data", detail: "Stay connected", icon: Smartphone, tone: "blue" },
@@ -96,7 +95,6 @@ export default function Customer() {
   const [walletBalance, setWalletBalance] = useState(0);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [error, setError] = useState("");
   const [funding, setFunding] = useState(false);
   const [depositAmount, setDepositAmount] = useState("");
@@ -227,37 +225,31 @@ export default function Customer() {
   }
 
   const firstName = session?.firstName || "Customer";
-  const fullName =
-    [session?.firstName, session?.lastName]
-      .filter(Boolean)
-      .join(" ") || "Customer";
 
   return (
     <div className="customer-page">
-      <header className="customer-topbar">
-        <Link to="/customer" className="customer-logo" aria-label="BukzEx dashboard">
-          <span className="customer-logo-mark">B</span>
-          <span>Bukz<span>Ex</span></span>
-        </Link>
-        <nav className={`customer-topnav ${mobileOpen ? "is-open" : ""}`} aria-label="Customer navigation">
-          <Link to="/customer" onClick={() => setMobileOpen(false)} className="is-current">Home</Link>
-          <Link to="/customer/services" onClick={() => setMobileOpen(false)}>Services</Link>
-          <Link to="/customer/orders" onClick={() => setMobileOpen(false)}>My purchases</Link>
-          <Link to="/customer/profile" onClick={() => setMobileOpen(false)}>Profile</Link>
-        </nav>
-        <div className="customer-topbar-actions">
-          <button type="button" className="customer-notification" aria-label="Notifications"><Bell size={18} /></button>
-          <Link to="/customer/profile" className="customer-user" aria-label={`Open ${fullName}'s profile`}>
-            <span className="customer-user-avatar">{firstName.charAt(0).toUpperCase()}</span>
-            <span className="customer-user-info"><strong>{firstName}</strong><small>My account</small></span>
-          </Link>
-          <button type="button" className="customer-menu-button" onClick={() => setMobileOpen((open) => !open)} aria-label={mobileOpen ? "Close menu" : "Open menu"}>
-            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
-        </div>
-      </header>
+      <CustomerWorkspaceNav current="home" name={firstName} onLogout={handleLogout} />
 
       <main className="customer-content">
+
+        {!topUpOpen && (
+          <section className="bx-home-hero">
+            <div>
+              <span className="bx-home-kicker"><i /> BUKZEX FINANCIAL WORKSPACE</span>
+              <h1>Welcome back, {firstName}. <em>Everything you need, one balance.</em></h1>
+              <p>Pay, verify, subscribe and manage your digital services from one secure BukzEx account.</p>
+              <div className="bx-home-actions">
+                <Link to="/customer/services">Explore services <ArrowRight size={15} /></Link>
+                <Link to="/customer/orders">View purchases <ShoppingBag size={15} /></Link>
+              </div>
+            </div>
+            <div className="bx-home-assurance">
+              <span><ShieldCheck size={18} /><span><strong>Protected checkout</strong><small>Wallet-backed purchases</small></span></span>
+              <span><Sparkles size={18} /><span><strong>Live catalogues</strong><small>Fresh service availability</small></span></span>
+              <span><Clock3 size={18} /><span><strong>Order tracking</strong><small>Status in one workspace</small></span></span>
+            </div>
+          </section>
+        )}
 
           {topUpOpen ? (
             <>

@@ -14,7 +14,9 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import WhatsAppSupport from "../components/WhatsAppSupport";
 import ServiceBrandMark from "../components/ServiceBrandMark";
+import CustomerWorkspaceNav from "../components/CustomerWorkspaceNav";
 import "./CustomerServices.css";
+import "./CustomerExperience2026.css";
 
 // These are the live ShadexGoLtd catalogues that BukzEx currently supports.
 // Keep the tiles visible even if one catalogue is temporarily empty.
@@ -105,11 +107,7 @@ export default function CustomerServices() {
 
   return (
     <>
-    <header className="customer-services-topbar">
-      <Link to="/customer" className="customer-services-brand"><span>B</span><strong>Bukz<span>Ex</span></strong></Link>
-      <nav aria-label="Customer navigation"><Link to="/customer">Home</Link><Link to="/customer/services" className="active">Services</Link><Link to="/customer/orders">My purchases</Link><Link to="/customer/profile">Profile</Link></nav>
-      <Link to="/customer" className="customer-services-account">My account <ArrowRight size={15} /></Link>
-    </header>
+    <CustomerWorkspaceNav current="services" />
     <main className="customer-services-page">
       <header className="customer-services-hero">
         <div className="customer-services-hero-copy">
