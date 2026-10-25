@@ -185,11 +185,17 @@ export default function CustomerOrders() {
         const terminal = ["failed", "rejected", "cancelled", "canceled", "refunded", "expired"].includes(status);
         if (terminal) return false;
         const activeWork = ["pending", "processing", "waiting", "allocating"].includes(status);
-        // Orders without a supplier reference are retried through the same
-        // saved idempotency key by the Worker, recovering uncertain timeouts.
-        if (!order?.supplier_order_id) return activeWork;
         const waitingForOtp = ["sms", "email_verification"].includes(serviceKey) && !order?.otp_code;
         const missingDigitalAccount = serviceKey === "marketplace" && !order?.service_email;
+
+        // A marketplace order can be left marked completed locally even when
+        // the ShadexGoLtd POST never produced/saved a supplier reference.
+        // Refresh it through the saved idempotency key so the Worker can safely
+        // submit/reconcile the supplier order without charging twice.
+        if (!order?.supplier_order_id) {
+          return activeWork || missingDigitalAccount;
+        }
+
         return activeWork || waitingForOtp || missingDigitalAccount;
       });
       if (waiting.length) {
