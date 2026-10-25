@@ -386,27 +386,31 @@ async function submitSavedPurchaseToShadex(env, uid, orderId, requestRow) {
   let result;
   try {
     result = await callShadex(env, path, "POST", idempotencyKey, providerBody);
-  } catch {
-    return {
-      order_id: orderId,
-      status: "processing",
-      message: "Your order is saved and awaiting ShadexGoLtd confirmation. Your wallet payment remains reserved; do not pay again. Refresh My Purchases shortly.",
-    };
+  } catch (error) {
+    const reason = String(error?.message || "network request failed").slice(0, 180);
+    throw new HttpError(
+      503,
+      `BukzEx could not reach the ShadexGoLtd order endpoint: ${reason}. No refund or second charge was applied.`
+    );
   }
 
   if (!result.response.ok || result.payload?.success !== true) {
     const message = safeMessage(result.payload, "ShadexGoLtd has not confirmed this order yet.");
-    // 409 is deliberately not refunded: it can mean an idempotency replay or
-    // an existing supplier order. Reconcile with the same key before deciding.
-    if ([400, 401, 402, 403, 422].includes(result.response.status)) {
+    const supplierStatus = Number(result.response.status || 0);
+
+    // Confirmed customer/request failures are safe to refund.
+    if ([400, 401, 402, 403, 422].includes(supplierStatus)) {
       await refundOnce(env, uid, idempotencyKey, message);
-      throw new HttpError(422, `${message} Your BukzEx wallet has been refunded.`);
+      throw new HttpError(422, `ShadexGoLtd returned HTTP ${supplierStatus}: ${message} Your BukzEx wallet has been refunded.`);
     }
-    return {
-      order_id: orderId,
-      status: "processing",
-      message: "Your order is saved and awaiting ShadexGoLtd confirmation. Your wallet payment remains reserved; do not pay again. Refresh My Purchases shortly.",
-    };
+
+    // 409 can represent an idempotency conflict/replay, so do not refund.
+    // 404/5xx may be routing/provider failures. Surface the exact response
+    // instead of silently leaving the customer stuck on "processing".
+    throw new HttpError(
+      supplierStatus >= 400 ? supplierStatus : 503,
+      `ShadexGoLtd returned HTTP ${supplierStatus || "unknown"}: ${message} No refund or second charge was applied.`
+    );
   }
 
   const upstream = result.payload.data?.order || result.payload.data || {};
