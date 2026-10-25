@@ -355,6 +355,16 @@ async function submitSavedPurchaseToShadex(env, uid, orderId, requestRow) {
     throw new HttpError(503, "The saved checkout reference is incomplete. Contact BukzEx Customer Care before retrying.");
   }
 
+  if (serviceKey === "marketplace" && !UUID.test(itemId)) {
+    await refundOnce(env, uid, idempotencyKey, "The saved marketplace selection is outdated and cannot be submitted safely.");
+    return {
+      order_id: orderId,
+      status: "failed",
+      payment_status: "refunded",
+      message: "This saved marketplace selection is outdated. Your BukzEx wallet has been refunded. Re-open Marketplace and choose the service again.",
+    };
+  }
+
   const [path, providerBody] = mapProviderBody(
     serviceKey,
     itemId,
@@ -513,6 +523,16 @@ async function purchase(request, env) {
   const orderPath = `orders/${orderId}`;
   const walletPath = `wallets/${uid}`;
   let savedRequest = await firestoreGet(env, docResource(env, reqPath));
+
+  if (serviceKey === "marketplace" && !UUID.test(itemId)) {
+    if (savedRequest && !["refunded", "cancelled", "cancel_requested", "failed", "expired"].includes(String(savedRequest.data.status || "").toLowerCase())) {
+      await refundOnce(env, uid, idempotencyKey, "The saved marketplace selection is outdated and cannot be submitted safely.");
+    }
+    throw new HttpError(409, savedRequest
+      ? "This saved marketplace selection is outdated. Your BukzEx wallet has been refunded. Re-open Marketplace and choose the service again."
+      : "This marketplace selection is outdated. Re-open Marketplace and choose the service again.");
+  }
+
   let amountMinor;
   let minorUnit;
   let currency;

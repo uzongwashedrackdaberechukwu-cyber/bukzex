@@ -30,6 +30,13 @@ import "./ServicePurchase.css";
 import "./CustomerExperience2026.css";
 import "./ShadexVtu.css";
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function validCatalogueSelection(serviceId, item) {
+  if (!item?.id) return false;
+  return serviceId !== "marketplace" || UUID.test(String(item.id));
+}
+
 const serviceMap = {
   vtu: {
     title: "VTU",
@@ -129,9 +136,12 @@ export default function ServicePurchase() {
   const [catalogueLoading, setCatalogueLoading] = useState(false);
   const [catalogueError, setCatalogueError] = useState("");
   const [selectedCatalogueItem, setSelectedCatalogueItem] = useState(() => {
-    if (location.state?.selectedCatalogueItem) return location.state.selectedCatalogueItem;
-    try { return JSON.parse(sessionStorage.getItem(`bukzex:selected:${serviceId}`) || "null"); }
-    catch { return null; }
+    const fromState = location.state?.selectedCatalogueItem;
+    if (fromState) return validCatalogueSelection(serviceId, fromState) ? fromState : null;
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(`bukzex:selected:${serviceId}`) || "null");
+      return validCatalogueSelection(serviceId, saved) ? saved : null;
+    } catch { return null; }
   });
   const [vtuType, setVtuType] = useState("data");
   const [networkId, setNetworkId] = useState("");
@@ -154,13 +164,30 @@ export default function ServicePurchase() {
   const [rentalAppName, setRentalAppName] = useState("");
 
   useEffect(() => {
+    const storageKey = `bukzex:selected:${serviceId}`;
     if (location.state?.selectedCatalogueItem) {
-      setSelectedCatalogueItem(location.state.selectedCatalogueItem);
+      const item = location.state.selectedCatalogueItem;
+      if (validCatalogueSelection(serviceId, item)) {
+        setSelectedCatalogueItem(item);
+      } else {
+        sessionStorage.removeItem(storageKey);
+        setSelectedCatalogueItem(null);
+      }
       return;
     }
     if (isCheckoutPage) {
-      try { setSelectedCatalogueItem(JSON.parse(sessionStorage.getItem(`bukzex:selected:${serviceId}`) || "null")); }
-      catch { setSelectedCatalogueItem(null); }
+      try {
+        const item = JSON.parse(sessionStorage.getItem(storageKey) || "null");
+        if (validCatalogueSelection(serviceId, item)) {
+          setSelectedCatalogueItem(item);
+        } else {
+          sessionStorage.removeItem(storageKey);
+          setSelectedCatalogueItem(null);
+        }
+      } catch {
+        sessionStorage.removeItem(storageKey);
+        setSelectedCatalogueItem(null);
+      }
     }
   }, [isCheckoutPage, location.state, serviceId]);
 
@@ -341,6 +368,12 @@ export default function ServicePurchase() {
 
     if (serviceId !== "vtu" && !selectedCatalogueItem?.id) {
       setError("Choose a service before continuing.");
+      return;
+    }
+    if (serviceId === "marketplace" && !UUID.test(String(selectedCatalogueItem.id))) {
+      sessionStorage.removeItem(`bukzex:selected:${serviceId}`);
+      setSelectedCatalogueItem(null);
+      setError("This saved marketplace selection is outdated. Return to Marketplace and choose the service again.");
       return;
     }
     if (serviceId === "email_verification" && !emailDomain) {
