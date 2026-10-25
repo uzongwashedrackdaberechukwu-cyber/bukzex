@@ -3,6 +3,12 @@
   "name": "bukzex",
   "compatibility_date": "2026-10-25",
   "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "bukzex.shadexgoltd.com",
+      "custom_domain": true
+    }
+  ],
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application"
