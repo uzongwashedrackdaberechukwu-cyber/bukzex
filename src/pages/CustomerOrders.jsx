@@ -200,9 +200,18 @@ export default function CustomerOrders() {
       });
       if (waiting.length) {
         const refreshResults = await Promise.allSettled(waiting.map((order) => refreshDigitalServiceOrder(order.id)));
-        const refreshFailures = refreshResults.filter((item) => item.status === "rejected").length;
-        if (refreshFailures) {
-          setError(`${refreshFailures} supplier status update${refreshFailures === 1 ? "" : "s"} could not be confirmed. Your order records and wallet history are preserved. BukzEx support may need to check the ShadexGoLtd API read permissions.`);
+        const rejectedRefreshes = refreshResults.filter((item) => item.status === "rejected");
+        if (rejectedRefreshes.length) {
+          const exactMessage = String(
+            rejectedRefreshes[0]?.reason?.message ||
+            rejectedRefreshes[0]?.reason ||
+            ""
+          ).trim();
+
+          setError(
+            exactMessage ||
+            `${rejectedRefreshes.length} supplier status update${rejectedRefreshes.length === 1 ? "" : "s"} could not be confirmed. Your order records and wallet history are preserved.`
+          );
         }
         result = await getOrders();
         data = Array.isArray(result) ? result : result?.orders || result?.data || [];
