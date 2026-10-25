@@ -64,45 +64,13 @@ function getStatusClass(status) {
   return "pending";
 }
 
-function isSupplierConfirmed(order) {
-  if (order?.provider !== "ShadexGoLtd") return true;
-
-  const supplierOrderId = String(order?.supplier_order_id || "").trim();
-  const fulfillment = String(order?.fulfillment_status || "").toLowerCase();
-  const fulfilledStates = ["fulfilled", "delivered", "complete", "completed", "success", "successful"];
-
-  return Boolean(supplierOrderId) && fulfilledStates.includes(fulfillment);
-}
-
-function displayStatus(order) {
-  const rawStatus = String(order?.status || "pending");
-  const normalized = rawStatus.toLowerCase();
-  const terminal = ["failed", "rejected", "cancelled", "canceled", "refunded", "expired"];
-
-  if (
-    order?.provider === "ShadexGoLtd" &&
-    !terminal.includes(normalized) &&
-    !isSupplierConfirmed(order)
-  ) {
-    return "processing";
-  }
-
-  return rawStatus;
-}
-
 function isPaidOrder(order) {
-  if (order?.provider === "ShadexGoLtd") {
-    return isSupplierConfirmed(order);
-  }
-
   const states = [order?.payment_status, order?.status, order?.fulfillment_status]
     .map((value) => String(value || "").toLowerCase());
   return states.some((value) => ["paid", "confirmed", "complete", "completed", "success", "successful", "fulfilled", "delivered"].includes(value));
 }
 
 function canIssueReceipt(order) {
-  if (order?.provider === "ShadexGoLtd" && !isSupplierConfirmed(order)) return false;
-
   const status = String(order?.status || "").toLowerCase();
   const fulfillment = String(order?.fulfillment_status || "").toLowerCase();
   const payment = String(order?.payment_status || "").toLowerCase();
@@ -181,7 +149,7 @@ export default function CustomerOrders() {
 
   const normalizedQuery = orderQuery.trim().toLowerCase();
   const filteredOrders = orders.filter((order) => {
-    const statusClass = getStatusClass(displayStatus(order));
+    const statusClass = getStatusClass(order.status || "pending");
     const searchable = [
       order.serviceName, order.service, order.id, order.orderId,
       order.status, order.payment_status, order.service_key,
@@ -190,9 +158,9 @@ export default function CustomerOrders() {
     return (activeFilter === "all" || statusClass === activeFilter)
       && searchable.includes(normalizedQuery);
   });
-  const pendingCount = orders.filter((order) => getStatusClass(displayStatus(order)) === "pending").length;
-  const completedCount = orders.filter((order) => getStatusClass(displayStatus(order)) === "success").length;
-  const failedCount = orders.filter((order) => getStatusClass(displayStatus(order)) === "failed").length;
+  const pendingCount = orders.filter((order) => getStatusClass(order.status || "pending") === "pending").length;
+  const completedCount = orders.filter((order) => getStatusClass(order.status || "pending") === "success").length;
+  const failedCount = orders.filter((order) => getStatusClass(order.status || "pending") === "failed").length;
 
   const loadOrders = useCallback(async (manual = false) => {
     try {
@@ -403,7 +371,7 @@ export default function CustomerOrders() {
       ) : (
         <div className="customer-orders-list">
           {filteredOrders.map((order, index) => {
-            const status = displayStatus(order);
+            const status = order.status || "pending";
             const statusClass = getStatusClass(status);
 
             return (
