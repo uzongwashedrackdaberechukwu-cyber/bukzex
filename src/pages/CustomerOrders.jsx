@@ -7,12 +7,16 @@ import {
   MessageCircle,
   Trash2,
   Search,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  ShieldCheck,
 } from "lucide-react";
 
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { deleteMyUnpaidOrder, getOrders, refreshDigitalServiceOrder } from "../services/api";
+import { deleteMyUnpaidOrder, getCustomerOrders, refreshDigitalServiceOrder } from "../services/api";
 import WhatsAppSupport from "../components/WhatsAppSupport";
 import ServiceBrandMark from "../components/ServiceBrandMark";
 import CustomerWorkspaceNav from "../components/CustomerWorkspaceNav";
@@ -65,8 +69,19 @@ function getStatusClass(status) {
 }
 
 function isPaidOrder(order) {
+  const payment = String(order?.payment_status || "").toLowerCase();
   const states = [order?.payment_status, order?.status, order?.fulfillment_status]
     .map((value) => String(value || "").toLowerCase());
+
+  if (["refunded", "failed", "cancelled", "canceled", "rejected", "expired"].includes(payment)) {
+    return false;
+  }
+  if (states.some((value) => ["refunded", "failed", "cancelled", "canceled", "rejected", "expired"].includes(value))) {
+    return false;
+  }
+  if (payment) {
+    return ["paid", "confirmed", "complete", "completed", "success", "successful"].includes(payment);
+  }
   return states.some((value) => ["paid", "confirmed", "complete", "completed", "success", "successful", "fulfilled", "delivered"].includes(value));
 }
 
@@ -127,14 +142,67 @@ function canDeleteOrder(order) {
 }
 
 function getServiceEmail(order) {
-  return order?.email_address || order?.service_email || order?.serviceEmail ||
+  return order?.login_email || order?.email_address || order?.service_email || order?.serviceEmail ||
     order?.fulfillment?.service_email || order?.credentials?.email || "";
+}
+
+function isHttpUrl(value) {
+  try {
+    const url = new URL(String(value || ""));
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+function getSupplierDetails(order) {
+  const fields = [];
+  const add = (key, label, value) => {
+    if (value === null || value === undefined) return;
+    const normalized = String(value).trim();
+    if (!normalized) return;
+    fields.push({ key, label, value: normalized });
+  };
+
+  add("supplier_order_id", "Supplier order reference", order?.supplier_order_id || order?.provider_order_id || order?.supplierOrderId);
+  add("supplier_status", "Supplier status", order?.supplier_status || order?.provider_status || order?.supplier_order_status);
+  add("fulfillment_status", "Fulfilment status", order?.fulfillment_status || order?.fulfilment_status);
+  add("supplier_message", "Supplier update", order?.supplier_message || order?.provider_message);
+
+  const states = [order?.status, order?.fulfillment_status, order?.supplier_status]
+    .map((value) => String(value || "").toLowerCase());
+  const serviceReady = states.some((value) =>
+    ["active", "completed", "complete", "success", "successful", "fulfilled", "delivered"].includes(value)
+  );
+
+  // Show access credentials only when the paid service has reached a ready state.
+  if (serviceReady) {
+    add("login_password", "Service password", order?.login_password || order?.service_password || order?.credentials?.password);
+    add("access_url", "Service access link", order?.access_url || order?.service_url || order?.credentials?.access_url);
+    add("access_instructions", "Activation instructions", order?.access_instructions || order?.fulfillment_instructions || order?.credentials?.instructions);
+    add("fulfillment_type", "Delivery type", order?.fulfillment_type || order?.fulfillment_method);
+    add("assigned_email", "Assigned account email", order?.assigned_email);
+    add("phone_number", "Assigned phone number", order?.phone_number);
+    add("rental_app_name", "Rental application", order?.rental_app_name);
+    add("rental_months", "Rental duration", order?.rental_months ? `${order.rental_months} month${Number(order.rental_months) === 1 ? "" : "s"}` : "");
+    const serviceStartsAt = order?.starts_at || order?.service_starts_at;
+    const serviceEndsAt = order?.ends_at || order?.service_ends_at || order?.expires_at;
+    add("starts_at", "Service starts", serviceStartsAt ? formatDate(serviceStartsAt) : "");
+    add("ends_at", "Service expiry", serviceEndsAt ? formatDate(serviceEndsAt) : "");
+  }
+
+  return fields;
 }
 
 function getOtpLink(order) {
   const orderId = order?.id || order?.orderId || "my order";
   const serviceEmail = getServiceEmail(order);
-  const message = `Hello BukzEx, please help me request the OTP for order ${orderId}${serviceEmail ? ` (service email: ${serviceEmail})` : ""}.`;
+  const serviceName = order?.serviceName || order?.service_name || order?.service || "service";
+  const serviceKey = String(order?.service_key || "").toLowerCase();
+  const otpService = ["sms", "email_verification", "rental"].includes(serviceKey);
+  const message = otpService
+    ? `Hello BukzEx, please help me request the OTP for order ${orderId}${serviceEmail ? ` (service email: ${serviceEmail})` : ""}.`
+    : `Hello BukzEx, I need help accessing or activating ${serviceName} for order ${orderId}${serviceEmail ? ` (account email: ${serviceEmail})` : ""}.`;
   return `https://wa.me/2349161791736?text=${encodeURIComponent(message)}`;
 }
 
@@ -146,13 +214,15 @@ export default function CustomerOrders() {
   const [deletingId, setDeletingId] = useState("");
   const [orderQuery, setOrderQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
+  const [visiblePasswords, setVisiblePasswords] = useState({});
 
   const normalizedQuery = orderQuery.trim().toLowerCase();
   const filteredOrders = orders.filter((order) => {
     const statusClass = getStatusClass(order.status || "pending");
     const searchable = [
       order.serviceName, order.service, order.id, order.orderId,
-      order.status, order.payment_status, order.service_key,
+      order.status, order.payment_status, order.service_key, order.provider,
+      order.supplier_order_id, order.supplier_status,
     ].filter(Boolean).join(" ").toLowerCase();
 
     return (activeFilter === "all" || statusClass === activeFilter)
@@ -172,7 +242,7 @@ export default function CustomerOrders() {
         setLoading(true);
       }
 
-      let result = await getOrders();
+      let result = await getCustomerOrders();
 
       let data = Array.isArray(result)
         ? result
@@ -213,7 +283,7 @@ export default function CustomerOrders() {
             `${rejectedRefreshes.length} supplier status update${rejectedRefreshes.length === 1 ? "" : "s"} could not be confirmed. Your order records and wallet history are preserved.`
           );
         }
-        result = await getOrders();
+        result = await getCustomerOrders();
         data = Array.isArray(result) ? result : result?.orders || result?.data || [];
       }
 
@@ -373,11 +443,16 @@ export default function CustomerOrders() {
           {filteredOrders.map((order, index) => {
             const status = order.status || "pending";
             const statusClass = getStatusClass(status);
+            const orderKey = String(order.id || order.orderId || index);
+            const supplierFields = getSupplierDetails(order);
+            const isSupplierOrder = Boolean(
+              order.provider || order.supplier_name || order.supplier_order_id || order.supplier_status
+            );
 
             return (
               <article
                 className="customer-order-card"
-                key={order.id || order.orderId || index}
+                key={orderKey}
               >
                 <div className="customer-order-icon">
                   <ServiceBrandMark name={order.serviceName || order.service || "Service"} fallbackIcon={ShoppingBag} size="small" />
@@ -427,6 +502,66 @@ export default function CustomerOrders() {
                     </span>
                   </div>
 
+                  {isPaidOrder(order) && isSupplierOrder && (
+                    <section className="customer-order-supplier-panel" aria-label="Supplier and service details">
+                      <div className="customer-order-supplier-heading">
+                        <ShieldCheck size={18} aria-hidden="true" />
+                        <div>
+                          <h3>Supplier &amp; service details</h3>
+                          <p>Supplier: {order.supplier_name || order.provider || "ShadexGoLtd"}</p>
+                        </div>
+                      </div>
+                      {!order.supplier_order_id && (
+                        <p className="customer-order-supplier-note">
+                          The supplier order reference has not been confirmed yet. Refresh status to check again; do not pay for this order a second time.
+                        </p>
+                      )}
+
+                      {supplierFields.length > 0 ? (
+                        <div className="customer-order-supplier-grid">
+                          {supplierFields.map((field) => (
+                            <div
+                              className={`customer-order-supplier-item${field.key === "access_instructions" ? " wide" : ""}`}
+                              key={field.key}
+                            >
+                              <small>{field.label}</small>
+                              {field.key === "login_password" ? (
+                                <div className="customer-order-secret">
+                                  <strong>{visiblePasswords[orderKey] ? field.value : "••••••••"}</strong>
+                                  <button
+                                    type="button"
+                                    onClick={() => setVisiblePasswords((current) => ({
+                                      ...current,
+                                      [orderKey]: !current[orderKey],
+                                    }))}
+                                    aria-label={visiblePasswords[orderKey] ? "Hide service password" : "Show service password"}
+                                  >
+                                    {visiblePasswords[orderKey] ? <EyeOff size={14} /> : <Eye size={14} />}
+                                    {visiblePasswords[orderKey] ? "Hide" : "Show"}
+                                  </button>
+                                </div>
+                              ) : field.key === "access_url" && isHttpUrl(field.value) ? (
+                                <a className="customer-order-supplier-link" href={field.value} target="_blank" rel="noopener noreferrer">
+                                  Open service <ExternalLink size={13} />
+                                </a>
+                              ) : (
+                                <strong className={field.key === "access_instructions" || field.key === "supplier_message" ? "multiline" : ""}>
+                                  {field.value}
+                                </strong>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="customer-order-supplier-note">
+                          {order.supplier_order_id
+                            ? "The supplier reference is saved, but no additional service-access details have been returned yet. Refresh status to check for updates."
+                            : "The supplier has not returned an order reference or service-access details yet. Refresh status to check again."}
+                        </p>
+                      )}
+                    </section>
+                  )}
+
                   {isPaidOrder(order) ? (
                     order.service_key === "email_verification" ? (
                       <div className="customer-order-fulfillment">
@@ -438,9 +573,14 @@ export default function CustomerOrders() {
                       </div>
                     ) : (
                       <div className="customer-order-fulfillment">
-                        {getServiceEmail(order) && <div><small>SERVICE EMAIL</small><strong>{getServiceEmail(order)}</strong></div>}
+                        {getServiceEmail(order) && <div><small>SERVICE / LOGIN EMAIL</small><strong>{getServiceEmail(order)}</strong></div>}
+                        {order.otp_code && <div><small>VERIFICATION CODE</small><strong>{order.otp_code}</strong></div>}
+                        {order.phone_number && <div><small>PHONE NUMBER</small><strong>{order.phone_number}</strong></div>}
                         <a href={getOtpLink(order)} target="_blank" rel="noreferrer" className="customer-order-otp-link">
-                          <MessageCircle size={16} /> Request OTP via WhatsApp
+                          <MessageCircle size={16} />
+                          {["sms", "email_verification", "rental"].includes(String(order.service_key || "").toLowerCase())
+                            ? "Request OTP via WhatsApp"
+                            : "Get activation help"}
                         </a>
                       </div>
                     )

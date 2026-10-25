@@ -373,6 +373,23 @@ export async function getOrders() {
   };
 }
 
+export async function getCustomerOrders() {
+  // The customer-facing Purchases page must always be scoped to the signed-in
+  // customer, even when an administrator account opens that page.
+  const user = requireUser();
+  const result = await getDocs(
+    query(collection(db, "orders"), where("user_id", "==", user.uid))
+  );
+
+  return {
+    orders: sortNewest(
+      result.docs.map((orderDoc) =>
+        mapOrder({ id: orderDoc.id, ...orderDoc.data() })
+      )
+    ),
+  };
+}
+
 export async function updateOrder(orderId, status, adminNote = "") {
   await requireAdmin();
   if (!["processing", "completed", "rejected"].includes(status)) {
