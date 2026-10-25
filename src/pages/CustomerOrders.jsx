@@ -193,7 +193,7 @@ export default function CustomerOrders() {
         // Refresh it through the saved idempotency key so the Worker can safely
         // submit/reconcile the supplier order without charging twice.
         if (!order?.supplier_order_id) {
-          return activeWork || missingDigitalAccount;
+          return true;
         }
 
         return activeWork || waitingForOtp || missingDigitalAccount;
