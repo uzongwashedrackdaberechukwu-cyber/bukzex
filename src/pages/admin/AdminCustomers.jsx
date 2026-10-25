@@ -134,7 +134,7 @@ export default function AdminCustomers() {
           <span>CUSTOMER MANAGEMENT</span>
           <h2>Customers</h2>
           <p>
-            Search customer accounts and review their contact details.
+            Search customer accounts, credit wallets and review account details.
           </p>
         </div>
 
@@ -246,14 +246,24 @@ export default function AdminCustomers() {
                     </td>
 
                     <td>
-                      <button
-                        type="button"
-                        className="admin-customer-view"
-                        onClick={() => openCustomer(customer)}
-                      >
-                        <Eye size={15} />
-                        View
-                      </button>
+                      <div className="admin-customer-actions">
+                        <button
+                          type="button"
+                          className="admin-customer-credit"
+                          onClick={() => openCustomer(customer)}
+                        >
+                          <WalletCards size={15} />
+                          Credit wallet
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-customer-view"
+                          onClick={() => openCustomer(customer)}
+                        >
+                          <Eye size={15} />
+                          View
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

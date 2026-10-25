@@ -462,6 +462,39 @@ export default function AdminDashboard() {
                 </article>
               </section>
 
+              <section className="admin-quick-ops" aria-label="Admin quick actions">
+                <div className="admin-quick-ops-heading">
+                  <div>
+                    <span>OPERATIONS CENTER</span>
+                    <h3>Run BukzEx from one workspace</h3>
+                    <p>Jump straight to the actions that keep orders, wallets and services moving.</p>
+                  </div>
+                  <small>Live workspace</small>
+                </div>
+                <div className="admin-quick-ops-grid">
+                  <button type="button" onClick={() => selectSection("customers")}>
+                    <span className="admin-quick-op-icon gold"><WalletCards size={20} /></span>
+                    <span><strong>Credit a wallet</strong><small>Find a customer and apply an audited NGN credit.</small></span>
+                    <ArrowUpRight size={17} />
+                  </button>
+                  <button type="button" onClick={() => selectSection("orders")}>
+                    <span className="admin-quick-op-icon blue"><ShoppingBag size={20} /></span>
+                    <span><strong>Manage orders</strong><small>Review processing orders, cancellations and supplier states.</small></span>
+                    <ArrowUpRight size={17} />
+                  </button>
+                  <button type="button" onClick={() => selectSection("transactions")}>
+                    <span className="admin-quick-op-icon green"><ArrowLeftRight size={20} /></span>
+                    <span><strong>Audit transactions</strong><small>Trace deposits, purchases, refunds and admin credits.</small></span>
+                    <ArrowUpRight size={17} />
+                  </button>
+                  <button type="button" onClick={() => selectSection("services")}>
+                    <span className="admin-quick-op-icon purple"><Layers3 size={20} /></span>
+                    <span><strong>Control services</strong><small>Manage catalogues, pricing and customer availability.</small></span>
+                    <ArrowUpRight size={17} />
+                  </button>
+                </div>
+              </section>
+
               <section className="admin-panels">
                 <div className="admin-panel">
                   <div className="admin-panel-header">

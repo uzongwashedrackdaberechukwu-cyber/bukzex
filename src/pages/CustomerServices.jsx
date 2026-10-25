@@ -193,6 +193,28 @@ export default function CustomerServices() {
         )}
       </section>
 
+      <section className="customer-popular-apps" aria-label="Popular verification destinations">
+        <div className="customer-popular-apps-heading">
+          <div>
+            <span>POPULAR DESTINATIONS</span>
+            <h2>Frequently used verification apps</h2>
+          </div>
+          <strong>Fast access</strong>
+        </div>
+        <div className="customer-popular-apps-grid">
+          {visibleApps.slice(0, 10).map((app) => {
+            const AppIcon = app.icon;
+            return (
+              <Link key={app.name} to="/customer/services/sms" className="customer-popular-app">
+                <span style={{ color: app.color }}><AppIcon /></span>
+                <strong>{app.name}</strong>
+                <ArrowRight size={14} />
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
       <aside className="customer-services-assurance"><span className="customer-services-assurance-mark"><span>✓</span></span><div><strong>One BukzEx account. Everyday services in one place.</strong><p>See available options and BukzEx prices before you continue to checkout.</p></div><Link to="/customer/orders">View my purchases <ArrowRight size={15} /></Link></aside>
       <WhatsAppSupport />
     </main>

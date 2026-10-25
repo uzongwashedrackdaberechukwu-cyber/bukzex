@@ -158,6 +158,7 @@ export default function CustomerOrders() {
   });
   const pendingCount = orders.filter((order) => getStatusClass(order.status || "pending") === "pending").length;
   const completedCount = orders.filter((order) => getStatusClass(order.status || "pending") === "success").length;
+  const failedCount = orders.filter((order) => getStatusClass(order.status || "pending") === "failed").length;
 
   const loadOrders = useCallback(async (manual = false) => {
     try {
@@ -252,22 +253,23 @@ export default function CustomerOrders() {
           </p>
         </div>
 
-        <button
-          type="button"
-          className="customer-orders-refresh"
-          onClick={() => loadOrders(true)}
-          disabled={refreshing}
-        >
-          <RefreshCw
-            size={15}
-            className={
-              refreshing
-                ? "customer-orders-spin"
-                : ""
-            }
-          />
-          Refresh
-        </button>
+        <div className="customer-orders-header-actions">
+          <Link to="/customer/services" className="customer-orders-browse">
+            <ShoppingBag size={15} /> Browse services
+          </Link>
+          <button
+            type="button"
+            className="customer-orders-refresh"
+            onClick={() => loadOrders(true)}
+            disabled={refreshing}
+          >
+            <RefreshCw
+              size={15}
+              className={refreshing ? "customer-orders-spin" : ""}
+            />
+            Refresh status
+          </button>
+        </div>
       </div>
 
       <section className="customer-orders-tools" aria-label="Order overview and filters">
@@ -275,6 +277,7 @@ export default function CustomerOrders() {
           <div><small>TOTAL</small><strong>{orders.length}</strong></div>
           <div><small>PENDING</small><strong>{pendingCount}</strong></div>
           <div><small>COMPLETED</small><strong>{completedCount}</strong></div>
+          <div><small>FAILED / REFUNDED</small><strong>{failedCount}</strong></div>
         </div>
         <label className="customer-orders-search">
           <Search size={17} aria-hidden="true" />
@@ -338,6 +341,13 @@ export default function CustomerOrders() {
           >
             Browse Services
           </Link>
+        </div>
+      ) : filteredOrders.length === 0 ? (
+        <div className="customer-orders-empty customer-orders-no-results">
+          <div className="customer-orders-empty-icon"><Search size={24} /></div>
+          <h2>No matching purchases</h2>
+          <p>Try another service name, order reference or status filter.</p>
+          <button type="button" className="customer-orders-clear" onClick={() => { setOrderQuery(""); setActiveFilter("all"); }}>Clear filters</button>
         </div>
       ) : (
         <div className="customer-orders-list">
