@@ -643,18 +643,6 @@ async function purchase(request, env) {
       message: "This purchase has already been submitted to ShadexGoLtd. Check My Purchases for the latest status.",
     };
   }
-  if (["completed", "active"].includes(String(existingOrder?.data.status || "").toLowerCase())
-      && existingOrder?.data.fulfillment_status === "fulfilled") {
-    return {
-      order_id: orderId,
-      status: existingOrder.data.status,
-      service_email: existingOrder.data.service_email || null,
-      email_address: existingOrder.data.email_address || null,
-      otp_code: existingOrder.data.otp_code || null,
-      message: "This purchase is already available in My Purchases.",
-    };
-  }
-
   const requestRow = await firestoreGet(env, docResource(env, reqPath));
   return submitSavedPurchaseToShadex(env, uid, orderId, requestRow);
 }
