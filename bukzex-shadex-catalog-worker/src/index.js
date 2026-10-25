@@ -27,7 +27,13 @@ let oauthCache = null;
 
 function corsHeaders(request, env) {
   const origin = request.headers.get("Origin") || "";
-  const allowed = new Set([env.BUKZEX_ORIGIN, "http://localhost:5173", "http://127.0.0.1:5173"].filter(Boolean));
+  const allowed = new Set([
+    env.BUKZEX_ORIGIN,
+    "https://x.shadexgoltd.com",
+    "https://bukzex.shadexgoltd.com",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+  ].filter(Boolean));
   const headers = new Headers({
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Authorization, Content-Type, Idempotency-Key",
