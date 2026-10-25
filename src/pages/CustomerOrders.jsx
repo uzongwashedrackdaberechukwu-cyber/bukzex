@@ -168,15 +168,26 @@ function getSupplierDetails(order) {
   add("supplier_status", "Supplier status", order?.supplier_status || order?.provider_status || order?.supplier_order_status);
   add("fulfillment_status", "Fulfilment status", order?.fulfillment_status || order?.fulfilment_status);
   add("supplier_message", "Supplier update", order?.supplier_message || order?.provider_message);
+  add("account_label", "Supplier account", order?.account_label);
+  add("provider_reference", "Supplier account reference", order?.provider_reference);
+  add("subscription_status", "Subscription status", order?.subscription_status);
+  add("country_code", "Account country", order?.country_code);
+  add("provisioned_at", "Account provisioned", order?.provisioned_at ? formatDate(order.provisioned_at) : "");
+  add("credential_updated_at", "Credentials updated", order?.credential_updated_at ? formatDate(order.credential_updated_at) : "");
 
   const states = [order?.status, order?.fulfillment_status, order?.supplier_status]
     .map((value) => String(value || "").toLowerCase());
   const serviceReady = states.some((value) =>
     ["active", "completed", "complete", "success", "successful", "fulfilled", "delivered"].includes(value)
   );
+  const subscriptionStatus = String(order?.subscription_status || "").toLowerCase();
+  const serviceEndValue = order?.service_ends_at || order?.ends_at || order?.expires_at;
+  const serviceEndTime = serviceEndValue ? Date.parse(String(serviceEndValue)) : NaN;
+  const accessActive = !["expired", "suspended", "cancelled", "canceled", "inactive"].includes(subscriptionStatus)
+    && !(Number.isFinite(serviceEndTime) && serviceEndTime <= Date.now());
 
-  // Show access credentials only when the paid service has reached a ready state.
-  if (serviceReady) {
+  // Show access credentials only while the paid subscription is ready and active.
+  if (serviceReady && accessActive) {
     add("login_password", "Service password", order?.login_password || order?.service_password || order?.credentials?.password);
     add("access_url", "Service access link", order?.access_url || order?.service_url || order?.credentials?.access_url);
     add("access_instructions", "Activation instructions", order?.access_instructions || order?.fulfillment_instructions || order?.credentials?.instructions);
@@ -256,7 +267,14 @@ export default function CustomerOrders() {
         if (terminal) return false;
         const activeWork = ["pending", "processing", "waiting", "allocating"].includes(status);
         const waitingForOtp = ["sms", "email_verification"].includes(serviceKey) && !order?.otp_code;
-        const missingDigitalAccount = serviceKey === "marketplace" && !order?.service_email;
+        const subscriptionStatus = String(order?.subscription_status || "").toLowerCase();
+        const serviceEndValue = order?.service_ends_at || order?.ends_at || order?.expires_at;
+        const serviceEndTime = serviceEndValue ? Date.parse(String(serviceEndValue)) : NaN;
+        const subscriptionEnded = ["expired", "suspended", "cancelled", "canceled", "inactive"].includes(subscriptionStatus)
+          || (Number.isFinite(serviceEndTime) && serviceEndTime <= Date.now());
+        const missingDigitalAccount = serviceKey === "marketplace"
+          && !subscriptionEnded
+          && (order?.supplier_details_available !== true || !order?.service_email);
 
         // A marketplace order can be left marked completed locally even when
         // the ShadexGoLtd POST never produced/saved a supplier reference.

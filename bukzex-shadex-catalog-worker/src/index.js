@@ -274,6 +274,76 @@ function safeMessage(payload, fallback) {
   ).slice(0, 220);
 }
 
+
+async function fetchShadexSupplierDetails(env, supplierOrderId) {
+  if (!UUID.test(String(supplierOrderId || "")) || !env.SHADEX_API_KEY) return null;
+
+  const baseUrl = String(
+    env.SHADEX_SUPPLIER_DETAILS_URL ||
+    "https://shadexgoltd.com/api/bukzex/supplier-details"
+  ).replace(/\/+$/, "");
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+
+  try {
+    const response = await fetch(
+      `${baseUrl}/${encodeURIComponent(supplierOrderId)}`,
+      {
+        method: "GET",
+        signal: controller.signal,
+        headers: {
+          Authorization: `Bearer ${env.SHADEX_API_KEY}`,
+          Accept: "application/json",
+        },
+      },
+    );
+    const payload = await response.json().catch(() => null);
+    if (!response.ok || payload?.success !== true) return null;
+
+    const details = payload?.data?.order || payload?.data;
+    if (!details || details.supplier_details_available !== true) return null;
+
+    const allowedFields = [
+      "login_email",
+      "service_email",
+      "email_address",
+      "login_password",
+      "service_password",
+      "password",
+      "access_url",
+      "login_url",
+      "service_url",
+      "access_instructions",
+      "fulfillment_instructions",
+      "instructions",
+      "fulfillment_type",
+      "fulfillment_method",
+      "assigned_email",
+      "account_label",
+      "provider_reference",
+      "country_code",
+      "provisioned_at",
+      "credential_updated_at",
+      "starts_at",
+      "ends_at",
+      "expires_at",
+      "subscription_status",
+      "supplier_details_available",
+    ];
+    return Object.fromEntries(
+      allowedFields
+        .filter((key) => Object.prototype.hasOwnProperty.call(details, key))
+        .map((key) => [key, details[key]]),
+    );
+  } catch {
+    // Do not fail or refund a valid order merely because the optional
+    // supplier-details lookup is temporarily unavailable.
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function refundOnce(env, uid, idempotencyKey, message, terminalStatus = "failed") {
   const requestPath = `shadex_purchase_requests/${uid}_${idempotencyKey}`;
   const request = await firestoreGet(env, docResource(env, requestPath));
@@ -415,6 +485,10 @@ async function submitSavedPurchaseToShadex(env, uid, orderId, requestRow) {
 
   const upstream = result.payload.data?.order || result.payload.data || {};
   const supplierOrderId = String(upstream.id || upstream.order_id || "");
+  if (serviceKey === "marketplace" && supplierOrderId) {
+    const supplierDetails = await fetchShadexSupplierDetails(env, supplierOrderId);
+    if (supplierDetails) Object.assign(upstream, supplierDetails);
+  }
   if (!supplierOrderId) {
     const orderPath = `orders/${orderId}`;
     const latest = await firestoreGet(env, docResource(env, orderPath));
@@ -475,6 +549,13 @@ async function submitSavedPurchaseToShadex(env, uid, orderId, requestRow) {
       access_instructions: upstream.access_instructions || upstream.fulfillment_instructions || upstream.instructions || null,
       fulfillment_type: upstream.fulfillment_type || upstream.fulfillment_method || null,
       assigned_email: upstream.assigned_email || null,
+      account_label: upstream.account_label || null,
+      provider_reference: upstream.provider_reference || null,
+      country_code: upstream.country_code || null,
+      provisioned_at: upstream.provisioned_at || null,
+      credential_updated_at: upstream.credential_updated_at || null,
+      subscription_status: upstream.subscription_status || null,
+      supplier_details_available: upstream.supplier_details_available === true,
       service_starts_at: upstream.starts_at || null,
       service_ends_at: upstream.ends_at || null,
       email_address: upstream.email_address ? String(upstream.email_address).slice(0, 320) : null,
@@ -1019,6 +1100,11 @@ async function refreshOrder(request, env) {
     throw new HttpError(503, "ShadexGoLtd status is temporarily unavailable. Your order remains saved; try refreshing again shortly.");
   }
 
+  if (serviceKey === "marketplace" && supplierOrderId) {
+    const supplierDetails = await fetchShadexSupplierDetails(env, supplierOrderId);
+    if (supplierDetails) Object.assign(upstream, supplierDetails);
+  }
+
   const state = supplierOrderState(serviceKey, upstream);
   if (state.failed) {
     await refundOnce(
@@ -1042,18 +1128,44 @@ async function refreshOrder(request, env) {
   const latestRequest = await firestoreGet(env, docResource(env, requestPath));
   if (!latestOrder || !latestRequest) throw new HttpError(503, "The supplier status was received, but BukzEx could not save it yet.");
 
+  const subscriptionStatus = String(
+    upstream.subscription_status || latestOrder.data.subscription_status || ""
+  ).toLowerCase();
+  const serviceEndValue =
+    upstream.ends_at ||
+    upstream.expires_at ||
+    latestOrder.data.service_ends_at ||
+    latestOrder.data.expires_at;
+  const serviceEndTime = serviceEndValue ? Date.parse(String(serviceEndValue)) : NaN;
+  const supplierSubscriptionInactive = serviceKey === "marketplace" && (
+    ["expired", "suspended", "cancelled", "canceled", "inactive"].includes(subscriptionStatus) ||
+    (Number.isFinite(serviceEndTime) && serviceEndTime <= Date.now())
+  );
+  const resolvedSubscriptionStatus = supplierSubscriptionInactive
+    ? (["expired", "suspended", "cancelled", "canceled", "inactive"].includes(subscriptionStatus)
+        ? subscriptionStatus
+        : "expired")
+    : subscriptionStatus;
+
   const status = state.status;
   await firestoreCommit(env, [
     updateWrite(env, orderPath, {
-      service_email: serviceEmail ? String(serviceEmail).slice(0, 320) : null,
-      login_password: upstream.login_password || upstream.service_password || upstream.password || latestOrder.data.login_password || null,
-      access_url: upstream.access_url || upstream.login_url || upstream.service_url || latestOrder.data.access_url || null,
-      access_instructions: upstream.access_instructions || upstream.fulfillment_instructions || upstream.instructions || latestOrder.data.access_instructions || null,
+      service_email: supplierSubscriptionInactive ? null : serviceEmail ? String(serviceEmail).slice(0, 320) : null,
+      login_password: supplierSubscriptionInactive ? null : upstream.login_password || upstream.service_password || upstream.password || latestOrder.data.login_password || null,
+      access_url: supplierSubscriptionInactive ? null : upstream.access_url || upstream.login_url || upstream.service_url || latestOrder.data.access_url || null,
+      access_instructions: supplierSubscriptionInactive ? null : upstream.access_instructions || upstream.fulfillment_instructions || upstream.instructions || latestOrder.data.access_instructions || null,
       fulfillment_type: upstream.fulfillment_type || upstream.fulfillment_method || latestOrder.data.fulfillment_type || null,
-      assigned_email: upstream.assigned_email || latestOrder.data.assigned_email || null,
+      assigned_email: supplierSubscriptionInactive ? null : upstream.assigned_email || latestOrder.data.assigned_email || null,
+      account_label: upstream.account_label || latestOrder.data.account_label || null,
+      provider_reference: upstream.provider_reference || latestOrder.data.provider_reference || null,
+      country_code: upstream.country_code || latestOrder.data.country_code || null,
+      provisioned_at: upstream.provisioned_at || latestOrder.data.provisioned_at || null,
+      credential_updated_at: upstream.credential_updated_at || latestOrder.data.credential_updated_at || null,
+      subscription_status: resolvedSubscriptionStatus || null,
+      supplier_details_available: upstream.supplier_details_available === true || latestOrder.data.supplier_details_available === true,
       service_starts_at: upstream.starts_at || latestOrder.data.service_starts_at || null,
       service_ends_at: upstream.ends_at || latestOrder.data.service_ends_at || null,
-      email_address: upstream.email_address ? String(upstream.email_address).slice(0, 320) : null,
+      email_address: supplierSubscriptionInactive ? null : upstream.email_address ? String(upstream.email_address).slice(0, 320) : null,
       otp_code: upstream.otp_code ? String(upstream.otp_code).slice(0, 100) : null,
       phone_number: upstream.phone_number || latestOrder.data.phone_number || null,
       domain_name: upstream.domain_name || latestOrder.data.domain_name || null,
