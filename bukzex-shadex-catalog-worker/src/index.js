@@ -29,7 +29,6 @@ function corsHeaders(request, env) {
   const origin = request.headers.get("Origin") || "";
   const allowed = new Set([
     env.BUKZEX_ORIGIN,
-    "https://x.shadexgoltd.com",
     "https://bukzex.shadexgoltd.com",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
@@ -960,7 +959,10 @@ async function refreshOrder(request, env) {
   const serviceKey = String(order.data.service_key || requestRow.data.service_key || "");
   const supplierOrderId = String(order.data.supplier_order_id || requestRow.data.supplier_order_id || "");
   if (!supplierOrderId) {
-    if (["refunded", "cancelled", "cancel_requested", "failed", "expired"].includes(String(requestRow.data.status || "").toLowerCase())) {
+    const savedStatus = String(requestRow.data.status || "").toLowerCase();
+    const hardTerminal = ["refunded", "cancelled", "cancel_requested"].includes(savedStatus);
+    const nonMarketplaceTerminal = serviceKey !== "marketplace" && ["failed", "expired"].includes(savedStatus);
+    if (hardTerminal || nonMarketplaceTerminal) {
       return {
         order_id: orderId,
         status: order.data.status,
