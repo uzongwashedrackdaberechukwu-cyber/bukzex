@@ -18,7 +18,6 @@ import {
 } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { getCryptoAdminRoutes } from "../../services/api";
-import "./AdminCrypto.css";
 
 function formatDate(value) {
   if (!value) return "—";

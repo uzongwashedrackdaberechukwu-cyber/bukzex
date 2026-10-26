@@ -12,7 +12,6 @@ import {
   getDepositStatus,
 } from "../services/api";
 
-import "./FundWallet.css";
 
 const BANK_DETAILS = {
   bank: "OPay",
@@ -126,7 +125,7 @@ export default function FundWallet({ onBack }) {
       setMessage(
         "Pending deposits usually take up to 1 minute for confirmation."
       );
-    } catch {
+    } catch (err) {
       /*
        * Until the client's API is connected,
        * the frontend cannot actually validate

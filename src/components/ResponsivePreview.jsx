@@ -5,7 +5,6 @@ import {
   useState,
 } from "react";
 
-import "./ResponsivePreview.css";
 
 const DEVICE_PRESETS = [
   {

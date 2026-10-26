@@ -38,7 +38,6 @@ import AdminTransactions from "./AdminTransactions";
 import AdminCrypto from "./AdminCrypto";
 import AdminSettings from "./AdminSettings";
 
-import "./AdminDashboard.css";
 
 const navigation = [
   {
@@ -370,7 +369,7 @@ export default function AdminDashboard() {
                   </p>
                   <div className="admin-welcome-actions">
                     <button type="button" onClick={() => selectSection("orders")}>Review live orders <ArrowUpRight size={15} /></button>
-                    <button type="button" onClick={() => selectSection("customers")}>Credit a wallet <WalletCards size={15} /></button>
+                    <button type="button" onClick={() => selectSection("customers")}>Adjust a wallet <WalletCards size={15} /></button>
                   </div>
                 </div>
 
@@ -489,7 +488,7 @@ export default function AdminDashboard() {
                   </button>
                   <button type="button" onClick={() => selectSection("transactions")}>
                     <span className="admin-quick-op-icon green"><ArrowLeftRight size={20} /></span>
-                    <span><strong>Audit transactions</strong><small>Trace deposits, purchases, refunds and admin credits.</small></span>
+                    <span><strong>Audit transactions</strong><small>Trace deposits, purchases, refunds and admin wallet adjustments.</small></span>
                     <ArrowUpRight size={17} />
                   </button>
                   <button type="button" onClick={() => selectSection("services")}>

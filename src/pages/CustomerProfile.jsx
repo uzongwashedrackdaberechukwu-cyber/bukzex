@@ -10,8 +10,6 @@ import { getSession, updateSession } from "../services/auth";
 import WhatsAppSupport from "../components/WhatsAppSupport";
 import CustomerWorkspaceNav from "../components/CustomerWorkspaceNav";
 
-import "./CustomerProfile.css";
-import "./CustomerExperience2026.css";
 
 export default function CustomerProfile() {
   const [profile, setProfile] = useState({

@@ -9,7 +9,6 @@ import {
 
 import { loginAdmin } from "../../services/adminAuth";
 
-import "./AdminLogin.css";
 
 export default function AdminLogin() {
   const navigate = useNavigate();

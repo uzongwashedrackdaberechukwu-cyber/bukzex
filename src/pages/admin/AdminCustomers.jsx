@@ -13,9 +13,8 @@ import {
 } from "lucide-react";
 
 import { getRegisteredUsers } from "../../services/auth";
-import { creditCustomerWallet } from "../../services/api";
+import { creditCustomerWallet, debitCustomerWallet } from "../../services/api";
 
-import "./AdminCustomers.css";
 
 function formatDate() {
   return "Registered customer";
@@ -27,6 +26,7 @@ export default function AdminCustomers() {
     useState(null);
   const [allCustomers, setAllCustomers] = useState([]);
   const [error, setError] = useState("");
+  const [walletAction, setWalletAction] = useState("credit");
   const [creditAmount, setCreditAmount] = useState("");
   const [creditReason, setCreditReason] = useState("");
   const [creditKey, setCreditKey] = useState("");
@@ -46,12 +46,13 @@ export default function AdminCustomers() {
     setCreditKey("");
     setCreditError("");
     setCreditNotice("");
+    setWalletAction("credit");
     setSelectedCustomer(customer);
   }
 
   function closeCustomer() {
     if (creditKey && !creditNotice) {
-      setCreditError("This credit attempt may have reached the server. Retry the same request first; its reference prevents a duplicate credit.");
+      setCreditError("This wallet adjustment may have reached the server. Retry the same request first; its reference prevents a duplicate adjustment.");
       return;
     }
     setSelectedCustomer(null);
@@ -95,14 +96,14 @@ export default function AdminCustomers() {
     setCreditError("");
     setCreditNotice("");
     try {
-      const result = await creditCustomerWallet(selectedCustomer.id, amountMinor, reason, key);
-      setCreditNotice(`Credited ₦${(Number(result.amount_minor || amountMinor) / 100).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. New wallet balance: ₦${Number(result.balance || 0).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. ${result.duplicate ? "This was an idempotent retry; no duplicate credit was added." : "The credit is recorded in the transaction ledger and admin audit log."}`);
+      const result = await (walletAction === "debit" ? debitCustomerWallet : creditCustomerWallet)(selectedCustomer.id, amountMinor, reason, key);
+      setCreditNotice(`${walletAction === "debit" ? "Removed" : "Credited"} ₦${(Number(result.amount_minor || amountMinor) / 100).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. New wallet balance: ₦${Number(result.balance || 0).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. ${result.duplicate ? "This was an idempotent retry; no duplicate adjustment was applied." : "The adjustment is recorded in the transaction ledger and admin audit log."}`);
       setCreditAmount("");
       setCreditReason("");
       setCreditKey("");
     } catch (err) {
-      if ([400, 403, 404].includes(Number(err?.status))) setCreditKey("");
-      setCreditError(err?.message || "Wallet credit could not be confirmed. Retry the same request before starting another credit.");
+      if ([400, 403, 404, 422].includes(Number(err?.status))) setCreditKey("");
+      setCreditError(err?.message || "Wallet adjustment could not be confirmed. Retry the same request before starting another adjustment.");
     } finally {
       setCrediting(false);
     }
@@ -352,9 +353,15 @@ export default function AdminCustomers() {
             <form className="admin-wallet-credit-form" onSubmit={handleWalletCredit}>
               <div className="admin-wallet-credit-heading">
                 <span className="admin-wallet-credit-icon"><WalletCards size={18} /></span>
-                <div><strong>Credit customer wallet</strong><small>NGN wallet · audited administrator action</small></div>
+                <div><strong>Adjust customer wallet</strong><small>NGN wallet · audited administrator action</small></div>
               </div>
-              <label htmlFor="admin-credit-amount">Credit amount (₦)</label>
+              <label htmlFor="admin-wallet-action">Wallet action</label>
+              <select id="admin-wallet-action" value={walletAction} disabled={Boolean(creditKey) || crediting} onChange={(event) => { setWalletAction(event.target.value); setCreditError(""); setCreditNotice(""); }}>
+                <option value="credit">Add money</option>
+                <option value="debit">Remove money</option>
+              </select>
+              {walletAction === "debit" && <p>Remove funds from this customer’s available wallet balance. A reason is required and the action is recorded.</p>}
+              <label htmlFor="admin-credit-amount">Amount (₦)</label>
               <input
                 id="admin-credit-amount"
                 type="number"
@@ -383,7 +390,7 @@ export default function AdminCustomers() {
               {creditError && <p className="admin-wallet-credit-message error" role="alert">{creditError}</p>}
               {creditNotice && <p className="admin-wallet-credit-message success" role="status">{creditNotice}</p>}
               <button type="submit" className="admin-wallet-credit-submit" disabled={crediting || !creditAmount || !creditReason.trim()}>
-                {crediting ? <><LoaderCircle size={15} className="admin-wallet-credit-spinner" /> Applying credit…</> : creditKey ? "Retry same credit safely" : "Credit wallet"}
+                {crediting ? <><LoaderCircle size={15} className="admin-wallet-credit-spinner" /> Applying adjustment…</> : creditKey ? "Retry same adjustment safely" : walletAction === "debit" ? "Remove money" : "Add money"}
               </button>
             </form>
 

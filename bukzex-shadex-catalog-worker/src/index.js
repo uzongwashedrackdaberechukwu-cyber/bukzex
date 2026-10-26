@@ -1,3 +1,4 @@
+import { catalogueResponse, publicApiResponse } from "./public-catalogue.js";
 const UPSTREAM = "https://shadexgoltd.com/api/v1";
 const FIREBASE_JWKS = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
 const OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -47,7 +48,8 @@ function json(body, status, cors) {
   const headers = new Headers(cors);
   headers.set("Content-Type", "application/json; charset=utf-8");
   headers.set("Cache-Control", "no-store");
-  return new Response(JSON.stringify(body), { status, headers });
+  try { return new Response(JSON.stringify(publicApiResponse(body)), { status, headers }); }
+  catch { return new Response(JSON.stringify({ success: false, error: { message: "This BukzEx service is temporarily unavailable. Please contact customer care." } }), { status: 502, headers }); }
 }
 
 function b64url(bytes) {
@@ -840,6 +842,101 @@ async function adminWalletCredit(request, env) {
     balance,
     duplicate: false,
     message: "Wallet credited successfully and the action was recorded in the admin audit log.",
+  };
+}
+
+async function adminWalletDebit(request, env) {
+  const identity = await requireAdminIdentity(request, env);
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object") throw new HttpError(400, "Debit details must be valid JSON.");
+
+  const targetUid = String(body.user_id || "").trim();
+  const amountMinor = Number(body.amount_minor);
+  const idempotencyKey = String(body.idempotency_key || request.headers.get("Idempotency-Key") || "").trim();
+  const reason = String(body.reason || "").trim().slice(0, 240);
+
+  if (!targetUid || targetUid.length > 128) throw new HttpError(400, "Choose a valid customer account.");
+  if (!UUID.test(idempotencyKey)) throw new HttpError(400, "A UUID debit reference is required.");
+  if (!Number.isSafeInteger(amountMinor) || amountMinor < 1 || amountMinor > 1000000000) {
+    throw new HttpError(400, "Enter a debit amount between ₦0.01 and ₦10,000,000.");
+  }
+  if (reason.length < 5) throw new HttpError(400, "Enter a reason for this wallet debit (at least 5 characters).");
+
+  const profile = await firestoreGet(env, docResource(env, `profiles/${targetUid}`));
+  if (!profile) throw new HttpError(404, "The selected customer profile was not found.");
+
+  const walletPath = `wallets/${targetUid}`;
+  const ledgerPath = `wallet_transactions/admin_debit_${identity.uid}_${idempotencyKey}`;
+  const auditPath = `admin_wallet_debit_audit/${identity.uid}_${idempotencyKey}`;
+  const existingLedger = await firestoreGet(env, docResource(env, ledgerPath));
+  if (existingLedger) {
+    if (existingLedger.data.user_id !== targetUid
+      || Number(existingLedger.data.amount_minor) !== amountMinor
+      || existingLedger.data.admin_uid !== identity.uid) {
+      throw new HttpError(409, "This debit reference was already used for different details.");
+    }
+    const wallet = await firestoreGet(env, docResource(env, walletPath));
+    return {
+      transaction_id: ledgerPath.split("/").pop(),
+      user_id: targetUid,
+      amount_minor: amountMinor,
+      balance: Number(wallet?.data?.balance || 0),
+      duplicate: true,
+      message: "This wallet debit was already applied. No additional debit was added.",
+    };
+  }
+
+  const wallet = await firestoreGet(env, docResource(env, walletPath));
+  if (wallet && String(wallet.data.currency || "NGN").toUpperCase() !== "NGN") {
+    throw new HttpError(409, "Manual debit is only supported for NGN wallets.");
+  }
+  const currentBalance = Number(wallet?.data?.balance || 0);
+  if (!Number.isFinite(currentBalance) || currentBalance < 0) {
+    throw new HttpError(409, "The customer wallet balance is invalid. Review it before debiting.");
+  }
+  const amount = amountMinor / 100;
+  if (Math.round(currentBalance * 100) < amountMinor) throw new HttpError(422, "Insufficient wallet balance. No money was removed.");
+  const balance = (Math.round(currentBalance * 100) - amountMinor) / 100;
+  const now = new Date().toISOString();
+  const writes = [
+    wallet
+      ? updateWrite(env, walletPath, { balance, updated_at: now }, wallet.updateTime)
+      : createWrite(env, walletPath, { user_id: targetUid, balance, currency: "NGN", updated_at: now }),
+    createWrite(env, ledgerPath, {
+      user_id: targetUid,
+      transaction_type: "admin_debit",
+      amount,
+      direction: "debit",
+      amount_minor: amountMinor,
+      currency: "NGN",
+      status: "completed",
+      source_id: idempotencyKey,
+      description: `Administrator wallet debit: ${reason}`,
+      admin_uid: identity.uid,
+      created_at: now,
+    }),
+    createWrite(env, auditPath, {
+      admin_uid: identity.uid,
+      customer_uid: targetUid,
+      amount_minor: amountMinor,
+      currency: "NGN",
+      reason,
+      balance_before: currentBalance,
+      balance_after: balance,
+      transaction_id: ledgerPath.split("/").pop(),
+      idempotency_key: idempotencyKey,
+      created_at: now,
+    }),
+  ];
+  await firestoreCommit(env, writes);
+
+  return {
+    transaction_id: ledgerPath.split("/").pop(),
+    user_id: targetUid,
+    amount_minor: amountMinor,
+    balance,
+    duplicate: false,
+    message: "Wallet debited successfully and the action was recorded in the admin audit log.",
   };
 }
 
@@ -1769,6 +1866,14 @@ export default {
         return json({ success: false, error: { message: error instanceof HttpError ? error.message : "BukzEx could not safely apply the wallet credit." } }, status, cors);
       }
     }
+    if (request.method === "POST" && url.pathname === "/api/admin/wallet-debit") {
+      try {
+        return json({ success: true, data: await adminWalletDebit(request, env) }, 200, cors);
+      } catch (error) {
+        const status = error instanceof HttpError ? error.status : 500;
+        return json({ success: false, error: { message: error instanceof HttpError ? error.message : "BukzEx could not safely apply the wallet debit." } }, status, cors);
+      }
+    }
     if (request.method === "POST" && url.pathname === "/api/admin/orders/cancel") {
       try {
         return json({ success: true, data: await adminCancelOrder(request, env) }, 200, cors);
@@ -1793,10 +1898,7 @@ export default {
         const upstream = await fetch(`${UPSTREAM}/email-verification/domains?service_id=${encodeURIComponent(serviceId)}`, {
           headers: { Authorization: `Bearer ${env.SHADEX_API_KEY}`, Accept: "application/json" },
         });
-        return new Response(await upstream.text(), {
-          status: upstream.status,
-          headers: new Headers({ ...Object.fromEntries(cors), "Content-Type": upstream.headers.get("Content-Type") || "application/json; charset=utf-8", "Cache-Control": "no-store" }),
-        });
+        return catalogueResponse(upstream, cors);
       } catch { return json({ error: "provider_unreachable" }, 502, cors); }
     }
     if (request.method === "GET" && CATALOG_ROUTES.has(url.pathname)) {
@@ -1805,10 +1907,7 @@ export default {
         const upstream = await fetch(`${UPSTREAM}${CATALOG_ROUTES.get(url.pathname)}`, {
           headers: { Authorization: `Bearer ${env.SHADEX_API_KEY}`, Accept: "application/json" },
         });
-        return new Response(await upstream.text(), {
-          status: upstream.status,
-          headers: new Headers({ ...Object.fromEntries(cors), "Content-Type": upstream.headers.get("Content-Type") || "application/json; charset=utf-8", "Cache-Control": "no-store" }),
-        });
+        return catalogueResponse(upstream, cors);
       } catch { return json({ error: "provider_unreachable" }, 502, cors); }
     }
     if (request.method === "POST" && ["/api/checkout/purchase", "/api/checkout/order-refresh"].includes(url.pathname)) {

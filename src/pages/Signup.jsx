@@ -18,7 +18,6 @@ import {
   Check,
 } from "lucide-react";
 
-import "./Signup.css";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -65,10 +64,10 @@ export default function Signup() {
             JOIN BUKZEX
           </span>
 
-          <h1>
+          <h2>
             Everything Digital.
             <span> One Account.</span>
-          </h1>
+          </h2>
 
           <p>
             Create your BukzEx account and access the
@@ -135,10 +134,10 @@ export default function Signup() {
               CREATE ACCOUNT
             </span>
 
-            <h2>
+            <h1>
               Join
               <span> BukzEx.</span>
-            </h2>
+            </h1>
 
             <p>
               Create your account to get started.

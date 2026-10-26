@@ -14,7 +14,6 @@ import {
   Headphones,
 } from "lucide-react";
 
-import "./Login.css";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -146,9 +145,8 @@ export default function Login() {
             </h1>
 
             <p>
-              Access your BukzEx account and
-              continue using the services available
-              to you.
+              Good to have you back. Your wallet,
+              services and purchases are waiting.
             </p>
           </div>
 

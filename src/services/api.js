@@ -104,6 +104,15 @@ export async function creditCustomerWallet(userId, amountMinor, reason, idempote
   });
 }
 
+export async function debitCustomerWallet(userId, amountMinor, reason, idempotencyKey) {
+  return callBukzExWorker("/api/admin/wallet-debit", {
+    user_id: String(userId || ""),
+    amount_minor: Number(amountMinor),
+    reason: String(reason || ""),
+    idempotency_key: String(idempotencyKey || ""),
+  });
+}
+
 export async function refreshDigitalServiceOrder(orderId) {
   return callBukzExWorker("/api/checkout/order-refresh", { order_id: orderId });
 }

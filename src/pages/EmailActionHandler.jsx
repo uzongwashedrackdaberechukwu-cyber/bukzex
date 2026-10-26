@@ -149,23 +149,7 @@ export default function EmailActionHandler() {
           </a>
         )}
       </section>
-      <style>{`
-        .email-action-page { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #07111f; color: #f6f8fb; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
-        .email-action-card { width: min(100%, 440px); padding: 36px; border: 1px solid rgba(255,255,255,.12); border-radius: 20px; background: #101c2c; box-shadow: 0 24px 70px rgba(0,0,0,.28); text-align: center; }
-        .email-action-brand { display: inline-block; margin-bottom: 24px; font-size: 22px; font-weight: 800; letter-spacing: -.04em; }
-        .email-action-brand span { color: #42d6a4; }
-        .email-action-card h1 { margin: 0 0 12px; font-size: clamp(24px, 6vw, 32px); }
-        .email-action-card p { margin: 0; color: #b8c4d2; line-height: 1.6; }
-        .email-action-button { display: inline-flex; justify-content: center; margin-top: 24px; padding: 12px 20px; border-radius: 10px; background: #42d6a4; color: #07111f; font-weight: 700; text-decoration: none; }
-        .email-action-button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
-        .email-action-button:disabled { cursor: wait; opacity: .7; }
-        .email-action-form { display: grid; gap: 10px; margin-top: 22px; text-align: left; }
-        .email-action-form label { margin-top: 6px; color: #d8e0e9; font-size: 14px; font-weight: 600; }
-        .email-action-form input { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid rgba(255,255,255,.18); border-radius: 9px; background: #07111f; color: #f6f8fb; font: inherit; }
-        .email-action-form .email-action-button { border: 0; font: inherit; cursor: pointer; }
-        .email-action-account { margin: 0; color: #42d6a4 !important; text-align: center; }
-        .email-action-error { margin: 4px 0 0 !important; color: #ffb4ad !important; }
-      `}</style>
+
     </main>
   );
 }

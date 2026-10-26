@@ -15,7 +15,6 @@ import {
   confirmDeposit,
 } from "../../services/api";
 
-import "./AdminDeposits.css";
 
 function formatAmount(value) {
   return `₦${Number(value || 0).toLocaleString()}`;

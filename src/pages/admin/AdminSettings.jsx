@@ -9,7 +9,6 @@ import {
 import { useEffect, useState } from "react";
 import { getSession } from "../../services/auth";
 import { isSupabaseConfigured } from "../../lib/supabase";
-import "./AdminSettings.css";
 
 export default function AdminSettings() {
   const [session, setSession] = useState(null);

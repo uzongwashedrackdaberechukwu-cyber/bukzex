@@ -1,4 +1,9 @@
-export const WORKER_URL = "https://bukzex-shadex-catalog.uzongwashedrackdaberechukwu.workers.dev";
+import {
+  publicCatalogueData,
+  publicText,
+} from "../../bukzex-shadex-catalog-worker/src/public-catalogue.js";
+export const WORKER_URL =
+  "https://bukzex-shadex-catalog.uzongwashedrackdaberechukwu.workers.dev";
 
 const CATALOGUE_PATHS = {
   vtu: "vtu",
@@ -19,10 +24,10 @@ async function readResponse(response, fallback) {
   }
 
   if (!response.ok || payload?.success !== true || !payload?.data) {
-    throw new Error(payload?.error?.message || fallback);
+    throw new Error(publicText(payload?.error?.message || fallback));
   }
 
-  return payload.data;
+  return publicCatalogueData(payload.data);
 }
 
 export async function getShadexCatalogue(serviceId) {
@@ -33,7 +38,10 @@ export async function getShadexCatalogue(serviceId) {
     headers: { Accept: "application/json" },
   });
 
-  return readResponse(response, "The live service catalogue could not be loaded.");
+  return readResponse(
+    response,
+    "The live service catalogue could not be loaded.",
+  );
 }
 
 export async function getEmailVerificationDomains(serviceId) {

@@ -26,9 +26,6 @@ import ShadexCataloguePanel from "./ShadexCataloguePanel";
 import WhatsAppSupport from "../components/WhatsAppSupport";
 import CustomerWorkspaceNav from "../components/CustomerWorkspaceNav";
 
-import "./ServicePurchase.css";
-import "./CustomerExperience2026.css";
-import "./ShadexVtu.css";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -486,7 +483,7 @@ export default function ServicePurchase() {
       if (message.includes("wallet has been refunded") || message.includes("payment reference was already used")) {
         sessionStorage.removeItem(requestStorageKey);
       }
-      setError(err?.message || "We couldn’t complete this purchase. Check My Stack before trying again, or contact BukzEx Customer Care.");
+      setError(err?.message || "We couldn’t complete this purchase. Check Purchases before trying again, or contact BukzEx Customer Care.");
     } finally {
       setSubmitting(false);
     }
@@ -597,7 +594,7 @@ export default function ServicePurchase() {
               <div><span>Available wallet balance</span><strong>{loading ? "Loading…" : `₦${walletBalance.toLocaleString()}`}</strong></div>
               <div><span>{serviceId === "rental" ? "Rental price" : "Price"}</span><strong>{selectedCatalogueItem.variable_amount ? "Enter amount" : serviceId === "rental" && selectedCatalogueItem.price ? (() => { const unit = Number(selectedCatalogueItem.price.minor_unit ?? 2); const monthly = Number(selectedCatalogueItem.price.amount_minor) / (10 ** unit); const currency = selectedCatalogueItem.price.currency || "NGN"; return `${currency} ${monthly.toLocaleString(undefined, { maximumFractionDigits: 2 })}/month · Total ${currency} ${(monthly * Number(rentalMonths || selectedCatalogueItem.minimum_months || 1)).toLocaleString(undefined, { maximumFractionDigits: 2 })}`; })() : selectedCatalogueItem.price ? priceLabel(selectedCatalogueItem, 0, selectedCatalogueItem.price) : "Price unavailable"}</strong></div>
             </div>
-            <p className="service-request-notice">Payment is securely deducted from your BukzEx wallet. Your purchase and available delivery details will appear in My Stack. Contact BukzEx Customer Care for OTP or password assistance.</p>
+            <p className="service-request-notice">Payment is securely deducted from your BukzEx wallet. Your purchase and available delivery details will appear in Purchases. Contact BukzEx Customer Care for OTP or password assistance.</p>
             {error && <div className="service-form-message error"><AlertCircle size={17} /><span>{error}</span></div>}
             {success && <div className="service-form-message success"><CheckCircle2 size={17} /><span>{success}</span></div>}
             <button type="submit" className="service-purchase-submit" disabled={submitting || loading || (serviceId === "email_verification" && (!emailDomain || emailDomainsLoading))}>
@@ -623,7 +620,7 @@ export default function ServicePurchase() {
             <h2>{serviceId === "vtu" ? "Choose Airtime or Data" : "Request a Service"}</h2>
             <p>
               {serviceId === "vtu"
-                ? `Browse available options. BukzEx pricing: ${markup}% markup.`
+                ? "Choose your network and plan. Review the total before you pay."
                 : "Choose the service option you need."}
             </p>
           </div>
@@ -673,7 +670,7 @@ export default function ServicePurchase() {
                     <div className="service-form-field">
                       <label htmlFor="service-amount">Airtime amount (₦)</label>
                     <input id="service-amount" type="number" min="1" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="Enter amount" />
-                    <small className="service-price-hint">Estimated customer total with {markup}% markup: ₦{(Number(amount || 0) * (1 + markup / 100)).toLocaleString(undefined, { maximumFractionDigits: 2 })}</small>
+                    <small className="service-price-hint">Estimated total: ₦{(Number(amount || 0) * (1 + markup / 100)).toLocaleString(undefined, { maximumFractionDigits: 2 })}</small>
                     </div>
                   )}
                   <div className="service-form-field">
@@ -697,7 +694,7 @@ export default function ServicePurchase() {
           )}
 
           {error && <div className="service-form-message error"><AlertCircle size={17} /><span>{error}</span></div>}
-          <p className="service-request-notice">Payment is securely deducted from your BukzEx wallet. Track your purchase and available delivery details in My Stack.</p>
+          <p className="service-request-notice">Payment is securely deducted from your BukzEx wallet. Track your purchase and available delivery details in Purchases.</p>
           <button type="submit" className="service-purchase-submit" disabled={submitting || loading || (vtuType === "data" && !planId)}>
             {submitting ? "Processing payment…" : "Pay with wallet"}
           </button>

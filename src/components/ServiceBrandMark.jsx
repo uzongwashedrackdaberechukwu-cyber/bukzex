@@ -1,58 +1,95 @@
-import { Package2 } from "lucide-react";
-import "./ServiceBrandMark.css";
-
-const BRANDS = [
-  [/netflix/i, "N", "#e50914"],
-  [/spotify/i, "S", "#1db954"],
-  [/youtube|prime video/i, "▶", "#ff0033"],
-  [/tiktok/i, "♪", "#111827"],
-  [/coursera/i, "C", "#0056d2"],
-  [/proton/i, "P", "#6d4aff"],
-  [/instagram/i, "IG", "#c13584"],
-  [/facebook|meta/i, "f", "#0866ff"],
-  [/whatsapp/i, "WA", "#25d366"],
-  [/airtel/i, "A", "#e40000"],
-  [/(^|\W)mtn(\W|$)/i, "MTN", "#ffcc00"],
-  [/(^|\W)glo(\W|$)/i, "G", "#00a650"],
-  [/9mobile/i, "9", "#00a859"],
-  [/dstv/i, "D", "#0065b3"],
-  [/gotv/i, "G", "#f5a000"],
-  [/startimes/i, "S", "#168447"],
-  [/amazon/i, "a", "#232f3e"],
-  [/apple/i, "A", "#51545a"],
-  [/chatgpt|openai/i, "AI", "#10a37f"],
-  [/perplexity/i, "P", "#2458a6"],
-  [/snapchat/i, "SC", "#fffc00"],
-  [/google|gmail|youtube/i, "G", "#4285f4"],
-  [/telegram/i, "T", "#229ed9"],
-  [/(^|\W)x(\W|$)|twitter/i, "X", "#171717"],
+import {
+  AtSign,
+  FileText,
+  Globe2,
+  Smartphone,
+  Tv,
+  Zap,
+  TrendingUp,
+  Package2,
+} from "lucide-react";
+import {
+  FaApple, FaRobot,
+  FaFacebookF,
+  FaGoogle,
+  FaInstagram,
+  FaSpotify,
+  FaTelegramPlane,
+  FaTiktok,
+  FaWhatsapp,
+  FaYoutube,
+} from "react-icons/fa";
+import { SiBinance, SiNetflix, SiX } from "react-icons/si";
+import {
+  publicLogoUrl,
+  publicText,
+} from "../../bukzex-shadex-catalog-worker/src/public-catalogue.js";
+const brands = [
+  [/netflix/i, SiNetflix, "#f15b63"],
+  [/spotify/i, FaSpotify, "#63dc93"],
+  [/youtube/i, FaYoutube, "#ff747b"],
+  [/tiktok/i, FaTiktok, "#e6edf7"],
+  [/instagram/i, FaInstagram, "#ec9cc7"],
+  [/facebook|meta/i, FaFacebookF, "#88baff"],
+  [/whatsapp/i, FaWhatsapp, "#6fdda1"],
+  [/telegram/i, FaTelegramPlane, "#8accff"],
+  [/google|gmail/i, FaGoogle, "#9ebfff"],
+  [/apple/i, FaApple, FaRobot, "#e4edf7"],
+  [/chatgpt|openai/i, FaRobot, "#8bd7bc"],
+  [/binance/i, SiBinance, "#e6ca75"],
+  [/(^|\W)x(\W|$)|twitter/i, SiX, "#e6edf7"],
 ];
-
+const fallbackIcons = [
+  [/electric|energy|power|prepaid|postpaid/i,Zap],
+  [/dstv|gotv|startimes|cable|television/i,Tv],
+  [/mtn|airtel|9mobile|glo|airtime|data|rental|number/i,Smartphone],
+  [/email|mail|126\.com/i,AtSign],
+  [/\.com|\.net|\.org|\.io|\.ai/i,Globe2],
+  [/social|boost|followers|views|likes/i,TrendingUp],
+  [/pdf|document/i,FileText],
+];
 export default function ServiceBrandMark({
   name = "",
   logoUrl = "",
-  fallbackIcon: FallbackIcon = Package2,
+  fallbackIcon,
   size = "medium",
 }) {
-  const brand = BRANDS.find(([pattern]) => pattern.test(String(name)));
-  const initials = brand?.[1] || String(name).trim().split(/\s+/).slice(0, 2).map((word) => word[0]).join("").toUpperCase() || "B";
-  const color = brand?.[2] || "#315fa9";
-
+  const label = publicText(name);
+  const brand = brands.find(([pattern]) => pattern.test(label));
+  const Icon = brand?.[1] || fallbackIcon || fallbackIcons.find(([pattern]) => pattern.test(label))?.[1] || Package2;
+  const safeLogo = publicLogoUrl(logoUrl);
+  const network = /\bMTN\b/i.test(label)
+    ? "MTN"
+    : /\bGLO\b/i.test(label)
+      ? "glo"
+      : /airtel/i.test(label)
+        ? "airtel"
+        : null;
   return (
     <span
       className={`service-brand-mark service-brand-mark-${size}`}
-      style={{ "--service-brand-color": color }}
+      style={{ "--service-brand-color": brand?.[2] || "#e0c588" }}
       aria-hidden="true"
     >
-      {logoUrl && (
-        <img
-          src={logoUrl}
-          alt=""
-          loading="lazy"
-          onError={(event) => { event.currentTarget.style.display = "none"; }}
+      {network ? (
+        <span className="service-brand-wordmark">{network}</span>
+      ) : (
+        <Icon
+          size={size === "small" ? 20 : 24}
+          aria-hidden="true"
+          focusable="false"
         />
       )}
-      {brand ? <span className="service-brand-initials">{initials}</span> : <FallbackIcon size={size === "small" ? 16 : 20} />}
+      {safeLogo && (
+        <img
+          src={safeLogo}
+          alt=""
+          loading="lazy"
+          onError={(event) => {
+            event.currentTarget.style.display = "none";
+          }}
+        />
+      )}
     </span>
   );
 }

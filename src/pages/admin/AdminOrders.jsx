@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 
 import { cancelAdminOrder, deleteOrder, getOrders, updateOrder } from "../../services/api";
-import "./AdminOrders.css";
 
 function formatMoney(value) {
   return `₦${Number(value || 0).toLocaleString()}`;

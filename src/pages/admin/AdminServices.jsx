@@ -5,8 +5,6 @@ import { getShadexCatalogue } from "../../services/shadexCatalog";
 import { getServices } from "../../services/api";
 import { CheckCircle2, LoaderCircle, MessageSquareCode, Mail, Receipt, RefreshCw, Save, Smartphone, Store, TrendingUp, XCircle } from "lucide-react";
 import ServiceBrandMark from "../../components/ServiceBrandMark";
-import "./AdminServices.css";
-import "./AdminShadexServices.css";
 
 const MANAGED = [
   { id: "vtu", name: "Airtime & Data", endpoint: "vtu", summary: "Mobile airtime and data plans", icon: Smartphone },

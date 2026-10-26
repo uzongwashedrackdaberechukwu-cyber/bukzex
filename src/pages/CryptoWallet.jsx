@@ -9,8 +9,6 @@ import {
   submitCryptoWithdrawal,
 } from "../services/api";
 import CustomerWorkspaceNav from "../components/CustomerWorkspaceNav";
-import "./CryptoWallet.css";
-import "./CustomerExperience2026.css";
 
 const banks = [
   "Access Bank", "Ecobank Nigeria", "Fidelity Bank", "First Bank of Nigeria",
@@ -187,7 +185,7 @@ export default function CryptoWallet() {
 
       {withdrawOpen && <div className="bx-crypto-overlay" onClick={() => setWithdrawOpen(false)}>
         <form className="bx-crypto-modal" onSubmit={withdraw} onClick={(e) => e.stopPropagation()}>
-          <div className="bx-crypto-panel-title"><h2>Withdraw to bank</h2><button type="button" onClick={() => setWithdrawOpen(false)}>×</button></div>
+          <div className="bx-crypto-panel-title"><h2>Withdraw to bank</h2><button type="button" aria-label="Close withdrawal form" onClick={() => setWithdrawOpen(false)}>×</button></div>
           <p>Funds are reserved while the request is processed. Rejected requests are refunded.</p>
           <label>Amount (NGN)<input required type="number" min="1" step="0.01" max={balance} value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} /></label>
           <label>Bank<select required value={bank} onChange={(e) => setBank(e.target.value)}><option value="">Choose bank</option>{banks.map((name) => <option key={name}>{name}</option>)}</select></label>

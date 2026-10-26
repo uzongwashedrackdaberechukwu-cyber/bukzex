@@ -12,7 +12,6 @@ import {
   getWalletTransactions,
 } from "../../services/api";
 
-import "./AdminTransactions.css";
 
 function formatMoney(value) {
   return `₦${Number(value || 0).toLocaleString()}`;
@@ -47,7 +46,7 @@ export default function AdminTransactions() {
         const type = rawType === "deposit" ? "deposit"
           : rawType === "admin_credit" ? "credit"
             : rawType === "refund" ? "refund"
-              : rawType === "withdrawal" ? "withdrawal"
+              : ["withdrawal", "admin_debit"].includes(rawType) ? "withdrawal"
                 : "purchase";
         const labels = {
           deposit: "Wallet Deposit",
@@ -59,7 +58,7 @@ export default function AdminTransactions() {
         return {
           id: row.id,
           type,
-          label: labels[type],
+          label: rawType === "admin_debit" ? "Administrator Wallet Debit" : labels[type],
           reference: row.source_id,
           amount: Number(row.amount || 0),
           status: row.status,

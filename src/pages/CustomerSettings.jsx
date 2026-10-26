@@ -8,8 +8,8 @@ import {
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import "./CustomerSettings.css";
 import { getSession, updateSession } from "../services/auth";
+import CustomerWorkspaceNav from "../components/CustomerWorkspaceNav";
 import WhatsAppSupport from "../components/WhatsAppSupport";
 
 export default function CustomerSettings() {
@@ -39,6 +39,8 @@ export default function CustomerSettings() {
   }
 
   return (
+    <>
+    <CustomerWorkspaceNav current="settings" />
     <main className="customer-settings-page">
       <div className="customer-settings-container">
 
@@ -130,5 +132,6 @@ export default function CustomerSettings() {
       </div>
       <WhatsAppSupport />
     </main>
+    </>
   );
 }

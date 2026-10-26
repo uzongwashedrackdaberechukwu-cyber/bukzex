@@ -21,8 +21,6 @@ import WhatsAppSupport from "../components/WhatsAppSupport";
 import ServiceBrandMark from "../components/ServiceBrandMark";
 import CustomerWorkspaceNav from "../components/CustomerWorkspaceNav";
 
-import "./CustomerOrders.css";
-import "./CustomerExperience2026.css";
 
 function formatAmount(value) {
   const amount = Number(value || 0);
@@ -108,7 +106,7 @@ function receiptText(order) {
     `Date: ${formatDate(order.createdAt || order.created_at || order.date)}`,
     "Status: Completed",
     "BukzEx transaction receipt. Not a bank-issued receipt.",
-  ].join("\\n");
+  ].join("\n");
 }
 
 function printReceipt(order) {
@@ -436,6 +434,7 @@ export default function CustomerOrders() {
               type="button"
               key={value}
               className={activeFilter === value ? "active" : ""}
+              aria-pressed={activeFilter === value}
               onClick={() => setActiveFilter(value)}
             >
               {label}
@@ -465,7 +464,7 @@ export default function CustomerOrders() {
             <ShoppingBag size={25} />
           </div>
 
-            <h2>Your stack is empty</h2>
+            <h2>Your purchases start here</h2>
 
           <p>
             Your completed and pending purchases will appear here.

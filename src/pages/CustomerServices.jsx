@@ -15,8 +15,6 @@ import { Link } from "react-router-dom";
 import WhatsAppSupport from "../components/WhatsAppSupport";
 import ServiceBrandMark from "../components/ServiceBrandMark";
 import CustomerWorkspaceNav from "../components/CustomerWorkspaceNav";
-import "./CustomerServices.css";
-import "./CustomerExperience2026.css";
 
 // These are the live ShadexGoLtd catalogues that BukzEx currently supports.
 // Keep the tiles visible even if one catalogue is temporarily empty.
@@ -84,11 +82,11 @@ const popularApps = [
   { name: "ChatGPT / OpenAI", icon: FaRobot, color: "#10a37f" },
   { name: "Telegram", icon: FaTelegramPlane, color: "#229ed9" },
   { name: "Google / Gmail", icon: FaGoogle, color: "#4285f4" },
-  { name: "Apple ID", icon: FaApple, color: "#f4f7fb" },
-  { name: "TikTok", icon: FaTiktok, color: "#f4f7fb" },
+  { name: "Apple ID", icon: FaApple, color: "#dce6f0" },
+  { name: "TikTok", icon: FaTiktok, color: "#dce6f0" },
   { name: "Facebook", icon: FaFacebookF, color: "#0866ff" },
   { name: "Tinder", icon: SiTinder, color: "#ff4458" },
-  { name: "Uber", icon: SiUber, color: "#f4f7fb" },
+  { name: "Uber", icon: SiUber, color: "#dce6f0" },
   { name: "Binance", icon: SiBinance, color: "#f0b90b" },
 ];
 
@@ -111,8 +109,8 @@ export default function CustomerServices() {
     <main className="customer-services-page">
       <header className="customer-services-hero">
         <div className="customer-services-hero-copy">
-          <span className="customer-services-eyebrow"><i /> ONE BUKZEX ACCOUNT · MANY POSSIBILITIES</span>
-          <h1>Everyday services,<br /><em>made effortless.</em></h1>
+          <span className="customer-services-eyebrow"><i /> BUKZEX SERVICES</span>
+          <h1>Your service directory.<br /><em>Built around your everyday.</em></h1>
           <p>Stay connected, take care of bills and find the digital services you need. Choose a category to see available options and clear prices.</p>
           <div className="customer-services-hero-actions"><Link to="/customer" className="customer-services-primary">Back to your dashboard <ArrowRight size={16} /></Link><span><span className="customer-services-secure">✓</span> Secure wallet checkout</span></div>
         </div>
@@ -149,6 +147,7 @@ export default function CustomerServices() {
               type="button"
               key={filter}
               className={activeFilter === filter ? "active" : ""}
+              aria-pressed={activeFilter === filter}
               onClick={() => setActiveFilter(filter)}
             >
               {filter}
@@ -204,7 +203,7 @@ export default function CustomerServices() {
             const AppIcon = app.icon;
             return (
               <Link key={app.name} to="/customer/services/sms" className="customer-popular-app">
-                <span style={{ color: app.color }}><AppIcon /></span>
+                <span style={{ color: app.color }}><AppIcon aria-hidden="true" focusable="false" /></span>
                 <strong>{app.name}</strong>
                 <ArrowRight size={14} />
               </Link>

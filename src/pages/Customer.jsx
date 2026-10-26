@@ -1,4 +1,5 @@
 import {
+  Bitcoin,
   Layers3,
   ShoppingBag,
   LogOut,
@@ -15,8 +16,6 @@ import {
   MessageSquareCode,
   Mail,
   TrendingUp,
-  ShieldCheck,
-  Sparkles,
 } from "lucide-react";
 
 import { useEffect, useState } from "react";
@@ -32,8 +31,6 @@ import { getSession, logoutUser } from "../services/auth";
 import WhatsAppSupport from "../components/WhatsAppSupport";
 import CustomerWorkspaceNav from "../components/CustomerWorkspaceNav";
 
-import "./Customer.css";
-import "./CustomerExperience2026.css";
 
 const serviceLinks = [
   { id: "vtu", name: "Airtime & data", detail: "Stay connected", icon: Smartphone, tone: "blue" },
@@ -235,18 +232,13 @@ export default function Customer() {
         {!topUpOpen && (
           <section className="bx-home-hero">
             <div>
-              <span className="bx-home-kicker"><i /> BUKZEX FINANCIAL WORKSPACE</span>
-              <h1>Welcome back, {firstName}. <em>Everything you need, one balance.</em></h1>
-              <p>Pay, verify, subscribe and manage your digital services from one secure BukzEx account.</p>
+              <span className="bx-home-kicker"><i /> BUKZEX WORKSPACE</span>
+              <h1>Hello, {firstName}. <em>Your wallet, services and activity. Connected.</em></h1>
+              <p>Your balance, your services and your latest purchases. Right where you need them.</p>
               <div className="bx-home-actions">
                 <Link to="/customer/services">Explore services <ArrowRight size={15} /></Link>
                 <Link to="/customer/orders">View purchases <ShoppingBag size={15} /></Link>
               </div>
-            </div>
-            <div className="bx-home-assurance">
-              <span><ShieldCheck size={18} /><span><strong>Protected checkout</strong><small>Wallet-backed purchases</small></span></span>
-              <span><Sparkles size={18} /><span><strong>Live catalogues</strong><small>Fresh service availability</small></span></span>
-              <span><Clock3 size={18} /><span><strong>Order tracking</strong><small>Status in one workspace</small></span></span>
             </div>
           </section>
         )}
@@ -306,7 +298,7 @@ export default function Customer() {
           )}
 
           <Link to="/customer/crypto" className="customer-crypto-promo">
-            <span className="customer-crypto-promo-icon">₿</span>
+            <span className="customer-crypto-promo-icon"><Bitcoin size={23} /></span>
             <span className="customer-crypto-promo-copy">
               <strong>Crypto wallet</strong>
               <small>Deposit supported crypto and request a bank withdrawal.</small>
@@ -354,7 +346,7 @@ export default function Customer() {
                   <ShoppingBag size={19} />
                 </div>
 
-                <span>ORDERS</span>
+                <span>RECENT ORDERS</span>
               </div>
 
               <strong>{orders.length}</strong>
@@ -371,13 +363,13 @@ export default function Customer() {
                   <Layers3 size={19} />
                 </div>
 
-                <span>PAYMENTS · ORDERS · STACK</span>
+                <span>YOUR SERVICES</span>
               </div>
 
-              <strong className="customer-stack-value">My purchases</strong>
+              <strong className="customer-stack-value">Active Stack</strong>
 
               <Link to="/customer/orders">
-                View payment stack
+                Open Active Stack
                 <ArrowRight size={14} />
               </Link>
             </div>
@@ -388,12 +380,16 @@ export default function Customer() {
 
           <section className="customer-service-preview">
             <div className="customer-section-heading">
-              <div><span className="customer-section-kicker">ONE ACCOUNT · MORE POSSIBILITIES</span><h2>What do you need today?</h2><p>Choose a service to see live options and prices.</p></div>
+              <div><span className="customer-section-kicker">QUICK ACCESS</span><h2>Make your next move</h2><p>Choose a service to see live options and prices.</p></div>
               <Link to="/customer/services" className="customer-view-all">View all services <ArrowRight size={16} /></Link>
             </div>
             <div className="customer-service-preview-grid">
               {serviceLinks.map((service) => { const Icon = service.icon; return <Link to={`/customer/services/${service.id}`} key={service.id} className={`customer-service-preview-card tone-${service.tone}`}><span className="customer-preview-icon"><Icon size={21} /></span><span className="customer-preview-copy"><strong>{service.name}</strong><small>{service.detail}</small></span><ArrowRight className="customer-preview-arrow" size={17} /></Link>; })}
             </div>
+          </section>
+          <section className="bx-recent-orders">
+            <div className="customer-section-heading"><div><span className="customer-section-kicker">YOUR LATEST ACTIVITY</span><h2>Recent activity</h2></div><Link to="/customer/orders" className="customer-view-all">All purchases <ArrowRight size={16} /></Link></div>
+            {loading ? <p role="status">Loading your recent purchases…</p> : orders.length ? <div className="bx-recent-list">{orders.map((order, index) => <Link to="/customer/orders" className="bx-recent-row" key={order.id || index}><span className="bx-recent-icon"><ShoppingBag size={19} /></span><div><strong>{order.serviceName || order.service_name || order.service || "Digital service"}</strong><small>{order.createdAt || order.created_at ? new Date(order.createdAt || order.created_at).toLocaleDateString("en-NG", {day:"numeric",month:"short",year:"numeric"}) : "View purchase details"}</small></div><span className={`bx-order-status ${getStatusClass(order.status)}`}>{getStatusIcon(order.status)}{order.status || "Pending"}</span><strong>{formatAmount(order.amount)}</strong><ArrowRight size={16} /></Link>)}</div> : <div className="bx-recent-empty"><ShoppingBag size={26}/><div><strong>Your first purchase starts here.</strong><p>Once you’ve chosen a service, you can follow its progress here.</p></div><Link to="/customer/services" className="bx-text-link">Explore services <ArrowRight size={16}/></Link></div>}
           </section>
           </>
           )}

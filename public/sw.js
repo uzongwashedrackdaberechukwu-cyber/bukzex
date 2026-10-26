@@ -1,4 +1,4 @@
-const CACHE_NAME = "bukzex-shell-v2";
+const CACHE_NAME = "bukzex-shell-catalogue-v9";
 const APP_SHELL = ["/", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
