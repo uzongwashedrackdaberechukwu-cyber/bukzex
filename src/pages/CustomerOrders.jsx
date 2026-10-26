@@ -142,8 +142,13 @@ function canDeleteOrder(order) {
 }
 
 function getServiceEmail(order) {
-  return order?.login_email || order?.email_address || order?.service_email || order?.serviceEmail ||
-    order?.fulfillment?.service_email || order?.credentials?.email || "";
+  return order?.login_email ||
+    order?.service_email ||
+    order?.serviceEmail ||
+    order?.fulfillment?.service_email ||
+    order?.credentials?.email ||
+    order?.email_address ||
+    "";
 }
 
 function isHttpUrl(value) {
@@ -155,8 +160,9 @@ function isHttpUrl(value) {
   }
 }
 
-function getSupplierDetails(order) {
+function getCustomerAccessDetails(order) {
   const fields = [];
+
   const add = (key, label, value) => {
     if (value === null || value === undefined) return;
     const normalized = String(value).trim();
@@ -164,43 +170,66 @@ function getSupplierDetails(order) {
     fields.push({ key, label, value: normalized });
   };
 
-  add("supplier_order_id", "Supplier order reference", order?.supplier_order_id || order?.provider_order_id || order?.supplierOrderId);
-  add("supplier_status", "Supplier status", order?.supplier_status || order?.provider_status || order?.supplier_order_status);
-  add("fulfillment_status", "Fulfilment status", order?.fulfillment_status || order?.fulfilment_status);
-  add("supplier_message", "Supplier update", order?.supplier_message || order?.provider_message);
-  add("account_label", "Supplier account", order?.account_label);
-  add("provider_reference", "Supplier account reference", order?.provider_reference);
-  add("subscription_status", "Subscription status", order?.subscription_status);
-  add("country_code", "Account country", order?.country_code);
-  add("provisioned_at", "Account provisioned", order?.provisioned_at ? formatDate(order.provisioned_at) : "");
-  add("credential_updated_at", "Credentials updated", order?.credential_updated_at ? formatDate(order.credential_updated_at) : "");
+  const loginEmail = getServiceEmail(order);
+  const assignedEmail =
+    order?.assigned_email ||
+    order?.email_address ||
+    "";
 
-  const states = [order?.status, order?.fulfillment_status, order?.supplier_status]
-    .map((value) => String(value || "").toLowerCase());
-  const serviceReady = states.some((value) =>
-    ["active", "completed", "complete", "success", "successful", "fulfilled", "delivered"].includes(value)
-  );
-  const subscriptionStatus = String(order?.subscription_status || "").toLowerCase();
-  const serviceEndValue = order?.service_ends_at || order?.ends_at || order?.expires_at;
-  const serviceEndTime = serviceEndValue ? Date.parse(String(serviceEndValue)) : NaN;
-  const accessActive = !["expired", "suspended", "cancelled", "canceled", "inactive"].includes(subscriptionStatus)
-    && !(Number.isFinite(serviceEndTime) && serviceEndTime <= Date.now());
+  const password =
+    order?.login_password ||
+    order?.service_password ||
+    order?.password ||
+    order?.credentials?.password ||
+    "";
 
-  // Show access credentials only while the paid subscription is ready and active.
-  if (serviceReady && accessActive) {
-    add("login_password", "Service password", order?.login_password || order?.service_password || order?.credentials?.password);
-    add("access_url", "Service access link", order?.access_url || order?.service_url || order?.credentials?.access_url);
-    add("access_instructions", "Activation instructions", order?.access_instructions || order?.fulfillment_instructions || order?.credentials?.instructions);
-    add("fulfillment_type", "Delivery type", order?.fulfillment_type || order?.fulfillment_method);
-    add("assigned_email", "Assigned account email", order?.assigned_email);
-    add("phone_number", "Assigned phone number", order?.phone_number);
-    add("rental_app_name", "Rental application", order?.rental_app_name);
-    add("rental_months", "Rental duration", order?.rental_months ? `${order.rental_months} month${Number(order.rental_months) === 1 ? "" : "s"}` : "");
-    const serviceStartsAt = order?.starts_at || order?.service_starts_at;
-    const serviceEndsAt = order?.ends_at || order?.service_ends_at || order?.expires_at;
-    add("starts_at", "Service starts", serviceStartsAt ? formatDate(serviceStartsAt) : "");
-    add("ends_at", "Service expiry", serviceEndsAt ? formatDate(serviceEndsAt) : "");
+  const starts =
+    order?.service_starts_at ||
+    order?.starts_at ||
+    order?.provisioned_at;
+
+  const ends =
+    order?.service_ends_at ||
+    order?.ends_at ||
+    order?.expires_at;
+
+  add("login_email", "Login", loginEmail);
+  add("login_password", "Password", password);
+
+  if (
+    assignedEmail &&
+    String(assignedEmail).toLowerCase() !== String(loginEmail).toLowerCase()
+  ) {
+    add("assigned_email", "Assigned email", assignedEmail);
   }
+
+  add(
+    "starts_at",
+    "Starts",
+    starts ? formatDate(starts) : ""
+  );
+
+  add(
+    "ends_at",
+    "Ends",
+    ends ? formatDate(ends) : ""
+  );
+
+  add(
+    "access_url",
+    "Access link",
+    order?.access_url ||
+      order?.service_url ||
+      order?.credentials?.access_url
+  );
+
+  add(
+    "access_instructions",
+    "Instructions",
+    order?.access_instructions ||
+      order?.fulfillment_instructions ||
+      order?.credentials?.instructions
+  );
 
   return fields;
 }
@@ -460,9 +489,14 @@ export default function CustomerOrders() {
         <div className="customer-orders-list">
           {filteredOrders.map((order, index) => {
             const status = order.status || "pending";
-            const statusClass = getStatusClass(status);
+            const serviceKey = String(order.service_key || "").toLowerCase();
+            const displayStatus =
+              serviceKey === "marketplace"
+                ? (order.subscription_status || order.supplier_status || status)
+                : status;
+            const statusClass = getStatusClass(displayStatus);
             const orderKey = String(order.id || order.orderId || index);
-            const supplierFields = getSupplierDetails(order);
+            const accessFields = getCustomerAccessDetails(order);
             const isSupplierOrder = Boolean(
               order.provider || order.supplier_name || order.supplier_order_id || order.supplier_status
             );
@@ -487,7 +521,7 @@ export default function CustomerOrders() {
                     <span
                       className={`customer-order-status ${statusClass}`}
                     >
-                      {status}
+                      {displayStatus}
                     </span>
                   </div>
 
@@ -520,67 +554,120 @@ export default function CustomerOrders() {
                     </span>
                   </div>
 
-                  {isPaidOrder(order) && isSupplierOrder && (
-                    <section className="customer-order-supplier-panel" aria-label="Supplier and service details">
-                      <div className="customer-order-supplier-heading">
-                        <ShieldCheck size={18} aria-hidden="true" />
+                  {isPaidOrder(order) && serviceKey === "marketplace" && (
+                    <section
+                      className="customer-order-access-card"
+                      aria-label="Service access details"
+                    >
+                      <div className="customer-order-access-title">
                         <div>
-                          <h3>Supplier &amp; service details</h3>
-                          <p>Supplier: {order.supplier_name || order.provider || "ShadexGoLtd"}</p>
+                          <span>ACCESS DETAILS</span>
+                          <h3>Your service account</h3>
                         </div>
                       </div>
-                      {!order.supplier_order_id && (
-                        <p className="customer-order-supplier-note">
-                          The supplier order reference has not been confirmed yet. Refresh status to check again; do not pay for this order a second time.
-                        </p>
-                      )}
 
-                      {supplierFields.length > 0 ? (
-                        <div className="customer-order-supplier-grid">
-                          {supplierFields.map((field) => (
+                      {accessFields.length > 0 ? (
+                        <div className="customer-order-access-grid">
+                          {accessFields.map((field) => (
                             <div
-                              className={`customer-order-supplier-item${field.key === "access_instructions" ? " wide" : ""}`}
+                              className={`customer-order-access-item ${
+                                field.key === "access_instructions" ? "wide" : ""
+                              }`}
                               key={field.key}
                             >
                               <small>{field.label}</small>
+
                               {field.key === "login_password" ? (
-                                <div className="customer-order-secret">
-                                  <strong>{visiblePasswords[orderKey] ? field.value : "••••••••"}</strong>
-                                  <button
-                                    type="button"
-                                    onClick={() => setVisiblePasswords((current) => ({
-                                      ...current,
-                                      [orderKey]: !current[orderKey],
-                                    }))}
-                                    aria-label={visiblePasswords[orderKey] ? "Hide service password" : "Show service password"}
-                                  >
-                                    {visiblePasswords[orderKey] ? <EyeOff size={14} /> : <Eye size={14} />}
-                                    {visiblePasswords[orderKey] ? "Hide" : "Show"}
-                                  </button>
-                                </div>
-                              ) : field.key === "access_url" && isHttpUrl(field.value) ? (
-                                <a className="customer-order-supplier-link" href={field.value} target="_blank" rel="noopener noreferrer">
-                                  Open service <ExternalLink size={13} />
+                                <>
+                                  <div className="customer-order-access-value">
+                                    <strong>
+                                      {visiblePasswords[orderKey]
+                                        ? field.value
+                                        : "••••••••"}
+                                    </strong>
+                                  </div>
+
+                                  <div className="customer-order-access-actions">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setVisiblePasswords((current) => ({
+                                          ...current,
+                                          [orderKey]: !current[orderKey],
+                                        }))
+                                      }
+                                    >
+                                      {visiblePasswords[orderKey] ? (
+                                        <EyeOff size={16} />
+                                      ) : (
+                                        <Eye size={16} />
+                                      )}
+                                      {visiblePasswords[orderKey] ? "Hide" : "Show"}
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        navigator.clipboard?.writeText(field.value)
+                                      }
+                                    >
+                                      Copy
+                                    </button>
+                                  </div>
+                                </>
+                              ) : field.key === "access_url" &&
+                                isHttpUrl(field.value) ? (
+                                <a
+                                  className="customer-order-access-open"
+                                  href={field.value}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  Open service
+                                  <ExternalLink size={15} />
                                 </a>
                               ) : (
-                                <strong className={field.key === "access_instructions" || field.key === "supplier_message" ? "multiline" : ""}>
-                                  {field.value}
-                                </strong>
+                                <>
+                                  <strong
+                                    className={
+                                      field.key === "access_instructions"
+                                        ? "multiline"
+                                        : ""
+                                    }
+                                  >
+                                    {field.value}
+                                  </strong>
+
+                                  {[
+                                    "login_email",
+                                    "assigned_email",
+                                  ].includes(field.key) && (
+                                    <button
+                                      type="button"
+                                      className="customer-order-copy"
+                                      onClick={() =>
+                                        navigator.clipboard?.writeText(field.value)
+                                      }
+                                    >
+                                      Copy
+                                    </button>
+                                  )}
+                                </>
                               )}
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <p className="customer-order-supplier-note">
-                          {order.supplier_order_id
-                            ? "The supplier reference is saved, but no additional service-access details have been returned yet. Refresh status to check for updates."
-                            : "The supplier has not returned an order reference or service-access details yet. Refresh status to check again."}
+                        <p className="customer-order-access-pending">
+                          Your access details are being prepared. Tap Refresh status
+                          to check again.
                         </p>
                       )}
                     </section>
                   )}
 
                   {isPaidOrder(order) ? (
+                    serviceKey === "marketplace" ? null :
                     order.service_key === "email_verification" ? (
                       <div className="customer-order-fulfillment">
                         {order.email_address && <div><small>VERIFICATION EMAIL</small><strong>{order.email_address}</strong></div>}

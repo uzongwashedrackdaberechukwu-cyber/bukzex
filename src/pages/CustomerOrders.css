@@ -600,3 +600,373 @@
   .customer-order-supplier-grid { grid-template-columns: 1fr; }
   .customer-order-supplier-item.wide { grid-column: auto; }
 }
+
+/* =========================================================
+   BUKZEX WHITE PURCHASES / SERVICE ACCESS EXPERIENCE
+   Customer-facing only — no supplier branding
+   ========================================================= */
+
+.customer-orders-page {
+  max-width: 820px !important;
+  margin: 0 auto !important;
+  padding: 22px 20px 70px !important;
+  color: #182033 !important;
+  background: #f4f6fa !important;
+  box-shadow: 0 0 0 100vmax #f4f6fa;
+  clip-path: inset(0 -100vmax);
+}
+
+.customer-orders-header {
+  padding: 28px !important;
+  border: 0 !important;
+  border-radius: 0 0 32px 32px !important;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(76, 139, 202, .25), transparent 38%),
+    linear-gradient(145deg, #143656, #102c48) !important;
+  box-shadow: none !important;
+}
+
+.customer-orders-header h1 {
+  color: #fff !important;
+}
+
+.customer-orders-header p {
+  color: #c7d5e2 !important;
+}
+
+.customer-orders-eyebrow {
+  color: #dfc174 !important;
+}
+
+.customer-orders-back {
+  color: #d7e2eb !important;
+}
+
+.customer-orders-tools {
+  margin-top: 22px !important;
+  padding: 14px !important;
+  border: 1px solid #e2e6ec !important;
+  border-radius: 24px !important;
+  background: #fff !important;
+  box-shadow: 0 8px 25px rgba(20, 36, 58, .06);
+}
+
+.customer-orders-stats > div {
+  border: 0 !important;
+  background: #f7f8fb !important;
+}
+
+.customer-orders-stats small {
+  color: #9aa1ad !important;
+}
+
+.customer-orders-stats strong {
+  color: #182033 !important;
+}
+
+.customer-orders-search {
+  border: 1px solid #e0e4e9 !important;
+  background: #fff !important;
+  color: #687386 !important;
+}
+
+.customer-orders-search input {
+  color: #182033 !important;
+}
+
+.customer-orders-filters button {
+  border: 1px solid #e0e4e9 !important;
+  background: #fff !important;
+  color: #818896 !important;
+}
+
+.customer-orders-filters button.active {
+  border-color: #173553 !important;
+  background: #173553 !important;
+  color: #fff !important;
+}
+
+.customer-orders-list {
+  grid-template-columns: 1fr !important;
+  gap: 20px !important;
+}
+
+.customer-order-card {
+  display: grid !important;
+  grid-template-columns: 78px minmax(0, 1fr) !important;
+  gap: 18px !important;
+  padding: 30px !important;
+  border: 1px solid #e5e8ed !important;
+  border-radius: 30px !important;
+  background: #fff !important;
+  box-shadow: 0 14px 35px rgba(28, 45, 68, .07) !important;
+}
+
+.customer-order-icon {
+  width: 64px !important;
+  height: 64px !important;
+  border: 0 !important;
+  border-radius: 20px !important;
+  background: #112d4b !important;
+  color: #e3c877 !important;
+}
+
+.customer-order-top {
+  margin: 0 0 12px !important;
+  align-items: center !important;
+}
+
+.customer-order-top h2 {
+  color: #152039 !important;
+  font-size: 24px !important;
+  letter-spacing: -.025em;
+}
+
+.customer-order-status {
+  padding: 8px 14px !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+}
+
+.customer-order-status.success {
+  border: 0 !important;
+  background: #e6f9ef !important;
+  color: #087b55 !important;
+}
+
+.customer-order-status.pending {
+  border: 0 !important;
+  background: #fff7df !important;
+  color: #9b6c00 !important;
+}
+
+.customer-order-status.failed {
+  border: 0 !important;
+  background: #fff0f0 !important;
+  color: #b42318 !important;
+}
+
+.customer-order-details {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 10px !important;
+  margin-top: 12px;
+}
+
+.customer-order-details > span {
+  padding: 12px 14px !important;
+  border: 0 !important;
+  border-radius: 14px !important;
+  background: #f7f8fb !important;
+  color: #9ba2ad !important;
+}
+
+.customer-order-details > span:first-child {
+  grid-column: 1 / -1;
+}
+
+.customer-order-details strong {
+  color: #273043 !important;
+}
+
+.customer-order-access-card {
+  grid-column: 1 / -1;
+  margin-top: 24px;
+  padding-top: 26px;
+  border-top: 1px solid #e7e9ed;
+}
+
+.customer-order-access-title {
+  margin-bottom: 18px;
+}
+
+.customer-order-access-title span {
+  display: block;
+  margin-bottom: 5px;
+  color: #9ba1ab;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .12em;
+}
+
+.customer-order-access-title h3 {
+  margin: 0;
+  color: #182033;
+  font-size: 20px;
+}
+
+.customer-order-access-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.customer-order-access-item {
+  position: relative;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  background: #f8f9fb;
+}
+
+.customer-order-access-item:first-child,
+.customer-order-access-item.wide {
+  grid-column: 1 / -1;
+}
+
+.customer-order-access-item small {
+  display: block;
+  margin-bottom: 9px;
+  color: #9aa0ab;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.customer-order-access-item strong {
+  display: block;
+  color: #182033;
+  font-size: 17px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.customer-order-access-item strong.multiline {
+  white-space: pre-wrap;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.customer-order-copy,
+.customer-order-access-actions button {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 13px;
+  border: 1px solid #d9dde3;
+  border-radius: 13px;
+  background: #fff;
+  color: #1b2437;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.customer-order-access-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.customer-order-access-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.customer-order-access-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 13px;
+  background: #173553;
+  color: #fff !important;
+  font-weight: 800;
+}
+
+.customer-order-access-pending {
+  margin: 0;
+  padding: 18px;
+  border-radius: 16px;
+  background: #f7f8fa;
+  color: #697386;
+  line-height: 1.6;
+}
+
+.customer-order-fulfillment {
+  border-color: #e4e7eb !important;
+  background: #f8f9fb !important;
+}
+
+.customer-order-fulfillment small {
+  color: #9aa0aa !important;
+}
+
+.customer-order-fulfillment strong {
+  color: #182033 !important;
+}
+
+.customer-order-locked-details {
+  color: #737d8c !important;
+}
+
+.customer-orders-empty,
+.customer-orders-loading {
+  border: 1px solid #e4e8ed !important;
+  background: #fff !important;
+  color: #677386 !important;
+}
+
+.customer-orders-empty h2 {
+  color: #182033 !important;
+}
+
+@media (max-width: 680px) {
+  .customer-orders-page {
+    padding: 0 14px 90px !important;
+  }
+
+  .customer-orders-header {
+    margin-left: -14px !important;
+    margin-right: -14px !important;
+    padding: 25px 20px !important;
+  }
+
+  .customer-orders-tools {
+    margin-top: 18px !important;
+  }
+
+  .customer-order-card {
+    grid-template-columns: 64px minmax(0, 1fr) !important;
+    padding: 22px 18px !important;
+    border-radius: 25px !important;
+  }
+
+  .customer-order-icon {
+    width: 58px !important;
+    height: 58px !important;
+  }
+
+  .customer-order-top {
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: 58px;
+  }
+
+  .customer-order-top h2 {
+    font-size: 20px !important;
+  }
+
+  .customer-order-details,
+  .customer-order-access-card {
+    grid-column: 1 / -1;
+  }
+
+  .customer-order-access-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .customer-order-access-item {
+    grid-column: 1 / -1;
+  }
+
+  .customer-orders-stats {
+    overflow-x: auto;
+  }
+}
