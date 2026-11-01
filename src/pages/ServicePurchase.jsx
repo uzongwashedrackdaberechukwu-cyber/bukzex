@@ -27,10 +27,12 @@ import WhatsAppSupport from "../components/WhatsAppSupport";
 import CustomerWorkspaceNav from "../components/CustomerWorkspaceNav";
 
 
+import { activeNgnPrice } from "../../bukzex-shadex-catalog-worker/src/ngn-pricing.js";
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function validCatalogueSelection(serviceId, item) {
-  if (!item?.id) return false;
+  if (!item?.id || (item.variable_amount !== true && !activeNgnPrice(item.price))) return false;
   return serviceId !== "marketplace" || UUID.test(String(item.id));
 }
 
@@ -313,7 +315,7 @@ export default function ServicePurchase() {
   const plans = (Array.isArray(selectedNetwork?.plans) ? selectedNetwork.plans : [])
     .filter((plan) => {
       const override = priceOverrides[String(plan.id)];
-      return override?.is_active !== false && Number(override?.amount_minor) > 0;
+      return activeNgnPrice(override);
     });
   const selectedPlan = plans.find((plan) => String(plan.id) === planId);
 
@@ -363,8 +365,9 @@ export default function ServicePurchase() {
       return;
     }
 
-    if (serviceId !== "vtu" && !selectedCatalogueItem?.id) {
-      setError("Choose a service before continuing.");
+    if (serviceId !== "vtu" && (!validCatalogueSelection(serviceId, selectedCatalogueItem)
+      || (selectedCatalogueItem.variable_amount !== true && !activeNgnPrice(priceOverrides[String(selectedCatalogueItem.id)])))) {
+      setError("Choose a service with an active NGN price before continuing.");
       return;
     }
     if (serviceId === "marketplace" && !UUID.test(String(selectedCatalogueItem.id))) {

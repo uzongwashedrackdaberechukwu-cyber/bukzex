@@ -18,6 +18,8 @@ import {
 import ServiceBrandMark from "../components/ServiceBrandMark";
 import { getShadexCatalogue } from "../services/shadexCatalog";
 
+import { activeNgnPrice } from "../../bukzex-shadex-catalog-worker/src/ngn-pricing.js";
+
 function matchesSearch(item, query) {
   const needle = String(query || "")
     .trim()
@@ -57,13 +59,7 @@ function displayPlatform(value) {
 
 function customerPrice(id, overrides) {
   const saved = overrides[String(id)];
-  if (
-    !saved ||
-    saved.is_active === false ||
-    saved.amount_minor == null ||
-    Number(saved.amount_minor) <= 0
-  )
-    return null;
+  if (!activeNgnPrice(saved)) return null;
   return saved;
 }
 
@@ -103,7 +99,7 @@ function priceState(id, overrides) {
   if (saved?.is_active === false) return "paused";
   if (saved?.amount_minor == null || Number(saved.amount_minor) <= 0)
     return "pending";
-  return "ready";
+  return activeNgnPrice(saved) ? "ready" : "pending";
 }
 
 function money(price) {

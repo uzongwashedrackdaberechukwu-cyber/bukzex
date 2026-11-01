@@ -1,3 +1,5 @@
+import { ngnCatalogue } from "./ngn-pricing.js";
+
 // Public BukzEx contract. Never return raw upstream catalogue/error objects.
 const PRIVATE_BRAND = /discount[\s._-]*zar/i;
 const PRIVATE_BRANDS = /discount[\s._-]*zar|shadex\s*go\s*ltd/gi;
@@ -124,7 +126,7 @@ export function publicApiResponse(payload) {
   return output;
 }
 export function publicCatalogueData(data) {
-  const output = visit(data, "", true);
+  const output = visit(ngnCatalogue(data), "", true);
   if (PRIVATE_BRAND.test(JSON.stringify(output)))
     throw new Error("The service catalogue is temporarily unavailable.");
   return output;

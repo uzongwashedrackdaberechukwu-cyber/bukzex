@@ -6,6 +6,8 @@ import { getServices } from "../../services/api";
 import { CheckCircle2, LoaderCircle, MessageSquareCode, Mail, Receipt, RefreshCw, Save, Smartphone, Store, TrendingUp, XCircle } from "lucide-react";
 import ServiceBrandMark from "../../components/ServiceBrandMark";
 
+import { isNgnPrice, ngnCatalogue } from "../../../bukzex-shadex-catalog-worker/src/ngn-pricing.js";
+
 const MANAGED = [
   { id: "vtu", name: "Airtime & Data", endpoint: "vtu", summary: "Mobile airtime and data plans", icon: Smartphone },
   { id: "bills", name: "Electricity & Cable TV", endpoint: "bills", summary: "Electricity and cable bill plans", icon: Receipt },
@@ -165,7 +167,7 @@ export default function AdminServices() {
 
       const results = await Promise.all(MANAGED.map(async (item) => {
         try {
-          const data = await getShadexCatalogue(item.endpoint);
+          const data = ngnCatalogue(await getShadexCatalogue(item.endpoint));
           return [item.id, { data, error: "" }];
         } catch (err) {
           return [item.id, { data: null, error: err?.message || "Catalogue unavailable" }];
@@ -194,7 +196,7 @@ export default function AdminServices() {
           ...(savedPricesByService[item.id] || {}),
         };
         for (const row of editableItems(item.id, nextCatalogues[item.id]?.data)) {
-          const saved = overrides[row.id];
+          const saved = isNgnPrice(overrides[row.id]) ? overrides[row.id] : null;
           nextPrices[`${item.id}:${row.id}`] = {
             amount: saved?.amount_minor != null ? priceInMajor(saved) : priceInMajor(row.price),
             enabled: saved?.is_active != null ? Boolean(saved.is_active) : Number(row.price?.amount_minor ?? 0) > 0,
@@ -260,12 +262,16 @@ export default function AdminServices() {
     setError("");
     setNotice("");
     const rows = editableItems(item.id, catalogues[item.id]?.data);
+    if (rows.some((row) => !isNgnPrice(row.price))) {
+      setError("Only NGN services with two decimal places can be saved. Refresh the catalogue.");
+      return;
+    }
     const nextOverrides = {};
     for (const row of rows) {
       const key = `${item.id}:${row.id}`;
       const entry = itemPrices[key];
       if (!entry?.amount?.trim()) continue;
-      const unit = Number(row.price?.minor_unit ?? 2);
+      const unit = 2;
       const amount = Number(entry.amount);
       const isActive = Boolean(entry.enabled);
       if (!Number.isFinite(amount) || amount < 0 || (isActive && amount <= 0)) {
@@ -276,7 +282,7 @@ export default function AdminServices() {
         item_id: row.id,
         item_name: row.title,
         amount_minor: Math.round(amount * (10 ** unit)),
-        currency: String(row.price?.currency || "NGN"),
+        currency: "NGN",
         minor_unit: unit,
         is_active: isActive,
       };
@@ -295,14 +301,14 @@ export default function AdminServices() {
           const key = `${item.id}:${row.id}`;
           const entry = itemPrices[key];
           if (!entry?.amount?.trim()) return;
-          const unit = Number(row.price?.minor_unit ?? 2);
+          const unit = 2;
           const amount = Number(entry.amount);
           batch.set(doc(db, "services", item.id, "prices", priceDocumentId(row.id)), {
             service_key: item.id,
             item_id: String(row.id),
             item_name: row.title,
             amount_minor: Math.round(amount * (10 ** unit)),
-            currency: String(row.price?.currency || "NGN"),
+            currency: "NGN",
             minor_unit: unit,
             is_active: Boolean(entry.enabled),
             updated_at: serverTimestamp(),

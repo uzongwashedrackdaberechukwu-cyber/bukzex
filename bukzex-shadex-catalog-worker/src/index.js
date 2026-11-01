@@ -1,4 +1,5 @@
 import { catalogueResponse, publicApiResponse } from "./public-catalogue.js";
+import { isNgnPrice, activeNgnPrice } from "./ngn-pricing.js";
 const UPSTREAM = "https://shadexgoltd.com/api/v1";
 const FIREBASE_JWKS = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
 const OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -671,12 +672,14 @@ async function purchase(request, env) {
     } else if (serviceKey === "bills" && inputs.variable_amount === true) {
       if (!inputs.customer_identifier || !inputs.phone_number || requestedAmount < 100 || requestedAmount > 10000000) throw new HttpError(400, "Enter the bill reference, phone number and amount.");
       const fee = feePrice?.data || service.data.bukzex_prices?.[feeItem];
+      if (fee && !isNgnPrice(fee)) throw new HttpError(409, "This bill fee needs an NGN price. Contact customer care.");
       const feeMajor = fee && fee.is_active !== false ? Number(fee.amount_minor) / (10 ** Number(fee.minor_unit ?? 2)) : 0;
       chargeMajor = requestedAmount * (1 + markup / 100) + feeMajor;
       serviceName = String(inputs.item_name || "Bill payment");
     } else {
       const savedPrice = price?.data || service.data.bukzex_prices?.[itemId];
       if (!savedPrice || savedPrice.is_active === false || !Number.isSafeInteger(Number(savedPrice.amount_minor)) || Number(savedPrice.amount_minor) <= 0) throw new HttpError(409, "This item has no active BukzEx price yet.");
+      if (!activeNgnPrice(savedPrice)) throw new HttpError(409, "This item needs an active NGN price. Refresh services or contact customer care.");
       amountMinor = Number(savedPrice.amount_minor);
       minorUnit = Number(savedPrice.minor_unit ?? 2);
       currency = String(savedPrice.currency || "NGN");
