@@ -1,5 +1,6 @@
 import { catalogueResponse, publicApiResponse } from "./public-catalogue.js";
 import { isNgnPrice, activeNgnPrice } from "./ngn-pricing.js";
+import { socialTargetError, socialDisplayStatus, socialOrderDetails } from "./social-boost.js";
 const UPSTREAM = "https://shadexgoltd.com/api/v1";
 const FIREBASE_JWKS = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
 const OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -249,7 +250,7 @@ function mapProviderBody(serviceKey, itemId, inputs, recipientType, data, reques
 async function callShadex(env, path, method, idempotencyKey, body) {
   if (!env.SHADEX_API_KEY) throw new HttpError(503, "ShadexGoLtd API access is not configured.");
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
+  const timeout = setTimeout(() => controller.abort(), method === "GET" && path.startsWith("/orders/") ? 25000 : 12000);
   try {
     const response = await fetch(`${UPSTREAM}${path}`, {
       method,
@@ -389,6 +390,13 @@ async function refundOnce(env, uid, idempotencyKey, message, terminalStatus = "f
 
 
 function supplierOrderState(serviceKey, upstream) {
+  if (serviceKey === "social") {
+    const status = socialDisplayStatus(upstream);
+    const failed = ["failed", "rejected", "cancelled", "canceled", "refunded"].includes(status);
+    return { providerStatus: String(upstream?.status || "processing").toLowerCase(), status,
+      failed, terminal: failed || status === "expired", fulfilled: status === "completed",
+      fulfillmentStatus: failed || status === "expired" ? "failed" : status === "completed" ? "fulfilled" : "processing" };
+  }
   const providerStatus = String(upstream?.status || "processing").trim().toLowerCase();
   const failed = ["failed", "rejected", "cancelled", "canceled", "refunded"].includes(providerStatus);
   const terminal = failed || providerStatus === "expired";
@@ -541,6 +549,7 @@ async function submitSavedPurchaseToShadex(env, uid, orderId, requestRow) {
   await firestoreCommit(env, [
     updateWrite(env, orderPath, {
       supplier_order_id: supplierOrderId,
+      ...(serviceKey === "social" ? socialOrderDetails(upstream, { ...latestOrder.data, target_link: inputs.target_link }) : {}),
       ...(serviceKey === "rental" ? {
         phone_number: upstream.phone_number || null,
         rental_months: Number(upstream.months || inputs.months),
@@ -582,6 +591,7 @@ async function submitSavedPurchaseToShadex(env, uid, orderId, requestRow) {
   return {
     order_id: orderId,
     status: state.status,
+    ...(serviceKey === "social" ? socialOrderDetails(upstream, latestOrder.data) : {}),
     service_email: serviceEmail || null,
     email_address: upstream.email_address || null,
     otp_code: upstream.otp_code || null,
@@ -615,7 +625,7 @@ async function purchase(request, env) {
   if (recipientEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail)) throw new HttpError(400, "Enter a valid recipient email.");
   if (serviceKey === "vtu" && (!inputs.phone_number || !inputs.network_id || !["airtime", "data"].includes(String(inputs.service_type)))) throw new HttpError(400, "Choose airtime or data, a network and a phone number.");
   if (serviceKey === "bills" && (!inputs.customer_identifier || !inputs.phone_number)) throw new HttpError(400, "Enter the bill reference and phone number.");
-  if (serviceKey === "social" && !String(inputs.target_link || "").trim()) throw new HttpError(400, "Enter the profile or post link for this service.");
+  if (serviceKey === "social" && socialTargetError(inputs.target_link)) throw new HttpError(400, socialTargetError(inputs.target_link));
   if (serviceKey === "email_verification" && !String(inputs.domain_name || "").trim()) throw new HttpError(400, "Choose an available email domain.");
 
   const reqPath = `shadex_purchase_requests/${uid}_${idempotencyKey}`;
@@ -637,6 +647,7 @@ async function purchase(request, env) {
   let minorUnit;
   let currency;
   let serviceName;
+  let socialDetails = {};
 
   if (savedRequest) {
     const prior = savedRequest.data;
@@ -656,6 +667,15 @@ async function purchase(request, env) {
     const wallet = await firestoreGet(env, docResource(env, walletPath));
     if (!service || service.data.status !== "active") throw new HttpError(409, "This service is not available right now.");
     if (!wallet || String(wallet.data.currency || "NGN") !== "NGN") throw new HttpError(409, "Your BukzEx NGN wallet could not be found.");
+    if (serviceKey === "social") {
+      const catalogue = await callShadex(env, "/social-boost/services", "GET");
+      if (!catalogue.response.ok || catalogue.payload?.success !== true) throw new HttpError(503, "Social packages could not be verified. Your wallet has not been charged.");
+      const pack = (catalogue.payload.data?.services || []).find(item => String(item.package_id) === itemId);
+      if (!pack || !isNgnPrice(pack.price)) throw new HttpError(409, "This NGN package is unavailable. Choose another package.");
+      const issue = socialTargetError(inputs.target_link, pack.platform);
+      if (issue) throw new HttpError(400, issue);
+      socialDetails = { target_link: String(inputs.target_link).trim(), platform: String(pack.platform || ""), quantity: Number(pack.quantity), delivery_confirmed: false, delivery_checked_at: null };
+    }
     const encodedId = encodeURIComponent(itemId);
     const price = await firestoreGet(env, docResource(env, `services/${serviceKey}/prices/${encodedId}`));
     const markup = Number(service.data.price_markup_percent || 0);
@@ -698,12 +718,16 @@ async function purchase(request, env) {
     minorUnit ??= 2;
     if (currency !== "NGN" || minorUnit !== 2) throw new HttpError(409, "This service is not priced in NGN.");
     amountMinor = Math.round(chargeMajor * 100);
+    if (serviceKey === "social" && Number(data.expected_amount_minor) !== amountMinor) {
+      throw new HttpError(409, "The package price changed. Refresh services and confirm the current price before paying.");
+    }
     const charge = amountMinor / 100;
     const balance = Number(wallet.data.balance || 0);
     if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) throw new HttpError(400, "The service price is invalid.");
     if (!Number.isFinite(balance) || Math.round(balance * 100) < amountMinor) throw new HttpError(402, "Your wallet balance is too low for this purchase.");
     const now = new Date().toISOString();
     const order = {
+      ...socialDetails,
       user_id: uid, service_key: serviceKey, service_name: serviceName,
       requested_amount: charge, amount_minor: amountMinor, currency, minor_unit: minorUnit,
       provider: "ShadexGoLtd", status: "processing", payment_status: "paid", fulfillment_status: "processing",
@@ -736,7 +760,8 @@ async function purchase(request, env) {
   if (existingOrder?.data.supplier_order_id) {
     return {
       order_id: orderId,
-      status: existingOrder.data.status || "processing",
+      status: serviceKey === "social" ? socialDisplayStatus(existingOrder.data) : existingOrder.data.status || "processing",
+      ...(serviceKey === "social" ? socialOrderDetails(existingOrder.data) : {}),
       payment_status: existingOrder.data.payment_status || null,
       fulfillment_status: existingOrder.data.fulfillment_status || null,
       service_email: existingOrder.data.service_email || null,
@@ -1165,6 +1190,9 @@ async function refreshOrder(request, env) {
         expires_at: order.data.expires_at || null,
       };
     }
+    if (serviceKey === "social" && socialTargetError(requestRow.data.request_data?.target_link)) {
+      throw new HttpError(409, "This saved boost has no valid target link. Contact support with the order ID before placing another order.");
+    }
     // Recover requests whose first POST timed out or whose supplier response
     // was accepted but not saved. Reuse the original idempotency key.
     return submitSavedPurchaseToShadex(env, uid, orderId, requestRow);
@@ -1253,6 +1281,7 @@ async function refreshOrder(request, env) {
       service_email: supplierSubscriptionInactive ? null : serviceEmail ? String(serviceEmail).slice(0, 320) : null,
       login_password: supplierSubscriptionInactive ? null : upstream.login_password || upstream.service_password || upstream.password || latestOrder.data.login_password || null,
       access_url: supplierSubscriptionInactive ? null : upstream.access_url || upstream.login_url || upstream.service_url || latestOrder.data.access_url || null,
+      ...(serviceKey === "social" ? socialOrderDetails(upstream, { ...latestOrder.data, target_link: requestRow.data.request_data?.target_link }) : {}),
       access_instructions: supplierSubscriptionInactive ? null : upstream.access_instructions || upstream.fulfillment_instructions || upstream.instructions || latestOrder.data.access_instructions || null,
       fulfillment_type: upstream.fulfillment_type || upstream.fulfillment_method || latestOrder.data.fulfillment_type || null,
       assigned_email: supplierSubscriptionInactive ? null : upstream.assigned_email || latestOrder.data.assigned_email || null,
@@ -1289,6 +1318,7 @@ async function refreshOrder(request, env) {
   return {
     order_id: orderId,
     status,
+    ...(serviceKey === "social" ? socialOrderDetails(upstream, latestOrder.data) : {}),
     service_email: serviceEmail,
     email_address: upstream.email_address || null,
     otp_code: upstream.otp_code || null,

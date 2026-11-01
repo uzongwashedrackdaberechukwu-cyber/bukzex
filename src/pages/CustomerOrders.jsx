@@ -20,6 +20,10 @@ import { deleteMyUnpaidOrder, getCustomerOrders, refreshDigitalServiceOrder } fr
 import WhatsAppSupport from "../components/WhatsAppSupport";
 import ServiceBrandMark from "../components/ServiceBrandMark";
 import CustomerWorkspaceNav from "../components/CustomerWorkspaceNav";
+import { socialDisplayStatus, socialTargetError } from "../../bukzex-shadex-catalog-worker/src/social-boost.js";
+import "../components/SocialBoostCheckout.css";
+
+const orderStatus = (order) => order?.service_key === "social" ? socialDisplayStatus(order) : order?.status || "pending";
 
 
 function formatAmount(value) {
@@ -84,6 +88,7 @@ function isPaidOrder(order) {
 }
 
 function canIssueReceipt(order) {
+  if (order?.service_key === "social") return isPaidOrder(order) && socialDisplayStatus(order) === "completed";
   const status = String(order?.status || "").toLowerCase();
   const fulfillment = String(order?.fulfillment_status || "").toLowerCase();
   const payment = String(order?.payment_status || "").toLowerCase();
@@ -238,7 +243,9 @@ function getOtpLink(order) {
   const serviceName = order?.serviceName || order?.service_name || order?.service || "service";
   const serviceKey = String(order?.service_key || "").toLowerCase();
   const otpService = ["sms", "email_verification", "rental"].includes(serviceKey);
-  const message = otpService
+  const message = serviceKey === "social"
+    ? `Hello BukzEx, please review delivery of ${serviceName}, order ${orderId}. Target: ${order.target_link || "not saved"}. Quantity: ${order.quantity || "awaiting confirmation"}.`
+    : otpService
     ? `Hello BukzEx, please help me request the OTP for order ${orderId}${serviceEmail ? ` (service email: ${serviceEmail})` : ""}.`
     : `Hello BukzEx, I need help accessing or activating ${serviceName} for order ${orderId}${serviceEmail ? ` (account email: ${serviceEmail})` : ""}.`;
   return `https://wa.me/2349161791736?text=${encodeURIComponent(message)}`;
@@ -256,19 +263,19 @@ export default function CustomerOrders() {
 
   const normalizedQuery = orderQuery.trim().toLowerCase();
   const filteredOrders = orders.filter((order) => {
-    const statusClass = getStatusClass(order.status || "pending");
+    const statusClass = getStatusClass(orderStatus(order));
     const searchable = [
       order.serviceName, order.service, order.id, order.orderId,
-      order.status, order.payment_status, order.service_key, order.provider,
+      orderStatus(order), order.payment_status, order.service_key, order.provider, order.target_link, order.platform,
       order.supplier_order_id, order.supplier_status,
     ].filter(Boolean).join(" ").toLowerCase();
 
     return (activeFilter === "all" || statusClass === activeFilter)
       && searchable.includes(normalizedQuery);
   });
-  const pendingCount = orders.filter((order) => getStatusClass(order.status || "pending") === "pending").length;
-  const completedCount = orders.filter((order) => getStatusClass(order.status || "pending") === "success").length;
-  const failedCount = orders.filter((order) => getStatusClass(order.status || "pending") === "failed").length;
+  const pendingCount = orders.filter((order) => getStatusClass(orderStatus(order)) === "pending").length;
+  const completedCount = orders.filter((order) => getStatusClass(orderStatus(order)) === "success").length;
+  const failedCount = orders.filter((order) => getStatusClass(orderStatus(order)) === "failed").length;
 
   const loadOrders = useCallback(async (manual = false) => {
     try {
@@ -311,7 +318,7 @@ export default function CustomerOrders() {
           return true;
         }
 
-        return activeWork || waitingForOtp || missingDigitalAccount;
+        return activeWork || waitingForOtp || missingDigitalAccount || (serviceKey === "social" && socialDisplayStatus(order) !== "completed");
       });
       if (waiting.length) {
         const refreshResults = await Promise.allSettled(waiting.map((order) => refreshDigitalServiceOrder(order.id)));
@@ -487,7 +494,7 @@ export default function CustomerOrders() {
       ) : (
         <div className="customer-orders-list">
           {filteredOrders.map((order, index) => {
-            const status = order.status || "pending";
+            const status = orderStatus(order);
             const serviceKey = String(order.service_key || "").toLowerCase();
             const displayStatus =
               serviceKey === "marketplace"
@@ -665,8 +672,22 @@ export default function CustomerOrders() {
                     </section>
                   )}
 
+                  {serviceKey === "social" && <section className="social-order-progress" aria-label="Social boost delivery">
+                    <h3>{displayStatus === "completed" ? "Delivery confirmed" : "Boost delivery"}</h3>
+                    <p>{displayStatus === "completed" ? "The supplier confirmed completion. Check the target below." : displayStatus === "refunded" ? "This order was refunded. Check your wallet transaction history." : displayStatus === "partial" ? "The supplier reports partial delivery. Contact support to review the remaining quantity." : "Payment acceptance is separate from delivery. Tap Refresh status to check supplier progress."}</p>
+                    <dl>
+                      <div><dt>Platform</dt><dd>{order.platform || "Social media"}</dd></div>
+                      <div><dt>Quantity ordered</dt><dd>{order.quantity ? Number(order.quantity).toLocaleString() : "Awaiting supplier details"}</dd></div>
+                      <div><dt>Starting count</dt><dd>{order.start_count ?? "Not reported yet"}</dd></div>
+                      <div><dt>Remaining</dt><dd>{order.remains ?? "Not reported yet"}</dd></div>
+                    </dl>
+                    <strong>Target profile / post</strong>
+                    {order.target_link && !socialTargetError(order.target_link) ? <a href={order.target_link} target="_blank" rel="noopener noreferrer">{order.target_link} <ExternalLink size={14} /></a> : <p>No target saved. Contact support with this order ID before placing another order.</p>}
+                    {order.delivery_checked_at && <small>Last supplier check: {formatDate(order.delivery_checked_at)}</small>}
+                    <a href={getOtpLink(order)} target="_blank" rel="noopener noreferrer" className="customer-order-otp-link"><MessageCircle size={16} /> Get delivery help</a>
+                  </section>}
                   {isPaidOrder(order) ? (
-                    serviceKey === "marketplace" ? null :
+                    ["marketplace", "social"].includes(serviceKey) ? null :
                     order.service_key === "email_verification" ? (
                       <div className="customer-order-fulfillment">
                         {order.email_address && <div><small>VERIFICATION EMAIL</small><strong>{order.email_address}</strong></div>}
@@ -688,7 +709,7 @@ export default function CustomerOrders() {
                         </a>
                       </div>
                     )
-                  ) : (
+                  ) : serviceKey !== "social" && (
                     <p className="customer-order-locked-details">Service details and OTP support appear here after payment is confirmed and the order is fulfilled.</p>
                   )}
                   {canIssueReceipt(order) && (

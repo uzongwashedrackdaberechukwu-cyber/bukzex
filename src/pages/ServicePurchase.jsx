@@ -19,6 +19,8 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 import { auth, db } from "../lib/firebase";
 import ServiceBrandMark from "../components/ServiceBrandMark";
+import SocialBoostCheckout from "../components/SocialBoostCheckout";
+import { socialTargetError, socialDisplayStatus } from "../../bukzex-shadex-catalog-worker/src/social-boost.js";
 
 import { getWalletBalance, purchaseShadexService } from "../services/api";
 import { getEmailVerificationDomains, getVtuCatalogue } from "../services/shadexCatalog";
@@ -360,7 +362,7 @@ export default function ServicePurchase() {
     setError("");
     setSuccess("");
 
-    if (purchaseFor === "friend" && (!recipientName.trim() || !recipientPhone.trim())) {
+    if (serviceId !== "social" && purchaseFor === "friend" && (!recipientName.trim() || !recipientPhone.trim())) {
       setError("Enter your friend's name and phone number.");
       return;
     }
@@ -384,8 +386,9 @@ export default function ServicePurchase() {
       setError("Enter the meter or smartcard number and phone number.");
       return;
     }
-    if (serviceId === "social" && !targetLink.trim()) {
-      setError("Enter the link for the social service.");
+    if (serviceId === "social" && socialTargetError(targetLink, selectedCatalogueItem?.platform)) {
+      setError(socialTargetError(targetLink, selectedCatalogueItem?.platform));
+      document.getElementById("social-target-link")?.focus();
       return;
     }
     if (serviceId === "vtu" && (!networkId || !(purchaseFor === "friend" ? recipientPhone.trim() : phoneNumber.trim()))) {
@@ -430,9 +433,10 @@ export default function ServicePurchase() {
         service_key: serviceId,
         item_id: itemId,
         idempotency_key: requestKey,
-        recipient_type: purchaseFor === "friend" ? "friend" : "self",
-        recipient_name: purchaseFor === "friend" ? recipientName.trim() : "",
-        recipient_phone: purchaseFor === "friend" ? recipientPhone.trim() : "",
+        ...(serviceId === "social" ? { expected_amount_minor: Number(priceOverrides[String(itemId)]?.amount_minor) } : {}),
+        recipient_type: serviceId !== "social" && purchaseFor === "friend" ? "friend" : "self",
+        recipient_name: serviceId !== "social" && purchaseFor === "friend" ? recipientName.trim() : "",
+        recipient_phone: serviceId !== "social" && purchaseFor === "friend" ? recipientPhone.trim() : "",
         inputs: serviceId === "vtu" ? {
           service_type: vtuType,
           network_id: networkId,
@@ -460,7 +464,7 @@ export default function ServicePurchase() {
       const waitingForOtp = ["sms", "email_verification"].includes(serviceId)
         && !result?.otp_code
         && ["active", "processing", "pending", "waiting", "allocating"].includes(orderStatus);
-      const completed = ["completed", "complete", "success", "successful", "fulfilled", "delivered"].includes(orderStatus)
+      const completed = serviceId === "social" ? socialDisplayStatus(result) === "completed" : ["completed", "complete", "success", "successful", "fulfilled", "delivered"].includes(orderStatus)
         || (orderStatus === "active" && !waitingForOtp);
 
       if (terminalFailure) {
@@ -550,14 +554,14 @@ export default function ServicePurchase() {
                 <p>{selectedCatalogueItem.name} · BukzEx secure checkout</p>
               </div>
             </div>
-            <div className="service-form-field">
+            {serviceId !== "social" && <div className="service-form-field">
               <label>Who is this purchase for?</label>
               <div className="purchase-for-options">
                 <label><input type="radio" name="purchase-for" value="myself" checked={purchaseFor === "myself"} onChange={() => setPurchaseFor("myself")} /> Myself</label>
                 <label><input type="radio" name="purchase-for" value="friend" checked={purchaseFor === "friend"} onChange={() => setPurchaseFor("friend")} /> A friend</label>
               </div>
-            </div>
-            {purchaseFor === "friend" && <div className="service-form-field">
+            </div>}
+            {serviceId !== "social" && purchaseFor === "friend" && <div className="service-form-field">
               <label htmlFor="friend-name">Friend’s name</label>
               <input id="friend-name" value={recipientName} onChange={(event) => setRecipientName(event.target.value)} placeholder="Enter their name" />
               <label htmlFor="friend-phone" className="friend-phone-label">Friend’s phone number</label>
@@ -592,18 +596,18 @@ export default function ServicePurchase() {
               {purchaseFor !== "friend" && <><label htmlFor="bill-phone" className="friend-phone-label">Phone number</label><input id="bill-phone" type="tel" value={servicePhone} onChange={(event) => setServicePhone(event.target.value)} placeholder="Enter phone number" /></>}
               {selectedCatalogueItem.variable_amount && <><label htmlFor="bill-amount" className="friend-phone-label">Bill amount (₦)</label><input id="bill-amount" type="number" min="100" value={variableBillAmount} onChange={(event) => setVariableBillAmount(event.target.value)} placeholder="Enter bill amount" /></>}
             </div>}
-            {serviceId === "social" && <div className="service-form-field"><label htmlFor="social-target-link">Link to the post or account</label><input id="social-target-link" type="url" value={targetLink} onChange={(event) => setTargetLink(event.target.value)} placeholder="https://…" /></div>}
+            {serviceId === "social" && <SocialBoostCheckout item={selectedCatalogueItem} price={priceOverrides[String(selectedCatalogueItem.id)]} targetLink={targetLink} onTargetChange={setTargetLink} disabled={submitting} />}
             <div className="service-purchase-total">
               <div><span>Available wallet balance</span><strong>{loading ? "Loading…" : `₦${walletBalance.toLocaleString()}`}</strong></div>
-              <div><span>{serviceId === "rental" ? "Rental price" : "Price"}</span><strong>{selectedCatalogueItem.variable_amount ? "Enter amount" : serviceId === "rental" && selectedCatalogueItem.price ? (() => { const unit = Number(selectedCatalogueItem.price.minor_unit ?? 2); const monthly = Number(selectedCatalogueItem.price.amount_minor) / (10 ** unit); const currency = selectedCatalogueItem.price.currency || "NGN"; return `${currency} ${monthly.toLocaleString(undefined, { maximumFractionDigits: 2 })}/month · Total ${currency} ${(monthly * Number(rentalMonths || selectedCatalogueItem.minimum_months || 1)).toLocaleString(undefined, { maximumFractionDigits: 2 })}`; })() : selectedCatalogueItem.price ? priceLabel(selectedCatalogueItem, 0, selectedCatalogueItem.price) : "Price unavailable"}</strong></div>
+              <div><span>{serviceId === "rental" ? "Rental price" : "Price"}</span><strong>{selectedCatalogueItem.variable_amount ? "Enter amount" : serviceId === "rental" && selectedCatalogueItem.price ? (() => { const unit = Number(selectedCatalogueItem.price.minor_unit ?? 2); const monthly = Number(selectedCatalogueItem.price.amount_minor) / (10 ** unit); const currency = selectedCatalogueItem.price.currency || "NGN"; return `${currency} ${monthly.toLocaleString(undefined, { maximumFractionDigits: 2 })}/month · Total ${currency} ${(monthly * Number(rentalMonths || selectedCatalogueItem.minimum_months || 1)).toLocaleString(undefined, { maximumFractionDigits: 2 })}`; })() : serviceId === "social" ? priceLabel(selectedCatalogueItem, 0, priceOverrides[String(selectedCatalogueItem.id)]) : selectedCatalogueItem.price ? priceLabel(selectedCatalogueItem, 0, selectedCatalogueItem.price) : "Price unavailable"}</strong></div>
             </div>
-            <p className="service-request-notice">Payment is securely deducted from your BukzEx wallet. Your purchase and available delivery details will appear in Purchases. Contact BukzEx Customer Care for OTP or password assistance.</p>
+            <p className="service-request-notice">{serviceId === "social" ? "Your wallet pays for this package once. Track delivery to your public profile or post in Purchases. Delivery times depend on the selected package." : "Payment is securely deducted from your BukzEx wallet. Your purchase and available delivery details will appear in Purchases. Contact BukzEx Customer Care for OTP or password assistance."}</p>
             {error && <div className="service-form-message error"><AlertCircle size={17} /><span>{error}</span></div>}
             {success && <div className="service-form-message success"><CheckCircle2 size={17} /><span>{success}</span></div>}
             <button type="submit" className="service-purchase-submit" disabled={submitting || loading || (serviceId === "email_verification" && (!emailDomain || emailDomainsLoading))}>
-              {submitting ? "Processing payment…" : "Pay with wallet"}
+              {submitting ? "Processing payment…" : serviceId === "social" ? "Pay & submit boost" : "Pay with wallet"}
             </button>
-            <button type="button" className="service-catalogue-change" onClick={() => { setSelectedCatalogueItem(null); setAmount(""); setDetails(""); setError(""); sessionStorage.removeItem(`bukzex:selected:${serviceId}`); navigate(`/customer/services/${serviceId}`); }}>
+            <button type="button" className="service-catalogue-change" onClick={() => { setSelectedCatalogueItem(null); setTargetLink(""); setAmount(""); setDetails(""); setError(""); sessionStorage.removeItem(`bukzex:selected:${serviceId}`); navigate(`/customer/services/${serviceId}`); }}>
               Choose a different service
             </button>
           </form>
