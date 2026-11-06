@@ -9,8 +9,8 @@ export default function AdminReviews() {
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     setError("");
     try {
       setReviews(await getBukzExAdminReviews());
@@ -21,7 +21,20 @@ export default function AdminReviews() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    let active = true;
+    getBukzExAdminReviews()
+      .then((items) => {
+        if (active) setReviews(items);
+      })
+      .catch((loadError) => {
+        if (active) setError(loadError?.message || "BukzEx reviews could not be loaded.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
+  }, []);
 
   async function moderate(review, status) {
     setBusyId(review.key);
