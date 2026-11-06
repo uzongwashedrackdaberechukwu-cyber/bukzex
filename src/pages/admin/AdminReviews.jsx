@@ -74,9 +74,9 @@ export default function AdminReviews() {
               {review.status === "pending" ? (
                 <div className="admin-review-actions">
                   <button type="button" disabled={busyId === review.key} onClick={() => moderate(review, "approved")}>
-                    {busyId === review.id ? <LoaderCircle className="admin-review-spin" size={14} /> : <Check size={14} />} Approve
+                    {busyId === review.key ? <LoaderCircle className="admin-review-spin" size={14} /> : <Check size={14} />} Approve
                   </button>
-                  <button type="button" disabled={busyId === review.id} onClick={() => moderate(review, "rejected")}>
+                  <button type="button" disabled={busyId === review.key} onClick={() => moderate(review, "rejected")}>
                     <X size={14} /> Reject
                   </button>
                 </div>
