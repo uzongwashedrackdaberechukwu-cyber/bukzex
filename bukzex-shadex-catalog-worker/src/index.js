@@ -2329,6 +2329,17 @@ async function processBukzExCustomerEmailJobs(env) {
 }
 
 export default {
+
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil(
+      processBukzExCustomerEmailJobs(env).then((summary) => {
+        console.log("BukzEx scheduled customer email run:", summary);
+      }).catch((error) => {
+        console.error("BukzEx scheduled customer email run failed:", error);
+      }),
+    );
+  },
+
   async fetch(request, env) {
     const cors = corsHeaders(request, env);
     const origin = request.headers.get("Origin") || "";
@@ -2346,6 +2357,48 @@ export default {
         return json({ success: false, error: { message: error instanceof HttpError ? error.message : "Crypto webhook failed." } }, status, cors);
       }
     }
+
+    if (request.method === "GET" && url.pathname === "/api/reviews") {
+      try {
+        return json({ success: true, data: { reviews: await listBukzExPublicReviews(env) } }, 200, cors);
+      } catch (error) {
+        const status = error instanceof HttpError ? error.status : 500;
+        return json({ success: false, error: { message: error instanceof HttpError ? error.message : "BukzEx reviews could not be loaded." } }, status, cors);
+      }
+    }
+    if (request.method === "POST" && url.pathname === "/api/reviews") {
+      try {
+        return json({ success: true, data: await submitBukzExCustomerReview(request, env) }, 201, cors);
+      } catch (error) {
+        const status = error instanceof HttpError ? error.status : 500;
+        return json({ success: false, error: { message: error instanceof HttpError ? error.message : "BukzEx review could not be submitted." } }, status, cors);
+      }
+    }
+    if (request.method === "GET" && url.pathname === "/api/admin/reviews") {
+      try {
+        return json({ success: true, data: { reviews: await listBukzExAdminReviews(request, env) } }, 200, cors);
+      } catch (error) {
+        const status = error instanceof HttpError ? error.status : 500;
+        return json({ success: false, error: { message: error instanceof HttpError ? error.message : "BukzEx admin reviews could not be loaded." } }, status, cors);
+      }
+    }
+    if (request.method === "POST" && url.pathname === "/api/admin/reviews/moderate") {
+      try {
+        return json({ success: true, data: await moderateBukzExReview(request, env) }, 200, cors);
+      } catch (error) {
+        const status = error instanceof HttpError ? error.status : 500;
+        return json({ success: false, error: { message: error instanceof HttpError ? error.message : "BukzEx review moderation failed." } }, status, cors);
+      }
+    }
+    if (request.method === "POST" && url.pathname === "/api/admin/deposits/confirm") {
+      try {
+        return json({ success: true, data: await adminConfirmDeposit(request, env) }, 200, cors);
+      } catch (error) {
+        const status = error instanceof HttpError ? error.status : 500;
+        return json({ success: false, error: { message: error instanceof HttpError ? error.message : "BukzEx could not safely confirm this deposit." } }, status, cors);
+      }
+    }
+
     if (request.method === "POST" && url.pathname === "/api/admin/wallet-credit") {
       try {
         return json({ success: true, data: await adminWalletCredit(request, env) }, 200, cors);
