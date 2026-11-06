@@ -247,6 +247,11 @@ export async function submitCustomerReview(orderId, rating, feedback, publishCon
   });
 }
 
+export async function getCustomerReviewStatus(orderId) {
+  const data = await callBukzExWorkerGet("/api/reviews/status?order_id=" + encodeURIComponent(String(orderId || "")));
+  return { reviewed: data?.reviewed === true, status: data?.status || null };
+}
+
 export async function getBukzExAdminReviews() {
   const data = await callBukzExWorkerGet("/api/admin/reviews");
   return Array.isArray(data?.reviews) ? data.reviews : [];
