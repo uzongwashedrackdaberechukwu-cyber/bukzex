@@ -486,6 +486,18 @@ export default function AdminDeposits() {
                     "pending"}
                 </strong>
               </div>
+              <div>
+                <span>Reviewed by</span>
+                <strong>{selectedDeposit.reviewed_by || "Not reviewed"}</strong>
+              </div>
+              <div>
+                <span>Reviewed at</span>
+                <strong>{selectedDeposit.reviewed_at ? formatDate(selectedDeposit.reviewed_at) : "Not reviewed"}</strong>
+              </div>
+              <div>
+                <span>Customer account</span>
+                <strong>{selectedDeposit.user_id || "—"}</strong>
+              </div>
             </div>
 
             {selectedDeposit.status ===
