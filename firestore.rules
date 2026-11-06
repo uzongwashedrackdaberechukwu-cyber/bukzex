@@ -83,7 +83,9 @@ service cloud.firestore {
         && request.resource.data.payment_reference is string
         && request.resource.data.payment_reference.size() > 0;
 
-      allow update: if isAdmin();
+      // Deposit confirmation and wallet credit must go through the BukzEx
+      // Worker so the wallet ledger and confirmation email job are atomic.
+      allow update: if false;
       allow delete: if false;
     }
 
