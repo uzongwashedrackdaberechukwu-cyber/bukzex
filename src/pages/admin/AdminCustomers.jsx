@@ -148,6 +148,11 @@ export default function AdminCustomers() {
     setCreditNotice("");
     try {
       const result = await (walletAction === "debit" ? debitCustomerWallet : creditCustomerWallet)(selectedCustomer.id, amountMinor, reason, key);
+      setCustomerWallet((current) => ({
+        ...(current || {}),
+        balance: Number(result.balance || 0),
+        currency: current?.currency || "NGN",
+      }));
       setCreditNotice(`${walletAction === "debit" ? "Removed" : "Credited"} ₦${(Number(result.amount_minor || amountMinor) / 100).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. New wallet balance: ₦${Number(result.balance || 0).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. ${result.duplicate ? "This was an idempotent retry; no duplicate adjustment was applied." : "The adjustment is recorded in the transaction ledger and admin audit log."}`);
       setCreditAmount("");
       setCreditReason("");
