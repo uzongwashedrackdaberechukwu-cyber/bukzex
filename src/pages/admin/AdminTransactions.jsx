@@ -11,6 +11,7 @@ import {
 import {
   getWalletTransactions,
 } from "../../services/api";
+import AdminPagination from "../../components/admin/AdminPagination";
 
 
 function formatMoney(value) {
@@ -30,6 +31,8 @@ export default function AdminTransactions() {
   const [transactions, setTransactions] = useState([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -112,6 +115,13 @@ export default function AdminTransactions() {
         );
     });
   }, [transactions, search, filter]);
+
+  useEffect(() => setPage(1), [search, filter]);
+
+  const visibleTransactions = useMemo(
+    () => filteredTransactions.slice((page - 1) * pageSize, page * pageSize),
+    [filteredTransactions, page, pageSize],
+  );
 
   const totals = useMemo(() => {
     const deposits = transactions
@@ -277,7 +287,7 @@ export default function AdminTransactions() {
                   </td>
                 </tr>
               ) : (
-                filteredTransactions.map(
+                visibleTransactions.map(
                   (transaction) => (
                     <tr key={transaction.id}>
                       <td>
@@ -363,6 +373,14 @@ export default function AdminTransactions() {
           </table>
         </div>
       </div>
+
+      <AdminPagination
+        page={page}
+        pageSize={pageSize}
+        total={filteredTransactions.length}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+      />
 
       {selected && (
         <div
