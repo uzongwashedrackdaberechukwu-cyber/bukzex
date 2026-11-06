@@ -1851,6 +1851,21 @@ async function handleCryptoWebhook(request, env) {
       description: "Confirmed crypto deposit",
       created_at: now,
     }));
+    writes.push(createWrite(env, "customer_email_jobs/crypto_deposit_" + eventId, {
+      user_id: uid,
+      job_type: "deposit_confirmation",
+      service_name: "Crypto wallet deposit",
+      amount_minor: creditMinor,
+      currency: "NGN",
+      minor_unit: 2,
+      balance_minor: Math.round((balance + credit) * 100),
+      reference: shadexRequestId,
+      send_after: now,
+      status: "pending",
+      attempt_count: 0,
+      created_at: now,
+      updated_at: now,
+    }));
   } else if (eventType === "crypto.deposit.rejected") {
     if (current.kind !== "deposit") throw new HttpError(400, "Deposit event does not match the request.");
     requestPatch.status = "rejected";
