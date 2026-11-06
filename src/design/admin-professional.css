@@ -1,0 +1,1030 @@
+/* BukzEx administration system — consistent density, readable controls and responsive workspaces. */
+.admin-page {
+  --bx-admin-bg: #061522;
+  --bx-admin-panel: #0b2133;
+  --bx-admin-panel-raised: #102a40;
+  --bx-admin-line: rgba(173, 198, 221, .14);
+  --bx-admin-text: #f4f8fb;
+  --bx-admin-muted: #91a4b8;
+  --bx-admin-gold: #e8c76d;
+  --bx-admin-green: #61d7b5;
+  min-height: 100dvh !important;
+  width: 100%;
+  color: var(--bx-admin-text);
+}
+
+.admin-page,
+.admin-page * {
+  box-sizing: border-box;
+}
+
+.admin-sidebar {
+  position: fixed !important;
+  inset: 0 auto 0 0 !important;
+  width: 276px !important;
+  min-width: 276px !important;
+  height: 100dvh !important;
+  padding: 25px 18px 18px !important;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-right: 1px solid var(--bx-admin-line) !important;
+  background: linear-gradient(180deg, #0a2031 0%, #061522 100%) !important;
+}
+
+.admin-brand {
+  gap: 12px !important;
+  padding: 2px 7px 4px !important;
+}
+
+.admin-brand-mark {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 13px !important;
+  font-size: 18px !important;
+}
+
+.admin-brand strong {
+  font-size: 21px !important;
+  line-height: 1.15;
+}
+
+.admin-brand small {
+  margin-top: 4px !important;
+  font-size: 9px !important;
+  letter-spacing: .14em !important;
+}
+
+.admin-navigation {
+  gap: 7px !important;
+  margin-top: 32px !important;
+}
+
+.admin-navigation > small {
+  margin-bottom: 8px !important;
+  font-size: 10px !important;
+  letter-spacing: .14em !important;
+}
+
+.admin-nav-link {
+  min-height: 47px !important;
+  gap: 12px !important;
+  padding: 0 13px !important;
+  border-radius: 12px !important;
+  font-size: 13px !important;
+  font-weight: 680 !important;
+}
+
+.admin-nav-link svg {
+  width: 18px;
+  height: 18px;
+}
+
+.admin-sidebar-bottom {
+  padding-top: 16px !important;
+}
+
+.admin-logout {
+  min-height: 46px !important;
+  font-size: 13px !important;
+}
+
+.admin-main {
+  width: calc(100% - 276px) !important;
+  min-width: 0 !important;
+  min-height: 100dvh !important;
+  height: auto !important;
+  margin-left: 276px !important;
+  overflow: visible !important;
+  background: transparent;
+}
+
+.admin-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  min-height: 78px !important;
+  height: auto !important;
+  gap: 16px !important;
+  padding: 12px clamp(22px, 2.8vw, 42px) !important;
+  border-bottom: 1px solid var(--bx-admin-line) !important;
+  background: rgba(5, 19, 31, .94) !important;
+  backdrop-filter: blur(20px);
+}
+
+.admin-topbar-label {
+  font-size: 10px !important;
+  letter-spacing: .15em !important;
+}
+
+.admin-topbar h1 {
+  margin-top: 4px !important;
+  font-size: 22px !important;
+  line-height: 1.2;
+}
+
+.admin-topbar-health {
+  font-size: 10px !important;
+}
+
+.admin-user {
+  gap: 10px !important;
+  padding: 6px 9px !important;
+  border-radius: 12px;
+}
+
+.admin-user-avatar {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 12px !important;
+  font-size: 13px !important;
+}
+
+.admin-user strong {
+  font-size: 12px !important;
+}
+
+.admin-user small {
+  font-size: 10px !important;
+}
+
+.admin-content {
+  width: 100% !important;
+  max-width: 1800px !important;
+  margin: 0 auto !important;
+  padding: clamp(22px, 2.8vw, 42px) !important;
+}
+
+.admin-welcome {
+  min-height: 190px !important;
+  gap: 24px !important;
+  margin-bottom: 20px !important;
+  padding: clamp(22px, 2.5vw, 34px) !important;
+  border-radius: 22px !important;
+}
+
+.admin-welcome h2 {
+  margin: 10px 0 8px !important;
+  font-size: clamp(28px, 3vw, 38px) !important;
+  line-height: 1.08 !important;
+}
+
+.admin-welcome p {
+  max-width: 680px !important;
+  font-size: 14px !important;
+  line-height: 1.65 !important;
+}
+
+.admin-welcome > div:first-child > span {
+  font-size: 10px !important;
+  letter-spacing: .15em !important;
+}
+
+.admin-welcome-icon {
+  width: 66px !important;
+  height: 66px !important;
+  border-radius: 18px !important;
+}
+
+.admin-stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 13px !important;
+  margin-bottom: 20px !important;
+  border: 0 !important;
+  background: transparent !important;
+  overflow: visible !important;
+}
+
+.admin-stat-card {
+  min-height: 124px !important;
+  align-items: flex-start !important;
+  gap: 13px !important;
+  padding: 18px !important;
+  border: 1px solid var(--bx-admin-line) !important;
+  border-radius: 17px !important;
+  background: linear-gradient(145deg, rgba(15, 42, 64, .97), rgba(8, 27, 42, .99)) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .12) !important;
+}
+
+.admin-stat-card span {
+  font-size: 11px !important;
+  line-height: 1.45 !important;
+}
+
+.admin-stat-card strong {
+  margin: 7px 0 0 !important;
+  font-size: clamp(20px, 1.7vw, 26px) !important;
+  line-height: 1.15 !important;
+}
+
+.admin-stat-card small {
+  margin-top: 8px !important;
+  font-size: 10px !important;
+  line-height: 1.4 !important;
+}
+
+.admin-stat-icon {
+  width: 42px !important;
+  height: 42px !important;
+  flex-basis: 42px !important;
+  border-radius: 13px !important;
+}
+
+.admin-quick-ops {
+  margin-bottom: 20px !important;
+  padding: 21px !important;
+  border-radius: 19px !important;
+}
+
+.admin-quick-ops-heading {
+  margin-bottom: 16px !important;
+}
+
+.admin-quick-ops-heading h3 {
+  font-size: 19px !important;
+}
+
+.admin-quick-ops-heading p {
+  font-size: 12px !important;
+}
+
+.admin-quick-ops-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 11px !important;
+  border: 0 !important;
+  overflow: visible !important;
+}
+
+.admin-quick-ops-grid > button {
+  min-height: 100px !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  padding: 15px !important;
+  border: 1px solid var(--bx-admin-line) !important;
+  border-radius: 15px !important;
+  font-size: 13px !important;
+}
+
+.admin-quick-ops-grid > button strong {
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+}
+
+.admin-quick-ops-grid > button small {
+  font-size: 11px !important;
+  line-height: 1.5 !important;
+}
+
+.admin-quick-op-icon {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 13px !important;
+}
+
+.admin-panels {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+}
+
+.admin-panel {
+  border-radius: 18px !important;
+}
+
+.admin-panel-header {
+  padding: 18px 20px !important;
+}
+
+.admin-panel-header span {
+  font-size: 10px !important;
+}
+
+.admin-panel-header h3 {
+  font-size: 16px !important;
+}
+
+.admin-panel-header button {
+  min-height: 36px !important;
+  padding: 0 12px !important;
+  font-size: 11px !important;
+}
+
+.admin-table {
+  min-width: 620px;
+  font-size: 12px !important;
+}
+
+.admin-table th {
+  padding: 13px 15px !important;
+  font-size: 10px !important;
+}
+
+.admin-table td {
+  padding: 14px 15px !important;
+  font-size: 12px !important;
+}
+
+.admin-status {
+  min-height: 25px;
+  padding: 5px 9px !important;
+  font-size: 10px !important;
+}
+
+.admin-customers-header,
+.admin-orders-header,
+.admin-deposits-header,
+.admin-services-header,
+.admin-transactions-header,
+.admin-settings-header {
+  min-height: 150px !important;
+  gap: 20px !important;
+  margin-bottom: 18px !important;
+  padding: 24px 26px !important;
+  border-radius: 20px !important;
+}
+
+.admin-customers-header h2,
+.admin-orders-header h2,
+.admin-deposits-header h2,
+.admin-services-header h2,
+.admin-transactions-header h2,
+.admin-settings-header h2 {
+  margin: 7px 0 6px !important;
+  font-size: clamp(25px, 2.5vw, 32px) !important;
+  line-height: 1.15 !important;
+}
+
+.admin-customers-header p,
+.admin-orders-header p,
+.admin-deposits-header p,
+.admin-services-header p,
+.admin-transactions-header p,
+.admin-settings-header p {
+  max-width: 720px !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+}
+
+.admin-section-kicker,
+.admin-customers-header > div > span,
+.admin-deposits-header > div > span,
+.admin-orders-header > div > span,
+.admin-services-header > div > span,
+.admin-transactions-header > div > span,
+.admin-settings-header > div > span {
+  font-size: 10px !important;
+  letter-spacing: .14em !important;
+}
+
+.admin-customers-toolbar,
+.admin-orders-toolbar,
+.admin-deposits-toolbar,
+.admin-transactions-toolbar {
+  gap: 12px !important;
+  margin-bottom: 14px !important;
+  padding: 12px !important;
+  border-radius: 14px !important;
+}
+
+.admin-customers-search,
+.admin-orders-search,
+.admin-deposits-search,
+.admin-transactions-search {
+  min-height: 46px !important;
+  width: min(100%, 520px) !important;
+  border-radius: 11px !important;
+  font-size: 13px !important;
+}
+
+.admin-customers-search input,
+.admin-orders-search input,
+.admin-deposits-search input,
+.admin-transactions-search input {
+  min-height: 42px !important;
+  font-size: 13px !important;
+}
+
+.admin-orders-filters button,
+.admin-deposit-filters button,
+.admin-transactions-filters button {
+  min-height: 37px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+}
+
+.admin-deposit-stats,
+.admin-orders-stats,
+.admin-transactions-stats {
+  gap: 12px !important;
+  margin-bottom: 15px !important;
+}
+
+.admin-deposit-stat,
+.admin-orders-stat,
+.admin-transaction-stat {
+  min-height: 100px !important;
+  gap: 12px !important;
+  padding: 17px !important;
+  border-radius: 15px !important;
+}
+
+.admin-deposit-stat span,
+.admin-orders-stat span,
+.admin-transaction-stat span {
+  font-size: 11px !important;
+}
+
+.admin-deposit-stat strong,
+.admin-orders-stat strong,
+.admin-transaction-stat strong {
+  font-size: 20px !important;
+  line-height: 1.2 !important;
+}
+
+.admin-deposits-table th,
+.admin-orders-table th,
+.admin-transactions-table th,
+.admin-customers-table th {
+  padding: 14px 15px !important;
+  font-size: 10px !important;
+  letter-spacing: .07em !important;
+}
+
+.admin-deposits-table td,
+.admin-orders-table td,
+.admin-transactions-table td,
+.admin-customers-table td {
+  padding: 14px 15px !important;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+}
+
+.admin-deposits-table-wrap,
+.admin-orders-table-wrap,
+.admin-transactions-table-wrap,
+.admin-customers-table-wrap,
+.admin-table-wrap {
+  max-width: 100%;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-deposits-table,
+.admin-orders-table,
+.admin-transactions-table,
+.admin-customers-table {
+  min-width: 760px;
+}
+
+.admin-deposit-view,
+.admin-order-view,
+.admin-order-cancel,
+.admin-order-delete,
+.admin-transaction-view,
+.admin-customer-view,
+.admin-customer-credit {
+  min-height: 36px !important;
+  padding: 0 11px !important;
+  border-radius: 9px !important;
+  font-size: 11px !important;
+}
+
+.admin-customer-modal,
+.admin-deposit-modal,
+.admin-order-modal,
+.admin-transaction-modal,
+.admin-crypto-modal {
+  width: min(100%, 680px) !important;
+  max-height: min(90dvh, 900px) !important;
+  overflow-y: auto !important;
+  padding: 26px !important;
+  border-radius: 20px !important;
+}
+
+.admin-customer-modal h3,
+.admin-deposit-modal h3,
+.admin-order-modal h3,
+.admin-transaction-modal h3,
+.admin-crypto-modal h3 {
+  font-size: 23px !important;
+  line-height: 1.2 !important;
+}
+
+.admin-customer-modal-header span,
+.admin-deposit-modal-header span,
+.admin-order-modal-header span,
+.admin-transaction-modal-header span {
+  font-size: 10px !important;
+  letter-spacing: .13em !important;
+}
+
+.admin-customer-details,
+.admin-deposit-detail-list,
+.admin-order-details,
+.admin-transaction-details,
+.admin-crypto-details {
+  gap: 12px !important;
+}
+
+.admin-customer-details > div,
+.admin-deposit-detail-list > div,
+.admin-order-details > div,
+.admin-transaction-details > div,
+.admin-crypto-details > div {
+  min-width: 0;
+  padding: 13px !important;
+  border-radius: 11px !important;
+}
+
+.admin-customer-details span,
+.admin-deposit-detail-list span,
+.admin-order-details span,
+.admin-transaction-details span,
+.admin-crypto-details span {
+  font-size: 10px !important;
+}
+
+.admin-customer-details strong,
+.admin-deposit-detail-list strong,
+.admin-order-details strong,
+.admin-transaction-details strong,
+.admin-crypto-details strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+  overflow-wrap: anywhere;
+}
+
+.admin-customer-wallet-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.admin-customer-wallet-summary > div {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid rgba(173, 198, 221, .14);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .035);
+}
+
+.admin-customer-wallet-summary span,
+.admin-customer-wallet-summary small {
+  display: block;
+  color: #91a4b8;
+  font-size: 10px;
+}
+
+.admin-customer-wallet-summary strong {
+  display: block;
+  margin: 7px 0 5px;
+  color: #f4f8fb;
+  font-size: 20px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.admin-customer-order-history {
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid rgba(173, 198, 221, .14);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .025);
+}
+
+.admin-customer-order-heading,
+.admin-customer-history-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.admin-customer-order-heading strong {
+  display: block;
+  color: #f4f8fb;
+  font-size: 13px;
+}
+
+.admin-customer-order-heading small,
+.admin-customer-history-row small {
+  display: block;
+  margin-top: 4px;
+  color: #91a4b8;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.admin-customer-order-heading > span {
+  display: grid;
+  min-width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 9px;
+  background: rgba(232, 199, 109, .1);
+  color: #e8c76d;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.admin-customer-history-list {
+  margin-top: 12px;
+  border-top: 1px solid rgba(173, 198, 221, .1);
+}
+
+.admin-customer-history-row {
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(173, 198, 221, .08);
+}
+
+.admin-customer-history-row:last-child {
+  border-bottom: 0;
+}
+
+.admin-customer-history-row > div {
+  min-width: 0;
+}
+
+.admin-customer-history-row > div:last-child {
+  flex: 0 0 auto;
+  text-align: right;
+}
+
+.admin-customer-history-row strong {
+  display: block;
+  color: #eaf0f5;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.admin-customer-history-empty,
+.admin-customer-history-error {
+  margin: 12px 0 0;
+  color: #91a4b8;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.admin-customer-history-error {
+  color: #f2a2a2;
+}
+
+.admin-order-supplier-cell small {
+  display: block;
+  margin-top: 4px;
+  color: #8195a8;
+  font-size: 10px;
+}
+
+.admin-order-supplier-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 4px 8px;
+  border: 1px solid rgba(173, 198, 221, .14);
+  border-radius: 99px;
+  background: rgba(255, 255, 255, .035);
+  color: #9fb0bf;
+  font-size: 10px;
+  font-weight: 750;
+  text-transform: capitalize;
+}
+
+.admin-order-supplier-status.reported {
+  border-color: rgba(116, 182, 255, .2);
+  background: rgba(116, 182, 255, .07);
+  color: #9ac8ff;
+}
+
+.admin-order-supplier-response {
+  margin-top: 13px;
+  padding: 14px;
+  border: 1px solid rgba(116, 182, 255, .17);
+  border-radius: 12px;
+  background: rgba(116, 182, 255, .055);
+}
+
+.admin-order-supplier-response span {
+  display: block;
+  color: #9ac8ff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.admin-order-supplier-response p {
+  margin: 7px 0 0;
+  color: #d8e4ed;
+  font-size: 12px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.admin-transaction-actor {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 4px 8px;
+  border: 1px solid rgba(173, 198, 221, .13);
+  border-radius: 99px;
+  color: #a9b8c5;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-transaction-actor.admin {
+  border-color: rgba(232, 199, 109, .2);
+  background: rgba(232, 199, 109, .07);
+  color: #e8c76d;
+}
+
+.admin-settings-refresh {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid var(--bx-admin-line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .045);
+  color: #d9e4ec;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.admin-settings-refresh:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
+.admin-system-status-list {
+  margin-top: 8px;
+}
+
+.admin-system-status-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 0;
+  border-bottom: 1px solid rgba(173, 198, 221, .08);
+}
+
+.admin-system-status-row:last-child {
+  border-bottom: 0;
+}
+
+.admin-system-status-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  border-radius: 11px;
+  background: rgba(116, 182, 255, .09);
+  color: #9ac8ff;
+}
+
+.admin-system-status-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.admin-system-status-copy strong {
+  display: block;
+  color: #f2f6f9;
+  font-size: 12px;
+}
+
+.admin-system-status-copy small {
+  display: block;
+  margin-top: 4px;
+  color: #91a4b8;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.admin-system-status-pill {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 9px;
+  border: 1px solid rgba(173, 198, 221, .12);
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-system-status-pill.ready {
+  border-color: rgba(97, 215, 181, .18);
+  background: rgba(97, 215, 181, .07);
+  color: #75dfbd;
+}
+
+.admin-system-status-pill.checking {
+  color: #e8c76d;
+}
+
+.admin-system-status-pill.attention {
+  border-color: rgba(248, 113, 113, .18);
+  background: rgba(248, 113, 113, .07);
+  color: #f2a2a2;
+}
+
+.admin-system-checked-at {
+  margin-top: 10px;
+  color: #8195a8;
+  font-size: 10px;
+}
+
+.admin-settings-mono {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: right;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px !important;
+}
+
+.admin-settings-safeguards {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.admin-settings-safeguards > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(173, 198, 221, .1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .025);
+  color: #91a4b8;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.admin-settings-safeguards svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: #75dfbd;
+}
+
+.admin-settings-safeguards strong {
+  color: #e9f0f5;
+}
+
+.admin-system-spin {
+  animation: bx-admin-spin .9s linear infinite;
+}
+
+@keyframes bx-admin-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 1180px) {
+  .admin-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .admin-quick-ops-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .admin-panels {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .admin-sidebar {
+    width: min(290px, 90vw) !important;
+    min-width: min(290px, 90vw) !important;
+    padding: 23px 16px 16px !important;
+  }
+
+  .admin-main {
+    width: 100% !important;
+    min-height: 100dvh !important;
+    margin-left: 0 !important;
+  }
+
+  .admin-topbar {
+    min-height: 70px !important;
+    padding: 10px 16px !important;
+  }
+
+  .admin-content {
+    padding: 20px 16px 38px !important;
+  }
+
+  .admin-welcome {
+    min-height: 0 !important;
+    padding: 22px !important;
+  }
+
+  .admin-customers-header,
+  .admin-orders-header,
+  .admin-deposits-header,
+  .admin-services-header,
+  .admin-transactions-header,
+  .admin-settings-header {
+    min-height: 0 !important;
+    padding: 20px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 9px !important;
+  }
+
+  .admin-stat-card {
+    min-height: 105px !important;
+    gap: 9px !important;
+    padding: 13px !important;
+  }
+
+  .admin-stat-icon {
+    width: 34px !important;
+    height: 34px !important;
+    flex-basis: 34px !important;
+  }
+
+  .admin-stat-card span {
+    font-size: 10px !important;
+  }
+
+  .admin-stat-card strong {
+    font-size: 19px !important;
+  }
+
+  .admin-stat-card small {
+    font-size: 9px !important;
+  }
+
+  .admin-quick-ops-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .admin-quick-ops {
+    padding: 15px !important;
+  }
+
+  .admin-customer-wallet-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-customer-modal,
+  .admin-deposit-modal,
+  .admin-order-modal,
+  .admin-transaction-modal,
+  .admin-crypto-modal {
+    padding: 19px !important;
+  }
+
+  .admin-settings-refresh {
+    width: 100%;
+  }
+
+  .admin-settings-header {
+    align-items: stretch !important;
+    flex-direction: column !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .admin-stats {
+    grid-template-columns: 1fr !important;
+  }
+
+  .admin-topbar h1 {
+    font-size: 18px !important;
+  }
+
+  .admin-user-avatar {
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  .admin-content {
+    padding: 16px 12px 30px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-page *,
+  .admin-page *::before,
+  .admin-page *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
