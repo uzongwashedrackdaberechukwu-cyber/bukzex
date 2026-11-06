@@ -289,8 +289,8 @@ export default function AdminCustomers() {
                     </td>
 
                     <td>
-                      <span className="admin-customer-status">
-                        Registered
+                      <span className={`admin-customer-status ${String(customer.accountStatus || "active").toLowerCase()}`}>
+                        {String(customer.accountStatus || "active").replaceAll("_", " ")}
                       </span>
                     </td>
 
