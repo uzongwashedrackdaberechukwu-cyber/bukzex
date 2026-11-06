@@ -83,7 +83,7 @@ export default function AdminTransactions() {
   }
 
   useEffect(() => {
-    loadTransactions();
+    void Promise.resolve().then(loadTransactions);
   }, []);
 
   const filteredTransactions = useMemo(() => {
@@ -115,8 +115,6 @@ export default function AdminTransactions() {
         );
     });
   }, [transactions, search, filter]);
-
-  useEffect(() => setPage(1), [search, filter]);
 
   const visibleTransactions = useMemo(
     () => filteredTransactions.slice((page - 1) * pageSize, page * pageSize),
@@ -208,8 +206,9 @@ export default function AdminTransactions() {
             type="text"
             placeholder="Search transactions..."
             value={search}
-            onChange={(event) =>
-              setSearch(event.target.value)
+            onChange={(event) => {
+              setPage(1);
+              setSearch(event.target.value);
             }
           />
         </div>
@@ -229,7 +228,10 @@ export default function AdminTransactions() {
               className={
                 filter === value ? "active" : ""
               }
-              onClick={() => setFilter(value)}
+              onClick={() => {
+                setPage(1);
+                setFilter(value);
+              }
             >
               {label}
             </button>
