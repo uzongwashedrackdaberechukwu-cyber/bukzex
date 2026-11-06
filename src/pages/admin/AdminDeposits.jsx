@@ -82,7 +82,7 @@ export default function AdminDeposits() {
   }
 
   useEffect(() => {
-    loadDeposits();
+    void Promise.resolve().then(loadDeposits);
   }, []);
 
   const filteredDeposits = useMemo(() => {
