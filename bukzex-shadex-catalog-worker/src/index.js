@@ -1987,7 +1987,7 @@ function buildBukzExEmail(job) {
     '<tr><td style="padding:8px 28px 30px;font-size:15px;line-height:1.7;color:#344256"><p>Dear BukzEx Customer,</p><p>' + message + '</p>' +
     '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:20px 0;padding:10px 18px;background:#f6f8fb;border-radius:12px">' + rows + '</table>' +
     '<p>' + action + '</p><p style="margin:24px 0 0">Thank you for choosing BukzEx.<br><strong>BukzEx Customer Care</strong></p>' +
-    '<p style="margin:24px 0 0"><a href="https://bukzex.shadexgoltd.com/customer/orders" style="display:inline-block;padding:12px 20px;border-radius:999px;background:#d9b968;color:#10233f;text-decoration:none;font-weight:700">' + (isDeposit ? "Open my wallet" : "Rate my service") + '</a></p></td></tr>' +
+    '<p style="margin:24px 0 0"><a href="' + (isDeposit ? "https://bukzex.shadexgoltd.com/customer" : "https://bukzex.shadexgoltd.com/customer/orders") + '" style="display:inline-block;padding:12px 20px;border-radius:999px;background:#d9b968;color:#10233f;text-decoration:none;font-weight:700">' + (isDeposit ? "Open my wallet" : "Rate my service") + '</a></p></td></tr>' +
     '<tr><td style="padding:18px 28px;background:#0b1a30;color:#9eacc0;font-size:11px;line-height:1.6;text-align:center">This is an automated message from BukzEx. Never share your password or verification codes by email.<br>© 2026 BukzEx. All rights reserved.</td></tr>' +
     '</table></td></tr></table></body></html>';
   return { subject, html };
