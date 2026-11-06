@@ -1,0 +1,30 @@
+name: Temporary BukzEx Worker deployment verification
+
+on:
+  push:
+    branches:
+      - diagnostic/bukzex-pages-discovery
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect live BukzEx Worker deployments
+        shell: bash
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          for worker in bukzex bukzex-shadex-catalog; do
+            echo "=== $worker ==="
+            response="$(curl -fsS -H "Authorization: Bearer $CF_TOKEN" -H "Content-Type: application/json" "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/scripts/$worker/deployments")"
+            echo "$response" | jq -r '
+              if .success then
+                (.result // [])[:5][] |
+                {id, created_on, source, annotations}
+              else
+                {errors}
+              end
+            '
+          done
