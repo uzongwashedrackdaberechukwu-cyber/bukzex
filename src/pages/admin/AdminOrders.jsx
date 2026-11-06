@@ -78,7 +78,7 @@ export default function AdminOrders() {
   }
 
   useEffect(() => {
-    loadOrders();
+    void Promise.resolve().then(loadOrders);
   }, []);
 
   async function handleStatusChange(status) {
