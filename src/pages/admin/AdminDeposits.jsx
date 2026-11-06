@@ -247,7 +247,7 @@ export default function AdminDeposits() {
             onChange={(event) => {
               setPage(1);
               setSearch(event.target.value);
-            }
+            }}
           />
         </div>
 
@@ -262,7 +262,7 @@ export default function AdminDeposits() {
             onClick={() => {
               setPage(1);
               setFilter("all");
-            }
+            }}
           >
             All
           </button>
@@ -277,7 +277,7 @@ export default function AdminDeposits() {
             onClick={() => {
               setPage(1);
               setFilter("pending");
-            }
+            }}
           >
             Pending
           </button>
@@ -292,7 +292,7 @@ export default function AdminDeposits() {
             onClick={() => {
               setPage(1);
               setFilter("confirmed");
-            }
+            }}
           >
             Confirmed
           </button>
