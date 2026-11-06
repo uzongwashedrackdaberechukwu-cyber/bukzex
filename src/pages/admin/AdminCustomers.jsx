@@ -218,7 +218,7 @@ export default function AdminCustomers() {
             onChange={(event) => {
               setPage(1);
               setSearch(event.target.value);
-            }
+            }}
           />
         </div>
       </div>
