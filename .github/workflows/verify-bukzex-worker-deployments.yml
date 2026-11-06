@@ -19,12 +19,5 @@ jobs:
           for worker in bukzex bukzex-shadex-catalog; do
             echo "=== $worker ==="
             response="$(curl -fsS -H "Authorization: Bearer $CF_TOKEN" -H "Content-Type: application/json" "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/scripts/$worker/deployments")"
-            echo "$response" | jq -r '
-              if .success then
-                (.result // [])[:5][] |
-                {id, created_on, source, annotations}
-              else
-                {errors}
-              end
-            '
+            echo "$response" | jq '{success, errors, result}'
           done
