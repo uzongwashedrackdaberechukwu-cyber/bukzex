@@ -165,8 +165,6 @@ export default function AdminCustomers() {
     }
   }
 
-  useEffect(() => setPage(1), [search]);
-
   const customers = useMemo(() => {
     return allCustomers.filter((user) => {
       const value = search.toLowerCase().trim();
@@ -217,8 +215,9 @@ export default function AdminCustomers() {
             type="search"
             placeholder="Search by name, email or phone..."
             value={search}
-            onChange={(event) =>
-              setSearch(event.target.value)
+            onChange={(event) => {
+              setPage(1);
+              setSearch(event.target.value);
             }
           />
         </div>
