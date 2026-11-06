@@ -209,7 +209,7 @@ export default function AdminTransactions() {
             onChange={(event) => {
               setPage(1);
               setSearch(event.target.value);
-            }
+            }}
           />
         </div>
 
@@ -231,7 +231,7 @@ export default function AdminTransactions() {
               onClick={() => {
                 setPage(1);
                 setFilter(value);
-              }
+              }}
             >
               {label}
             </button>
