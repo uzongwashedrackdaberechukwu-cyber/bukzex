@@ -159,6 +159,11 @@ export default function AdminOrders() {
         order.provider,
         order.supplier_order_id,
         order.payment_status,
+        order.fulfillment_status,
+        order.supplier_status,
+        order.supplier_message,
+        order.cancellation_reason,
+        order.admin_note,
         order.details,
       ]
         .filter(Boolean)
