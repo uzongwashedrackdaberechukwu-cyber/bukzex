@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Check, LoaderCircle, MessageSquareText, RefreshCw, Star, X } from "lucide-react";
 import { getBukzExAdminReviews, moderateBukzExReview } from "../../services/api";
+import "./AdminReviews.css";
 
 export default function AdminReviews() {
   const [reviews, setReviews] = useState([]);
