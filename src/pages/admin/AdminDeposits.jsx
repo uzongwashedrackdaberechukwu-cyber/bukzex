@@ -14,6 +14,7 @@ import {
   getDeposits,
   confirmDeposit,
 } from "../../services/api";
+import AdminPagination from "../../components/admin/AdminPagination";
 
 
 function formatAmount(value) {
@@ -45,6 +46,8 @@ function statusClass(status) {
 export default function AdminDeposits() {
   const [deposits, setDeposits] = useState([]);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [filter, setFilter] = useState("all");
   const [selectedDeposit, setSelectedDeposit] =
     useState(null);
@@ -112,6 +115,13 @@ export default function AdminDeposits() {
         .includes(query);
     });
   }, [deposits, search, filter]);
+
+  useEffect(() => setPage(1), [search, filter]);
+
+  const visibleDeposits = useMemo(
+    () => filteredDeposits.slice((page - 1) * pageSize, page * pageSize),
+    [filteredDeposits, page, pageSize],
+  );
 
   const pendingCount = deposits.filter(
     (deposit) =>
@@ -321,7 +331,7 @@ export default function AdminDeposits() {
               </thead>
 
               <tbody>
-                {filteredDeposits.map(
+                {visibleDeposits.map(
                   (deposit) => (
                     <tr key={deposit.id}>
                       <td>
@@ -391,6 +401,14 @@ export default function AdminDeposits() {
           </div>
         )}
       </div>
+
+      <AdminPagination
+        page={page}
+        pageSize={pageSize}
+        total={filteredDeposits.length}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+      />
 
       {selectedDeposit && (
         <div
