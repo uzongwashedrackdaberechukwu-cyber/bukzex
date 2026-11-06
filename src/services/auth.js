@@ -28,6 +28,10 @@ function toProfile(profile, email = "", role = "customer", emailVerified) {
     phone: profile.phone || "",
     role,
     notificationsEnabled: profile.notifications_enabled ?? true,
+    createdAt: profile.created_at?.toDate
+      ? profile.created_at.toDate().toISOString()
+      : profile.created_at || null,
+    accountStatus: profile.account_status || "active",
   };
 }
 
