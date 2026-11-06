@@ -776,10 +776,24 @@ async function purchase(request, env) {
       updateWrite(env, walletPath, { balance: Number((balance - charge).toFixed(2)), updated_at: now }, wallet.updateTime),
       createWrite(env, orderPath, order),
       createWrite(env, reqPath, savedRequest),
-      createWrite(env, `wallet_transactions/purchase_${uid}_${idempotencyKey}`, {
+      createWrite(env, "wallet_transactions/purchase_" + uid + "_" + idempotencyKey, {
         user_id: uid, transaction_type: "purchase", amount: charge, currency,
         status: "completed", source_id: orderId,
-        description: `BukzEx service purchase: ${serviceName}`, created_at: now,
+        description: "BukzEx service purchase: " + serviceName, created_at: now,
+      }),
+      createWrite(env, "customer_email_jobs/service_check_in_" + uid + "_" + idempotencyKey, {
+        user_id: uid,
+        order_id: orderId,
+        job_type: "service_check_in",
+        service_name: serviceName,
+        amount_minor: amountMinor,
+        currency,
+        minor_unit: minorUnit,
+        send_after: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+        status: "pending",
+        attempt_count: 0,
+        created_at: now,
+        updated_at: now,
       }),
     ]);
   }
