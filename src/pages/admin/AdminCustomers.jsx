@@ -15,6 +15,7 @@ import {
 import { getRegisteredUsers } from "../../services/auth";
 import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../lib/firebase";
+import AdminPagination from "../../components/admin/AdminPagination";
 import { creditCustomerWallet, debitCustomerWallet } from "../../services/api";
 
 
@@ -42,6 +43,8 @@ function formatWalletBalance(value, currency = "NGN") {
 
 export default function AdminCustomers() {
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [selectedCustomer, setSelectedCustomer] =
     useState(null);
   const [customerWallet, setCustomerWallet] = useState(null);
@@ -157,6 +160,8 @@ export default function AdminCustomers() {
     }
   }
 
+  useEffect(() => setPage(1), [search]);
+
   const customers = useMemo(() => {
     return allCustomers.filter((user) => {
       const value = search.toLowerCase().trim();
@@ -175,6 +180,11 @@ export default function AdminCustomers() {
         .includes(value);
     });
   }, [allCustomers, search]);
+
+  const visibleCustomers = useMemo(
+    () => customers.slice((page - 1) * pageSize, page * pageSize),
+    [customers, page, pageSize],
+  );
 
   return (
     <section className="admin-customers">
@@ -244,7 +254,7 @@ export default function AdminCustomers() {
               </thead>
 
               <tbody>
-                {customers.map((customer) => (
+                {visibleCustomers.map((customer) => (
                   <tr key={customer.id}>
                     <td>
                       <div className="admin-customer-person">
@@ -321,6 +331,14 @@ export default function AdminCustomers() {
           </div>
         )}
       </div>
+
+      <AdminPagination
+        page={page}
+        pageSize={pageSize}
+        total={customers.length}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+      />
 
       {selectedCustomer && (
         <div
