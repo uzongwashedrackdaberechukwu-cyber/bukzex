@@ -116,8 +116,6 @@ export default function AdminDeposits() {
     });
   }, [deposits, search, filter]);
 
-  useEffect(() => setPage(1), [search, filter]);
-
   const visibleDeposits = useMemo(
     () => filteredDeposits.slice((page - 1) * pageSize, page * pageSize),
     [filteredDeposits, page, pageSize],
@@ -246,8 +244,9 @@ export default function AdminDeposits() {
             type="search"
             placeholder="Search reference or customer..."
             value={search}
-            onChange={(event) =>
-              setSearch(event.target.value)
+            onChange={(event) => {
+              setPage(1);
+              setSearch(event.target.value);
             }
           />
         </div>
@@ -260,8 +259,9 @@ export default function AdminDeposits() {
                 ? "active"
                 : ""
             }
-            onClick={() =>
-              setFilter("all")
+            onClick={() => {
+              setPage(1);
+              setFilter("all");
             }
           >
             All
@@ -274,8 +274,9 @@ export default function AdminDeposits() {
                 ? "active"
                 : ""
             }
-            onClick={() =>
-              setFilter("pending")
+            onClick={() => {
+              setPage(1);
+              setFilter("pending");
             }
           >
             Pending
@@ -288,8 +289,9 @@ export default function AdminDeposits() {
                 ? "active"
                 : ""
             }
-            onClick={() =>
-              setFilter("confirmed")
+            onClick={() => {
+              setPage(1);
+              setFilter("confirmed");
             }
           >
             Confirmed
