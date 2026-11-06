@@ -17,13 +17,9 @@ export default function CustomerReviewCard({ order }) {
   const createdAt = order?.createdAt || order?.created_at || order?.date;
   const createdTime = createdAt ? Date.parse(createdAt) : NaN;
   const paymentStatus = String(order?.payment_status || "").toLowerCase();
-  const status = String(order?.status || order?.fulfillment_status || "").toLowerCase();
-  const terminal = ["refunded", "cancelled", "canceled", "failed", "rejected", "expired"].includes(status)
-    || ["refunded", "failed", "cancelled", "canceled", "rejected", "expired"].includes(paymentStatus);
   const eligible = paymentStatus === "paid"
     && Number.isFinite(createdTime)
-    && Date.now() - createdTime >= FORTY_EIGHT_HOURS
-    && !terminal;
+    && Date.now() - createdTime >= FORTY_EIGHT_HOURS;
 
   useEffect(() => {
     let active = true;
