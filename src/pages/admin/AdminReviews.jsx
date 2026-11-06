@@ -24,10 +24,10 @@ export default function AdminReviews() {
   useEffect(() => { load(); }, [load]);
 
   async function moderate(review, status) {
-    setBusyId(review.id);
+    setBusyId(review.key);
     setError("");
     try {
-      await moderateBukzExReview(review.id, status);
+      await moderateBukzExReview(review.key, status);
       await load();
     } catch (moderationError) {
       setError(moderationError?.message || "Review moderation failed.");
@@ -60,11 +60,11 @@ export default function AdminReviews() {
       ) : reviews.length ? (
         <div className="admin-review-list">
           {reviews.map((review) => (
-            <article className="admin-review-card" key={review.id}>
+            <article className="admin-review-card" key={review.key}>
               <div className="admin-review-card-head">
                 <div>
                   <strong>{review.service_name || "BukzEx service"}</strong>
-                  <small>Customer {String(review.user_id || "").slice(0, 8)}… · Order {String(review.order_id || "").slice(0, 14)}</small>
+                  <small>Verified BukzEx purchase · {new Date(review.created_at).toLocaleString()}</small>
                 </div>
                 <span className={"admin-review-status " + (review.status === "approved" ? "approved" : review.status === "rejected" ? "rejected" : "pending")}>{review.status || "pending"}</span>
               </div>
@@ -73,7 +73,7 @@ export default function AdminReviews() {
               <small className="admin-review-consent">{review.publish_consent ? "Customer consented to public display." : "Private feedback only — no public display consent."}</small>
               {review.status === "pending" ? (
                 <div className="admin-review-actions">
-                  <button type="button" disabled={busyId === review.id} onClick={() => moderate(review, "approved")}>
+                  <button type="button" disabled={busyId === review.key} onClick={() => moderate(review, "approved")}>
                     {busyId === review.id ? <LoaderCircle className="admin-review-spin" size={14} /> : <Check size={14} />} Approve
                   </button>
                   <button type="button" disabled={busyId === review.id} onClick={() => moderate(review, "rejected")}>
