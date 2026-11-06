@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle2, LoaderCircle, Send, Star } from "lucide-react";
-import { submitCustomerReview } from "../services/api";
+import { getCustomerReviewStatus, submitCustomerReview } from "../services/api";
 import "./CustomerReviewCard.css";
 
 const FORTY_EIGHT_HOURS = 48 * 60 * 60 * 1000;
@@ -12,6 +12,7 @@ export default function CustomerReviewCard({ order }) {
   const [busy, setBusy] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+  const [checking, setChecking] = useState(true);
 
   const createdAt = order?.createdAt || order?.created_at || order?.date;
   const createdTime = createdAt ? Date.parse(createdAt) : NaN;
@@ -24,7 +25,25 @@ export default function CustomerReviewCard({ order }) {
     && Date.now() - createdTime >= FORTY_EIGHT_HOURS
     && !terminal;
 
+  useEffect(() => {
+    let active = true;
+    if (!eligible) {
+      setChecking(false);
+      return () => { active = false; };
+    }
+    getCustomerReviewStatus(order?.id || order?.orderId)
+      .then((result) => {
+        if (active && result.reviewed) setSubmitted(true);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setChecking(false);
+      });
+    return () => { active = false; };
+  }, [eligible, order?.id, order?.orderId]);
+
   if (!eligible) return null;
+  if (checking) return <p className="bx-review-checking">Checking your review status…</p>;
 
   async function handleSubmit(event) {
     event.preventDefault();
