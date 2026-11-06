@@ -2148,6 +2148,21 @@ async function submitBukzExCustomerReview(request, env) {
   return { review_id: reviewId, status: "pending", message: "Thank you. Your review has been submitted for moderation." };
 }
 
+
+async function getBukzExCustomerReviewStatus(request, env, url) {
+  const identity = await verifyFirebaseToken(request, env);
+  const orderId = String(url.searchParams.get("order_id") || "").trim();
+  if (!orderId || orderId.length > 160 || orderId.includes("/")) {
+    throw new HttpError(400, "Choose a valid purchase.");
+  }
+  const reviewId = identity.uid + "_" + orderId;
+  const review = await firestoreGet(env, docResource(env, "customer_reviews/" + reviewId));
+  if (!review || review.data.user_id !== identity.uid) {
+    return { reviewed: false, status: null };
+  }
+  return { reviewed: true, status: String(review.data.status || "pending") };
+}
+
 async function listBukzExPublicReviews(env) {
   const rows = await firestoreQuery(env, {
     from: [{ collectionId: "customer_reviews" }],
@@ -2355,6 +2370,15 @@ export default {
       } catch (error) {
         const status = error instanceof HttpError ? error.status : 500;
         return json({ success: false, error: { message: error instanceof HttpError ? error.message : "Crypto webhook failed." } }, status, cors);
+      }
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/reviews/status") {
+      try {
+        return json({ success: true, data: await getBukzExCustomerReviewStatus(request, env, url) }, 200, cors);
+      } catch (error) {
+        const status = error instanceof HttpError ? error.status : 500;
+        return json({ success: false, error: { message: error instanceof HttpError ? error.message : "BukzEx review status could not be loaded." } }, status, cors);
       }
     }
 
