@@ -23,10 +23,7 @@ export default function CustomerReviewCard({ order }) {
 
   useEffect(() => {
     let active = true;
-    if (!eligible) {
-      setChecking(false);
-      return () => { active = false; };
-    }
+    if (!eligible) return () => { active = false; };
     getCustomerReviewStatus(order?.id || order?.orderId)
       .then((result) => {
         if (active && result.reviewed) setSubmitted(true);
