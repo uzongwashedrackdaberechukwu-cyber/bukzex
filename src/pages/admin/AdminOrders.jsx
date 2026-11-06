@@ -173,8 +173,6 @@ export default function AdminOrders() {
     });
   }, [orders, search, filter]);
 
-  useEffect(() => setPage(1), [search, filter]);
-
   const visibleOrders = useMemo(
     () => filteredOrders.slice((page - 1) * pageSize, page * pageSize),
     [filteredOrders, page, pageSize],
@@ -286,8 +284,9 @@ export default function AdminOrders() {
             type="text"
             placeholder="Search orders..."
             value={search}
-            onChange={(event) =>
-              setSearch(event.target.value)
+            onChange={(event) => {
+              setPage(1);
+              setSearch(event.target.value);
             }
           />
         </div>
@@ -301,7 +300,10 @@ export default function AdminOrders() {
                 className={
                   filter === item ? "active" : ""
                 }
-                onClick={() => setFilter(item)}
+                onClick={() => {
+                  setPage(1);
+                  setFilter(item);
+                }
               >
                 {item === "all"
                   ? "All"
