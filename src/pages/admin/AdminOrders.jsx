@@ -323,6 +323,7 @@ export default function AdminOrders() {
                 <th>Amount</th>
                 <th>Date</th>
                 <th>Status</th>
+                <th>Supplier</th>
                 <th></th>
               </tr>
             </thead>
@@ -331,7 +332,7 @@ export default function AdminOrders() {
               {loading ? (
                 <tr>
                   <td
-                    colSpan="6"
+                    colSpan="7"
                     className="admin-orders-empty"
                   >
                     Loading orders...
@@ -385,6 +386,15 @@ export default function AdminOrders() {
                       >
                         {order.status || "Pending"}
                       </span>
+                    </td>
+
+                    <td>
+                      <div className="admin-order-supplier-cell">
+                        <span className={`admin-order-supplier-status ${order.supplier_status ? "reported" : ""}`}>
+                          {order.supplier_status || (order.provider === "ShadexGoLtd" ? "Awaiting update" : "—")}
+                        </span>
+                        {order.provider === "ShadexGoLtd" && <small>ShadexGoLtd</small>}
+                      </div>
                     </td>
 
                     <td>
@@ -522,11 +532,37 @@ export default function AdminOrders() {
                 <span>Supplier reference</span>
                 <strong>{selectedOrder.supplier_order_id}</strong>
               </div>}
+              {selectedOrder.supplier_status && <div>
+                <span>Supplier status</span>
+                <strong>{String(selectedOrder.supplier_status).replaceAll("_", " ")}</strong>
+              </div>}
+              {selectedOrder.updated_at && <div>
+                <span>Last updated</span>
+                <strong>{formatDate(selectedOrder.updated_at)}</strong>
+              </div>}
               {selectedOrder.user_id && <div>
                 <span>Customer UID</span>
                 <strong>{selectedOrder.user_id}</strong>
               </div>}
             </div>
+            {selectedOrder.supplier_message && (
+              <div className="admin-order-supplier-response">
+                <span>Supplier response</span>
+                <p>{selectedOrder.supplier_message}</p>
+              </div>
+            )}
+            {selectedOrder.cancellation_reason && (
+              <div className="admin-order-supplier-response">
+                <span>Cancellation reason</span>
+                <p>{selectedOrder.cancellation_reason}</p>
+              </div>
+            )}
+            {selectedOrder.admin_note && (
+              <div className="admin-order-supplier-response">
+                <span>Administrator note</span>
+                <p>{selectedOrder.admin_note}</p>
+              </div>
+            )}
             {error && <div className="admin-orders-error" role="alert">{error}</div>}
             {selectedOrder.status === "pending" && (
               <div className="admin-order-modal-actions">
