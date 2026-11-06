@@ -2206,9 +2206,7 @@ async function listBukzExAdminReviews(request, env) {
     limit: 100,
   });
   return rows.map((row) => ({
-    id: row.path.split("/").pop(),
-    user_id: row.data.user_id,
-    order_id: row.data.order_id,
+    key: row.path.split("/").pop(),
     service_name: row.data.service_name,
     rating: Number(row.data.rating),
     feedback: row.data.feedback,
