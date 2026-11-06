@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { cancelAdminOrder, deleteOrder, getOrders, updateOrder } from "../../services/api";
+import AdminPagination from "../../components/admin/AdminPagination";
 
 function formatMoney(value) {
   return `₦${Number(value || 0).toLocaleString()}`;
@@ -53,6 +54,8 @@ export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -75,7 +78,7 @@ export default function AdminOrders() {
   }
 
   useEffect(() => {
-    loadOrders();
+    void Promise.resolve().then(loadOrders);
   }, []);
 
   async function handleStatusChange(status) {
@@ -156,6 +159,11 @@ export default function AdminOrders() {
         order.provider,
         order.supplier_order_id,
         order.payment_status,
+        order.fulfillment_status,
+        order.supplier_status,
+        order.supplier_message,
+        order.cancellation_reason,
+        order.admin_note,
         order.details,
       ]
         .filter(Boolean)
@@ -164,6 +172,11 @@ export default function AdminOrders() {
         );
     });
   }, [orders, search, filter]);
+
+  const visibleOrders = useMemo(
+    () => filteredOrders.slice((page - 1) * pageSize, page * pageSize),
+    [filteredOrders, page, pageSize],
+  );
 
   const stats = useMemo(() => {
     const pending = orders.filter(
@@ -271,9 +284,10 @@ export default function AdminOrders() {
             type="text"
             placeholder="Search orders..."
             value={search}
-            onChange={(event) =>
-              setSearch(event.target.value)
-            }
+            onChange={(event) => {
+              setPage(1);
+              setSearch(event.target.value);
+            }}
           />
         </div>
 
@@ -286,7 +300,10 @@ export default function AdminOrders() {
                 className={
                   filter === item ? "active" : ""
                 }
-                onClick={() => setFilter(item)}
+                onClick={() => {
+                  setPage(1);
+                  setFilter(item);
+                }}
               >
                 {item === "all"
                   ? "All"
@@ -323,6 +340,7 @@ export default function AdminOrders() {
                 <th>Amount</th>
                 <th>Date</th>
                 <th>Status</th>
+                <th>Supplier</th>
                 <th></th>
               </tr>
             </thead>
@@ -331,7 +349,7 @@ export default function AdminOrders() {
               {loading ? (
                 <tr>
                   <td
-                    colSpan="6"
+                    colSpan="7"
                     className="admin-orders-empty"
                   >
                     Loading orders...
@@ -351,7 +369,7 @@ export default function AdminOrders() {
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map((order) => (
+                visibleOrders.map((order) => (
                   <tr key={order.id}>
                     <td>
                       <div className="admin-order-id">
@@ -385,6 +403,15 @@ export default function AdminOrders() {
                       >
                         {order.status || "Pending"}
                       </span>
+                    </td>
+
+                    <td>
+                      <div className="admin-order-supplier-cell">
+                        <span className={`admin-order-supplier-status ${order.supplier_status ? "reported" : ""}`}>
+                          {order.supplier_status || (order.provider === "ShadexGoLtd" ? "Awaiting update" : "—")}
+                        </span>
+                        {order.provider === "ShadexGoLtd" && <small>ShadexGoLtd</small>}
+                      </div>
                     </td>
 
                     <td>
@@ -428,6 +455,14 @@ export default function AdminOrders() {
           </table>
         </div>
       </div>
+
+      <AdminPagination
+        page={page}
+        pageSize={pageSize}
+        total={filteredOrders.length}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+      />
 
       {selectedOrder && (
         <div
@@ -522,11 +557,37 @@ export default function AdminOrders() {
                 <span>Supplier reference</span>
                 <strong>{selectedOrder.supplier_order_id}</strong>
               </div>}
+              {selectedOrder.supplier_status && <div>
+                <span>Supplier status</span>
+                <strong>{String(selectedOrder.supplier_status).replaceAll("_", " ")}</strong>
+              </div>}
+              {selectedOrder.updated_at && <div>
+                <span>Last updated</span>
+                <strong>{formatDate(selectedOrder.updated_at)}</strong>
+              </div>}
               {selectedOrder.user_id && <div>
                 <span>Customer UID</span>
                 <strong>{selectedOrder.user_id}</strong>
               </div>}
             </div>
+            {selectedOrder.supplier_message && (
+              <div className="admin-order-supplier-response">
+                <span>Supplier response</span>
+                <p>{selectedOrder.supplier_message}</p>
+              </div>
+            )}
+            {selectedOrder.cancellation_reason && (
+              <div className="admin-order-supplier-response">
+                <span>Cancellation reason</span>
+                <p>{selectedOrder.cancellation_reason}</p>
+              </div>
+            )}
+            {selectedOrder.admin_note && (
+              <div className="admin-order-supplier-response">
+                <span>Administrator note</span>
+                <p>{selectedOrder.admin_note}</p>
+              </div>
+            )}
             {error && <div className="admin-orders-error" role="alert">{error}</div>}
             {selectedOrder.status === "pending" && (
               <div className="admin-order-modal-actions">

@@ -13,17 +13,44 @@ import {
 } from "lucide-react";
 
 import { getRegisteredUsers } from "../../services/auth";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import { db } from "../../lib/firebase";
+import AdminPagination from "../../components/admin/AdminPagination";
 import { creditCustomerWallet, debitCustomerWallet } from "../../services/api";
 
 
-function formatDate() {
-  return "Registered customer";
+function formatDate(value) {
+  if (!value) return "Registration date unavailable";
+  const date = typeof value?.toDate === "function" ? value.toDate() : new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "Registration date unavailable"
+    : date.toLocaleDateString("en-NG", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function dateMillis(value) {
+  const date = typeof value?.toDate === "function" ? value.toDate() : new Date(value || 0);
+  return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+}
+
+function formatWalletBalance(value, currency = "NGN") {
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(value || 0));
 }
 
 export default function AdminCustomers() {
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [selectedCustomer, setSelectedCustomer] =
     useState(null);
+  const [customerWallet, setCustomerWallet] = useState(null);
+  const [customerOrders, setCustomerOrders] = useState([]);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState("");
   const [allCustomers, setAllCustomers] = useState([]);
   const [error, setError] = useState("");
   const [walletAction, setWalletAction] = useState("credit");
@@ -40,14 +67,35 @@ export default function AdminCustomers() {
       .catch((err) => setError(err.message || "Unable to load customers."));
   }, []);
 
-  function openCustomer(customer) {
+  async function openCustomer(customer) {
     setCreditAmount("");
     setCreditReason("");
     setCreditKey("");
     setCreditError("");
     setCreditNotice("");
+    setDetailsError("");
+    setCustomerWallet(null);
+    setCustomerOrders([]);
     setWalletAction("credit");
     setSelectedCustomer(customer);
+    setDetailsLoading(true);
+
+    try {
+      const [walletSnapshot, orderSnapshot] = await Promise.all([
+        getDoc(doc(db, "wallets", customer.id)),
+        getDocs(query(collection(db, "orders"), where("user_id", "==", customer.id))),
+      ]);
+      setCustomerWallet(walletSnapshot.exists() ? walletSnapshot.data() : null);
+      const recentOrders = orderSnapshot.docs
+        .map((orderDoc) => ({ id: orderDoc.id, ...orderDoc.data() }))
+        .sort((left, right) => dateMillis(right.created_at) - dateMillis(left.created_at))
+        .slice(0, 5);
+      setCustomerOrders(recentOrders);
+    } catch (err) {
+      setDetailsError(err?.message || "Customer wallet and order history could not be loaded.");
+    } finally {
+      setDetailsLoading(false);
+    }
   }
 
   function closeCustomer() {
@@ -56,6 +104,9 @@ export default function AdminCustomers() {
       return;
     }
     setSelectedCustomer(null);
+    setCustomerWallet(null);
+    setCustomerOrders([]);
+    setDetailsError("");
     setCreditAmount("");
     setCreditReason("");
     setCreditKey("");
@@ -97,6 +148,11 @@ export default function AdminCustomers() {
     setCreditNotice("");
     try {
       const result = await (walletAction === "debit" ? debitCustomerWallet : creditCustomerWallet)(selectedCustomer.id, amountMinor, reason, key);
+      setCustomerWallet((current) => ({
+        ...(current || {}),
+        balance: Number(result.balance || 0),
+        currency: current?.currency || "NGN",
+      }));
       setCreditNotice(`${walletAction === "debit" ? "Removed" : "Credited"} ₦${(Number(result.amount_minor || amountMinor) / 100).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. New wallet balance: ₦${Number(result.balance || 0).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. ${result.duplicate ? "This was an idempotent retry; no duplicate adjustment was applied." : "The adjustment is recorded in the transaction ledger and admin audit log."}`);
       setCreditAmount("");
       setCreditReason("");
@@ -128,6 +184,11 @@ export default function AdminCustomers() {
     });
   }, [allCustomers, search]);
 
+  const visibleCustomers = useMemo(
+    () => customers.slice((page - 1) * pageSize, page * pageSize),
+    [customers, page, pageSize],
+  );
+
   return (
     <section className="admin-customers">
       <div className="admin-customers-header">
@@ -154,9 +215,10 @@ export default function AdminCustomers() {
             type="search"
             placeholder="Search by name, email or phone..."
             value={search}
-            onChange={(event) =>
-              setSearch(event.target.value)
-            }
+            onChange={(event) => {
+              setPage(1);
+              setSearch(event.target.value);
+            }}
           />
         </div>
       </div>
@@ -196,7 +258,7 @@ export default function AdminCustomers() {
               </thead>
 
               <tbody>
-                {customers.map((customer) => (
+                {visibleCustomers.map((customer) => (
                   <tr key={customer.id}>
                     <td>
                       <div className="admin-customer-person">
@@ -213,7 +275,7 @@ export default function AdminCustomers() {
                           </strong>
 
                           <small>
-                            {formatDate()}
+                            {formatDate(customer.createdAt)}
                           </small>
                         </div>
                       </div>
@@ -241,8 +303,8 @@ export default function AdminCustomers() {
                     </td>
 
                     <td>
-                      <span className="admin-customer-status">
-                        Registered
+                      <span className={`admin-customer-status ${String(customer.accountStatus || "active").toLowerCase()}`}>
+                        {String(customer.accountStatus || "active").replaceAll("_", " ")}
                       </span>
                     </td>
 
@@ -273,6 +335,14 @@ export default function AdminCustomers() {
           </div>
         )}
       </div>
+
+      <AdminPagination
+        page={page}
+        pageSize={pageSize}
+        total={customers.length}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+      />
 
       {selectedCustomer && (
         <div
@@ -344,11 +414,56 @@ export default function AdminCustomers() {
 
               <div>
                 <span>Account status</span>
-                <strong className="active">
-                  Active
+                <strong className={String(selectedCustomer.accountStatus || "active").toLowerCase() === "active" ? "active" : ""}>
+                  {String(selectedCustomer.accountStatus || "active").replaceAll("_", " ")}
                 </strong>
               </div>
             </div>
+
+            <section className="admin-customer-wallet-summary">
+              <div>
+                <span>Available wallet balance</span>
+                <strong>{detailsLoading ? "Loading…" : formatWalletBalance(customerWallet?.balance, customerWallet?.currency || "NGN")}</strong>
+                <small>{customerWallet?.currency || "NGN"} wallet · current Firestore balance</small>
+              </div>
+              <div>
+                <span>Customer since</span>
+                <strong>{formatDate(selectedCustomer.createdAt)}</strong>
+                <small>{customerOrders.length} recent order records loaded</small>
+              </div>
+            </section>
+
+            <section className="admin-customer-order-history">
+              <div className="admin-customer-order-heading">
+                <div>
+                  <strong>Recent order history</strong>
+                  <small>Latest five orders associated with this customer</small>
+                </div>
+                <span>{customerOrders.length}</span>
+              </div>
+              {detailsLoading ? (
+                <p className="admin-customer-history-empty">Loading customer activity…</p>
+              ) : detailsError ? (
+                <p className="admin-customer-history-error" role="alert">{detailsError}</p>
+              ) : customerOrders.length ? (
+                <div className="admin-customer-history-list">
+                  {customerOrders.map((order) => (
+                    <div key={order.id} className="admin-customer-history-row">
+                      <div>
+                        <strong>{order.service_name || order.service_key || "Service order"}</strong>
+                        <small>{formatDate(order.created_at)} · {order.id}</small>
+                      </div>
+                      <div>
+                        <strong>{formatWalletBalance(order.requested_amount, order.currency || "NGN")}</strong>
+                        <small>{String(order.status || "pending").replaceAll("_", " ")}</small>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="admin-customer-history-empty">No service orders are recorded for this customer.</p>
+              )}
+            </section>
 
             <form className="admin-wallet-credit-form" onSubmit={handleWalletCredit}>
               <div className="admin-wallet-credit-heading">

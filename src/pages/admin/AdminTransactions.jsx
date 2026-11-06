@@ -11,6 +11,7 @@ import {
 import {
   getWalletTransactions,
 } from "../../services/api";
+import AdminPagination from "../../components/admin/AdminPagination";
 
 
 function formatMoney(value) {
@@ -30,6 +31,8 @@ export default function AdminTransactions() {
   const [transactions, setTransactions] = useState([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -65,6 +68,8 @@ export default function AdminTransactions() {
           createdAt: row.created_at,
           customer: row.user_id,
           details: row.description,
+          adminUid: row.admin_uid || "",
+          adminAction: rawType.startsWith("admin_"),
         };
       }));
     } catch (err) {
@@ -78,7 +83,7 @@ export default function AdminTransactions() {
   }
 
   useEffect(() => {
-    loadTransactions();
+    void Promise.resolve().then(loadTransactions);
   }, []);
 
   const filteredTransactions = useMemo(() => {
@@ -98,6 +103,7 @@ export default function AdminTransactions() {
         transaction.label,
         transaction.reference,
         transaction.customer,
+        transaction.adminUid,
         transaction.status,
         transaction.details,
       ]
@@ -109,6 +115,11 @@ export default function AdminTransactions() {
         );
     });
   }, [transactions, search, filter]);
+
+  const visibleTransactions = useMemo(
+    () => filteredTransactions.slice((page - 1) * pageSize, page * pageSize),
+    [filteredTransactions, page, pageSize],
+  );
 
   const totals = useMemo(() => {
     const deposits = transactions
@@ -195,9 +206,10 @@ export default function AdminTransactions() {
             type="text"
             placeholder="Search transactions..."
             value={search}
-            onChange={(event) =>
-              setSearch(event.target.value)
-            }
+            onChange={(event) => {
+              setPage(1);
+              setSearch(event.target.value);
+            }}
           />
         </div>
 
@@ -216,7 +228,10 @@ export default function AdminTransactions() {
               className={
                 filter === value ? "active" : ""
               }
-              onClick={() => setFilter(value)}
+              onClick={() => {
+                setPage(1);
+                setFilter(value);
+              }}
             >
               {label}
             </button>
@@ -238,6 +253,7 @@ export default function AdminTransactions() {
                 <th>Transaction</th>
                 <th>Type</th>
                 <th>Customer</th>
+                <th>Actor</th>
                 <th>Amount</th>
                 <th>Date</th>
                 <th>Status</th>
@@ -249,7 +265,7 @@ export default function AdminTransactions() {
               {loading ? (
                 <tr>
                   <td
-                    colSpan="7"
+                    colSpan="8"
                     className="admin-transactions-empty"
                   >
                     Loading transactions...
@@ -273,7 +289,7 @@ export default function AdminTransactions() {
                   </td>
                 </tr>
               ) : (
-                filteredTransactions.map(
+                visibleTransactions.map(
                   (transaction) => (
                     <tr key={transaction.id}>
                       <td>
@@ -300,15 +316,18 @@ export default function AdminTransactions() {
                             />
                           )}
 
-                          {transaction.type ===
-                          "deposit"
-                            ? "Deposit"
-                            : "Purchase"}
+                          {transaction.label}
                         </span>
                       </td>
 
                       <td>
                         {transaction.customer}
+                      </td>
+
+                      <td>
+                        <span className={transaction.adminUid ? "admin-transaction-actor admin" : "admin-transaction-actor"}>
+                          {transaction.adminUid ? "Administrator" : "System / customer"}
+                        </span>
                       </td>
 
                       <td>
@@ -357,6 +376,14 @@ export default function AdminTransactions() {
         </div>
       </div>
 
+      <AdminPagination
+        page={page}
+        pageSize={pageSize}
+        total={filteredTransactions.length}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+      />
+
       {selected && (
         <div
           className="admin-transaction-modal-backdrop"
@@ -385,11 +412,7 @@ export default function AdminTransactions() {
             <div className="admin-transaction-details">
               <div>
                 <span>Type</span>
-                <strong>
-                  {selected.type === "deposit"
-                    ? "Wallet Deposit"
-                    : "Service Purchase"}
-                </strong>
+                <strong>{selected.label}</strong>
               </div>
 
               <div>
@@ -410,6 +433,16 @@ export default function AdminTransactions() {
                   {selected.customer}
                 </strong>
               </div>
+              <div>
+                <span>Performed by</span>
+                <strong>{selected.adminUid ? "Administrator" : "System / customer"}</strong>
+              </div>
+              {selected.adminUid ? (
+                <div className="full">
+                  <span>Administrator UID</span>
+                  <strong>{selected.adminUid}</strong>
+                </div>
+              ) : null}
 
               <div>
                 <span>Date</span>

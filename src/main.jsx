@@ -3,6 +3,7 @@ import "./design/landing.css";
 import "./design/auth.css";
 import "./design/workspace.css";
 import "./design/admin.css";
+import "./design/admin-professional.css";
 import "./design/preview.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";

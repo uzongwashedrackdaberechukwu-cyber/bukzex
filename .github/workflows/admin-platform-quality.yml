@@ -1,0 +1,35 @@
+name: BukzEx admin platform quality checks
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - feature/bukzex-admin-platform-rebuild-2026-11
+
+concurrency:
+  group: bukzex-admin-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint application
+        run: npx eslint src/pages/admin/AdminCustomers.jsx src/pages/admin/AdminDeposits.jsx src/pages/admin/AdminOrders.jsx src/pages/admin/AdminTransactions.jsx src/pages/admin/AdminSettings.jsx src/components/admin/AdminPagination.jsx src/services/auth.js
+
+      - name: Build frontend
+        run: npm run build

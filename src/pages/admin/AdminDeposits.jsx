@@ -14,6 +14,7 @@ import {
   getDeposits,
   confirmDeposit,
 } from "../../services/api";
+import AdminPagination from "../../components/admin/AdminPagination";
 
 
 function formatAmount(value) {
@@ -45,6 +46,8 @@ function statusClass(status) {
 export default function AdminDeposits() {
   const [deposits, setDeposits] = useState([]);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [filter, setFilter] = useState("all");
   const [selectedDeposit, setSelectedDeposit] =
     useState(null);
@@ -79,7 +82,7 @@ export default function AdminDeposits() {
   }
 
   useEffect(() => {
-    loadDeposits();
+    void Promise.resolve().then(loadDeposits);
   }, []);
 
   const filteredDeposits = useMemo(() => {
@@ -112,6 +115,11 @@ export default function AdminDeposits() {
         .includes(query);
     });
   }, [deposits, search, filter]);
+
+  const visibleDeposits = useMemo(
+    () => filteredDeposits.slice((page - 1) * pageSize, page * pageSize),
+    [filteredDeposits, page, pageSize],
+  );
 
   const pendingCount = deposits.filter(
     (deposit) =>
@@ -236,9 +244,10 @@ export default function AdminDeposits() {
             type="search"
             placeholder="Search reference or customer..."
             value={search}
-            onChange={(event) =>
-              setSearch(event.target.value)
-            }
+            onChange={(event) => {
+              setPage(1);
+              setSearch(event.target.value);
+            }}
           />
         </div>
 
@@ -250,9 +259,10 @@ export default function AdminDeposits() {
                 ? "active"
                 : ""
             }
-            onClick={() =>
-              setFilter("all")
-            }
+            onClick={() => {
+              setPage(1);
+              setFilter("all");
+            }}
           >
             All
           </button>
@@ -264,9 +274,10 @@ export default function AdminDeposits() {
                 ? "active"
                 : ""
             }
-            onClick={() =>
-              setFilter("pending")
-            }
+            onClick={() => {
+              setPage(1);
+              setFilter("pending");
+            }}
           >
             Pending
           </button>
@@ -278,9 +289,10 @@ export default function AdminDeposits() {
                 ? "active"
                 : ""
             }
-            onClick={() =>
-              setFilter("confirmed")
-            }
+            onClick={() => {
+              setPage(1);
+              setFilter("confirmed");
+            }}
           >
             Confirmed
           </button>
@@ -321,7 +333,7 @@ export default function AdminDeposits() {
               </thead>
 
               <tbody>
-                {filteredDeposits.map(
+                {visibleDeposits.map(
                   (deposit) => (
                     <tr key={deposit.id}>
                       <td>
@@ -391,6 +403,14 @@ export default function AdminDeposits() {
           </div>
         )}
       </div>
+
+      <AdminPagination
+        page={page}
+        pageSize={pageSize}
+        total={filteredDeposits.length}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+      />
 
       {selectedDeposit && (
         <div
@@ -485,6 +505,18 @@ export default function AdminDeposits() {
                   {selectedDeposit.status ||
                     "pending"}
                 </strong>
+              </div>
+              <div>
+                <span>Reviewed by</span>
+                <strong>{selectedDeposit.reviewed_by || "Not reviewed"}</strong>
+              </div>
+              <div>
+                <span>Reviewed at</span>
+                <strong>{selectedDeposit.reviewed_at ? formatDate(selectedDeposit.reviewed_at) : "Not reviewed"}</strong>
+              </div>
+              <div>
+                <span>Customer account</span>
+                <strong>{selectedDeposit.user_id || "—"}</strong>
               </div>
             </div>
 
