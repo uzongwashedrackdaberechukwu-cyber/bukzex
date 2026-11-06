@@ -1,0 +1,44 @@
+name: Temporary BukzEx Pages deployment audit
+
+on:
+  push:
+    branches:
+      - diagnostic/bukzex-pages-audit
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect Cloudflare Pages project and live deployments
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ] || [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+            echo "Cloudflare API credentials are not configured in this repository."
+            exit 2
+          fi
+          curl -fsS \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects" \
+            -o /tmp/pages-projects.json
+          echo "Cloudflare Pages projects:"
+          jq -r '.result[] | [.name, (.production_branch // ""), (.domains // [] | join(",")), (.source.config.repo_name // "")] | @tsv' /tmp/pages-projects.json
+          PROJECT="$(jq -r '.result[] | select((.domains // []) | index("bukzex.shadexgoltd.com")) | .name' /tmp/pages-projects.json | head -n 1)"
+          if [ -z "$PROJECT" ]; then
+            echo "No Pages project currently owns bukzex.shadexgoltd.com."
+            exit 0
+          fi
+          echo "Exact BukzEx Pages project: $PROJECT"
+          curl -fsS \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PROJECT/deployments?per_page=10" \
+            -o /tmp/pages-deployments.json
+          echo "Latest deployments (environment, time, branch, commit, URL):"
+          jq -r '.result[] | [(.environment // ""), (.created_on // ""), (.deployment_trigger.metadata.branch // ""), (.deployment_trigger.metadata.commit_hash // ""), (.url // "")] | @tsv' /tmp/pages-deployments.json
