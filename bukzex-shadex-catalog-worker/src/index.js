@@ -2135,11 +2135,6 @@ async function submitBukzExCustomerReview(request, env) {
   if (!Number.isFinite(createdAt) || Date.now() - createdAt < 48 * 60 * 60 * 1000) {
     throw new HttpError(409, "You can rate this purchase 48 hours after it was made.");
   }
-  if (["refunded", "cancelled", "canceled", "failed", "rejected", "expired"].includes(String(order.data.status || "").toLowerCase())
-    || String(order.data.payment_status || "").toLowerCase() === "refunded") {
-    throw new HttpError(409, "A cancelled or refunded purchase cannot be reviewed.");
-  }
-
   const reviewId = identity.uid + "_" + orderId;
   const reviewPath = "customer_reviews/" + reviewId;
   const existing = await firestoreGet(env, docResource(env, reviewPath));
@@ -2318,9 +2313,8 @@ async function processBukzExCustomerEmailJobs(env) {
 
       if (job.job_type === "service_check_in") {
         const order = await firestoreGet(env, docResource(env, "orders/" + String(job.order_id || "")));
-        const state = String(order?.data?.status || "").toLowerCase();
         const payment = String(order?.data?.payment_status || "").toLowerCase();
-        if (!order || payment !== "paid" || ["refunded", "cancelled", "canceled", "failed", "rejected", "expired"].includes(state)) {
+        if (!order || payment !== "paid") {
           await markBukzExEmailJob(env, jobPath, "skipped", claimed.updateTime);
           summary.skipped += 1;
           continue;
