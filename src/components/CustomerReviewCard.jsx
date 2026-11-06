@@ -13,13 +13,26 @@ export default function CustomerReviewCard({ order }) {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
   const [checking, setChecking] = useState(true);
+  const [eligible, setEligible] = useState(false);
 
   const createdAt = order?.createdAt || order?.created_at || order?.date;
   const createdTime = createdAt ? Date.parse(createdAt) : NaN;
   const paymentStatus = String(order?.payment_status || "").toLowerCase();
-  const eligible = paymentStatus === "paid"
-    && Number.isFinite(createdTime)
-    && Date.now() - createdTime >= FORTY_EIGHT_HOURS;
+
+  useEffect(() => {
+    let active = true;
+    if (paymentStatus !== "paid" || !Number.isFinite(createdTime)) {
+      return () => { active = false; };
+    }
+    const delay = Math.max(0, FORTY_EIGHT_HOURS - (Date.now() - createdTime));
+    const timer = setTimeout(() => {
+      if (active) setEligible(true);
+    }, delay);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [paymentStatus, createdTime]);
 
   useEffect(() => {
     let active = true;
@@ -35,7 +48,7 @@ export default function CustomerReviewCard({ order }) {
     return () => { active = false; };
   }, [eligible, order?.id, order?.orderId]);
 
-  if (!eligible) return null;
+  if (!eligible || paymentStatus !== "paid") return null;
   if (checking) return <p className="bx-review-checking">Checking your review status…</p>;
 
   async function handleSubmit(event) {
