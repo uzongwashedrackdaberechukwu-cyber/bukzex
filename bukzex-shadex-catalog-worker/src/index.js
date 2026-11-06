@@ -182,6 +182,34 @@ async function firestoreGet(env, resource) {
   return { data: decodeFields(payload.fields), updateTime: payload.updateTime, raw: payload };
 }
 
+
+
+async function firestoreQuery(env, structuredQuery) {
+  const token = await serviceAccountToken(env);
+  const projectId = env.FIREBASE_PROJECT_ID || "bukzex";
+  const endpoint = FIRESTORE_URL + "/projects/" + encodeURIComponent(projectId)
+    + "/databases/(default)/documents:runQuery";
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + token,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ structuredQuery }),
+  });
+  const payload = await response.json().catch(() => []);
+  if (!response.ok) {
+    throw new HttpError(503, "BukzEx could not load customer communication records.");
+  }
+  return (Array.isArray(payload) ? payload : [])
+    .filter((row) => row && row.document && row.document.name)
+    .map((row) => ({
+      data: decodeFields(row.document.fields),
+      updateTime: row.document.updateTime,
+      path: String(row.document.name).split("/documents/").pop(),
+    }));
+}
+
 async function firestoreCommit(env, writes) {
   const token = await serviceAccountToken(env);
   const response = await fetch(`${FIRESTORE_URL}/${docResource(env, "").replace(/\/documents\/$/, "/documents:commit")}`, {
