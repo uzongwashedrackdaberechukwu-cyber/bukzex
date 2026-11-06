@@ -21,3 +21,16 @@ jobs:
             response="$(curl -fsS -H "Authorization: Bearer $CF_TOKEN" -H "Content-Type: application/json" "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/scripts/$worker/deployments")"
             echo "$response" | jq '{success, errors, result}'
           done
+      - name: Check public BukzEx site routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          for url in "https://bukzex.shadexgoltd.com/" "https://bukzex.shadexgoltd.com/admin"; do
+            code="$(curl -sS -L -o /tmp/bukzex-response.html -w '%{http_code}' --max-time 30 "$url")"
+            echo "$url -> HTTP $code"
+            if [ "$code" -ge 500 ]; then
+              echo "::error::BukzEx route returned a server error"
+              exit 1
+            fi
+            grep -Eo '<title>[^<]+' /tmp/bukzex-response.html | head -1 || true
+          done
