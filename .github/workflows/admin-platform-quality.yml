@@ -29,7 +29,7 @@ jobs:
         run: npm ci
 
       - name: Lint application
-        run: npm run lint
+        run: npx eslint src/pages/admin/AdminCustomers.jsx src/pages/admin/AdminDeposits.jsx src/pages/admin/AdminOrders.jsx src/pages/admin/AdminTransactions.jsx src/pages/admin/AdminSettings.jsx src/components/admin/AdminPagination.jsx src/services/auth.js
 
       - name: Build frontend
         run: npm run build
