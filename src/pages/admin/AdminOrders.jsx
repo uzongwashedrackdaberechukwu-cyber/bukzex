@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { cancelAdminOrder, deleteOrder, getOrders, updateOrder } from "../../services/api";
+import AdminPagination from "../../components/admin/AdminPagination";
 
 function formatMoney(value) {
   return `₦${Number(value || 0).toLocaleString()}`;
@@ -53,6 +54,8 @@ export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -164,6 +167,13 @@ export default function AdminOrders() {
         );
     });
   }, [orders, search, filter]);
+
+  useEffect(() => setPage(1), [search, filter]);
+
+  const visibleOrders = useMemo(
+    () => filteredOrders.slice((page - 1) * pageSize, page * pageSize),
+    [filteredOrders, page, pageSize],
+  );
 
   const stats = useMemo(() => {
     const pending = orders.filter(
@@ -352,7 +362,7 @@ export default function AdminOrders() {
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map((order) => (
+                visibleOrders.map((order) => (
                   <tr key={order.id}>
                     <td>
                       <div className="admin-order-id">
@@ -438,6 +448,14 @@ export default function AdminOrders() {
           </table>
         </div>
       </div>
+
+      <AdminPagination
+        page={page}
+        pageSize={pageSize}
+        total={filteredOrders.length}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+      />
 
       {selectedOrder && (
         <div
