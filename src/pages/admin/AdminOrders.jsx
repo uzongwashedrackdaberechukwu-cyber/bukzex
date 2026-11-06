@@ -287,7 +287,7 @@ export default function AdminOrders() {
             onChange={(event) => {
               setPage(1);
               setSearch(event.target.value);
-            }
+            }}
           />
         </div>
 
@@ -303,7 +303,7 @@ export default function AdminOrders() {
                 onClick={() => {
                   setPage(1);
                   setFilter(item);
-                }
+                }}
               >
                 {item === "all"
                   ? "All"
