@@ -77,7 +77,7 @@ export default function AdminSettings() {
   }, []);
 
   useEffect(() => {
-    checkSystem();
+    void Promise.resolve().then(checkSystem);
   }, [checkSystem]);
 
   const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID || "Not configured";
