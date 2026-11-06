@@ -20,6 +20,7 @@ import { deleteMyUnpaidOrder, getCustomerOrders, refreshDigitalServiceOrder } fr
 import WhatsAppSupport from "../components/WhatsAppSupport";
 import ServiceBrandMark from "../components/ServiceBrandMark";
 import CustomerWorkspaceNav from "../components/CustomerWorkspaceNav";
+import CustomerReviewCard from "../components/CustomerReviewCard";
 import { socialDisplayStatus, socialTargetError } from "../../bukzex-shadex-catalog-worker/src/social-boost.js";
 import "../components/SocialBoostCheckout.css";
 
@@ -736,6 +737,7 @@ export default function CustomerOrders() {
                       {deletingId === String(order.id || order.orderId) ? "Deleting…" : "Delete unpaid request"}
                     </button>
                   )}
+                  <CustomerReviewCard order={order} />
                 </div>
               </article>
             );

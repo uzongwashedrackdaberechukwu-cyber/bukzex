@@ -7,7 +7,6 @@ import {
   getDocs,
   orderBy,
   query,
-  runTransaction,
   serverTimestamp,
   updateDoc,
   where,
@@ -232,66 +231,48 @@ export async function getDepositStatus(depositId) {
 }
 
 export async function confirmDeposit(depositId) {
-  const admin = await requireAdmin();
-  const depositRef = doc(db, "wallet_deposits", depositId);
-  const ledgerRef = doc(db, "wallet_transactions", "deposit_" + depositId);
-
-  return runTransaction(db, async (transaction) => {
-    const depositSnap = await transaction.get(depositRef);
-    if (!depositSnap.exists()) throw new Error("Deposit not found.");
-
-    const deposit = depositSnap.data();
-    if (deposit.status === "confirmed") {
-      return { id: depositSnap.id, ...deposit };
-    }
-    if (deposit.status !== "pending") {
-      throw new Error("Only pending deposits can be confirmed.");
-    }
-
-    const walletRef = doc(db, "wallets", deposit.user_id);
-    const walletSnap = await transaction.get(walletRef);
-    const balance = walletSnap.exists()
-      ? Number(walletSnap.data().balance || 0)
-      : 0;
-    const newBalance =
-      Math.round((balance + Number(deposit.amount)) * 100) / 100;
-
-    transaction.update(depositRef, {
-      status: "confirmed",
-      reviewed_by: admin.uid,
-      reviewed_at: serverTimestamp(),
-    });
-    if (walletSnap.exists()) {
-      transaction.update(walletRef, {
-        balance: newBalance,
-        updated_at: serverTimestamp(),
-      });
-    } else {
-      transaction.set(walletRef, {
-        user_id: deposit.user_id,
-        balance: newBalance,
-        currency: deposit.currency || "NGN",
-        updated_at: serverTimestamp(),
-      });
-    }
-    transaction.set(ledgerRef, {
-      user_id: deposit.user_id,
-      transaction_type: "deposit",
-      amount: Number(deposit.amount),
-      currency: deposit.currency || "NGN",
-      status: "completed",
-      source_id: depositSnap.id,
-      description: "Admin-confirmed wallet deposit",
-      created_at: serverTimestamp(),
-    });
-
-    return {
-      id: depositSnap.id,
-      ...deposit,
-      status: "confirmed",
-      reviewed_by: admin.uid,
-    };
+  await requireAdmin();
+  return callBukzExWorker("/api/admin/deposits/confirm", {
+    deposit_id: String(depositId || ""),
   });
+}
+
+
+export async function submitCustomerReview(orderId, rating, feedback, publishConsent = false) {
+  return callBukzExWorker("/api/reviews", {
+    order_id: String(orderId || ""),
+    rating: Number(rating),
+    feedback: String(feedback || ""),
+    publish_consent: publishConsent === true,
+  });
+}
+
+export async function getCustomerReviewStatus(orderId) {
+  const data = await callBukzExWorkerGet("/api/reviews/status?order_id=" + encodeURIComponent(String(orderId || "")));
+  return { reviewed: data?.reviewed === true, status: data?.status || null };
+}
+
+export async function getBukzExAdminReviews() {
+  const data = await callBukzExWorkerGet("/api/admin/reviews");
+  return Array.isArray(data?.reviews) ? data.reviews : [];
+}
+
+export async function moderateBukzExReview(reviewId, status) {
+  return callBukzExWorker("/api/admin/reviews/moderate", {
+    review_id: String(reviewId || ""),
+    status: String(status || ""),
+  });
+}
+
+export async function getBukzExPublicReviews() {
+  const response = await fetch(WORKER_URL + "/api/reviews", {
+    headers: { Accept: "application/json" },
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || result?.success !== true) {
+    throw new Error(result?.error?.message || "BukzEx customer reviews could not be loaded.");
+  }
+  return Array.isArray(result?.data?.reviews) ? result.data.reviews : [];
 }
 
 export async function getServices() {

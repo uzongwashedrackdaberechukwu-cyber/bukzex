@@ -182,6 +182,34 @@ async function firestoreGet(env, resource) {
   return { data: decodeFields(payload.fields), updateTime: payload.updateTime, raw: payload };
 }
 
+
+
+async function firestoreQuery(env, structuredQuery) {
+  const token = await serviceAccountToken(env);
+  const projectId = env.FIREBASE_PROJECT_ID || "bukzex";
+  const endpoint = FIRESTORE_URL + "/projects/" + encodeURIComponent(projectId)
+    + "/databases/(default)/documents:runQuery";
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + token,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ structuredQuery }),
+  });
+  const payload = await response.json().catch(() => []);
+  if (!response.ok) {
+    throw new HttpError(503, "BukzEx could not load customer communication records.");
+  }
+  return (Array.isArray(payload) ? payload : [])
+    .filter((row) => row && row.document && row.document.name)
+    .map((row) => ({
+      data: decodeFields(row.document.fields),
+      updateTime: row.document.updateTime,
+      path: String(row.document.name).split("/documents/").pop(),
+    }));
+}
+
 async function firestoreCommit(env, writes) {
   const token = await serviceAccountToken(env);
   const response = await fetch(`${FIRESTORE_URL}/${docResource(env, "").replace(/\/documents\/$/, "/documents:commit")}`, {
@@ -748,10 +776,24 @@ async function purchase(request, env) {
       updateWrite(env, walletPath, { balance: Number((balance - charge).toFixed(2)), updated_at: now }, wallet.updateTime),
       createWrite(env, orderPath, order),
       createWrite(env, reqPath, savedRequest),
-      createWrite(env, `wallet_transactions/purchase_${uid}_${idempotencyKey}`, {
+      createWrite(env, "wallet_transactions/purchase_" + uid + "_" + idempotencyKey, {
         user_id: uid, transaction_type: "purchase", amount: charge, currency,
         status: "completed", source_id: orderId,
-        description: `BukzEx service purchase: ${serviceName}`, created_at: now,
+        description: "BukzEx service purchase: " + serviceName, created_at: now,
+      }),
+      createWrite(env, "customer_email_jobs/service_check_in_" + uid + "_" + idempotencyKey, {
+        user_id: uid,
+        order_id: orderId,
+        job_type: "service_check_in",
+        service_name: serviceName,
+        amount_minor: amountMinor,
+        currency,
+        minor_unit: minorUnit,
+        send_after: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+        status: "pending",
+        attempt_count: 0,
+        created_at: now,
+        updated_at: now,
       }),
     ]);
   }
@@ -1809,6 +1851,21 @@ async function handleCryptoWebhook(request, env) {
       description: "Confirmed crypto deposit",
       created_at: now,
     }));
+    writes.push(createWrite(env, "customer_email_jobs/crypto_deposit_" + eventId, {
+      user_id: uid,
+      job_type: "deposit_confirmation",
+      service_name: "Crypto wallet deposit",
+      amount_minor: creditMinor,
+      currency: "NGN",
+      minor_unit: 2,
+      balance_minor: Math.round((balance + credit) * 100),
+      reference: shadexRequestId,
+      send_after: now,
+      status: "pending",
+      attempt_count: 0,
+      created_at: now,
+      updated_at: now,
+    }));
   } else if (eventType === "crypto.deposit.rejected") {
     if (current.kind !== "deposit") throw new HttpError(400, "Deposit event does not match the request.");
     requestPatch.status = "rejected";
@@ -1873,7 +1930,438 @@ async function handleCryptoWebhook(request, env) {
   return { received: true };
 }
 
+
+
+function escapeEmailHtml(value) {
+  return String(value || "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
+  })[character]);
+}
+
+function formatBukzExAmount(amountMinor, currency, minorUnit) {
+  const amount = Number(amountMinor || 0) / (10 ** Number(minorUnit || 2));
+  return String(currency || "NGN") + " " + amount.toLocaleString("en", {
+    minimumFractionDigits: Number(minorUnit || 2),
+    maximumFractionDigits: Number(minorUnit || 2),
+  });
+}
+
+async function sendBukzExEmail(env, to, subject, html, idempotencyKey) {
+  if (!env.BUKZEX_RESEND_API_KEY || !env.BUKZEX_FROM_EMAIL) {
+    throw new HttpError(503, "BukzEx email delivery is not configured.");
+  }
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + env.BUKZEX_RESEND_API_KEY,
+      "Content-Type": "application/json",
+      "Idempotency-Key": idempotencyKey,
+    },
+    body: JSON.stringify({
+      from: env.BUKZEX_FROM_EMAIL,
+      to: [to],
+      subject,
+      html,
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.message || "BukzEx email provider returned HTTP " + response.status + ".");
+  }
+}
+
+function buildBukzExEmail(job) {
+  const isDeposit = job.job_type === "deposit_confirmation";
+  const serviceName = escapeEmailHtml(job.service_name || "your recent service");
+  const amount = escapeEmailHtml(formatBukzExAmount(job.amount_minor, job.currency, job.minor_unit));
+  const balance = job.balance_minor === null || job.balance_minor === undefined
+    ? ""
+    : escapeEmailHtml(formatBukzExAmount(job.balance_minor, job.currency, job.minor_unit));
+  const reference = escapeEmailHtml(job.reference || job.order_id || "—");
+  const subject = isDeposit
+    ? "Your BukzEx wallet deposit has been confirmed"
+    : "How are you enjoying " + (job.service_name || "your BukzEx service") + "?";
+  const heading = isDeposit ? "Your deposit is confirmed" : "How is your service going?";
+  const message = isDeposit
+    ? "Your BukzEx wallet deposit of <strong>" + amount + "</strong> has been confirmed and credited to your account."
+    : "It has been two days since you purchased <strong>" + serviceName + "</strong>. We would love to hear how you are enjoying the service. Your feedback helps us improve BukzEx.";
+  const rows = isDeposit
+    ? '<tr><td style="padding:8px 0;color:#64748b">Amount credited</td><td style="padding:8px 0;text-align:right;font-weight:700">' + amount + '</td></tr>' +
+      '<tr><td style="padding:8px 0;color:#64748b">Wallet balance</td><td style="padding:8px 0;text-align:right;font-weight:700">' + (balance || "Updated in your account") + '</td></tr>' +
+      '<tr><td style="padding:8px 0;color:#64748b">Transfer reference</td><td style="padding:8px 0;text-align:right;font-size:12px">' + reference + '</td></tr>'
+    : '<tr><td style="padding:8px 0;color:#64748b">Service</td><td style="padding:8px 0;text-align:right;font-weight:700">' + serviceName + '</td></tr>' +
+      '<tr><td style="padding:8px 0;color:#64748b">Order reference</td><td style="padding:8px 0;text-align:right;font-size:12px">' + reference + '</td></tr>';
+  const action = isDeposit
+    ? "You can sign in to BukzEx to view your updated wallet balance and transaction history."
+    : "Sign in to your BukzEx account to rate your purchase and leave feedback.";
+  const html = '<!doctype html><html><body style="margin:0;padding:28px 12px;background:#f3f5f8;font-family:Arial,Helvetica,sans-serif;color:#172033">' +
+    '<table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center">' +
+    '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#fff;border-radius:16px;overflow:hidden">' +
+    '<tr><td style="padding:25px 28px;background:#10233f;color:#fff"><div style="font-size:12px;font-weight:800;letter-spacing:2px;color:#d9b968">BUKZEX</div><div style="margin-top:7px;font-size:12px;color:#b8c6d9">' + (isDeposit ? "Wallet confirmation" : "Customer check-in") + '</div></td></tr>' +
+    '<tr><td style="padding:30px 28px 10px"><h1 style="margin:0;font-size:25px;line-height:1.3;color:#10233f">' + heading + '</h1></td></tr>' +
+    '<tr><td style="padding:8px 28px 30px;font-size:15px;line-height:1.7;color:#344256"><p>Dear BukzEx Customer,</p><p>' + message + '</p>' +
+    '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:20px 0;padding:10px 18px;background:#f6f8fb;border-radius:12px">' + rows + '</table>' +
+    '<p>' + action + '</p><p style="margin:24px 0 0">Thank you for choosing BukzEx.<br><strong>BukzEx Customer Care</strong></p>' +
+    '<p style="margin:24px 0 0"><a href="' + (isDeposit ? "https://bukzex.shadexgoltd.com/customer" : "https://bukzex.shadexgoltd.com/customer/orders") + '" style="display:inline-block;padding:12px 20px;border-radius:999px;background:#d9b968;color:#10233f;text-decoration:none;font-weight:700">' + (isDeposit ? "Open my wallet" : "Rate my service") + '</a></p></td></tr>' +
+    '<tr><td style="padding:18px 28px;background:#0b1a30;color:#9eacc0;font-size:11px;line-height:1.6;text-align:center">This is an automated message from BukzEx. Never share your password or verification codes by email.<br>© 2026 BukzEx. All rights reserved.</td></tr>' +
+    '</table></td></tr></table></body></html>';
+  return { subject, html };
+}
+
+async function adminConfirmDeposit(request, env) {
+  const identity = await requireAdminIdentity(request, env);
+  const body = await request.json().catch(() => null);
+  const depositId = String(body?.deposit_id || "").trim();
+  if (!depositId || depositId.length > 160 || depositId.includes("/")) {
+    throw new HttpError(400, "Choose a valid deposit.");
+  }
+
+  const depositPath = "wallet_deposits/" + depositId;
+  const deposit = await firestoreGet(env, docResource(env, depositPath));
+  if (!deposit) throw new HttpError(404, "Deposit not found.");
+  if (deposit.data.status === "confirmed") {
+    const wallet = await firestoreGet(env, docResource(env, "wallets/" + deposit.data.user_id));
+    return {
+      deposit_id: depositId,
+      status: "confirmed",
+      balance: Number(wallet?.data?.balance || 0),
+      duplicate: true,
+      message: "This deposit was already confirmed. No additional credit was applied.",
+    };
+  }
+  if (deposit.data.status !== "pending") {
+    throw new HttpError(409, "Only pending deposits can be confirmed.");
+  }
+
+  const uid = String(deposit.data.user_id || "");
+  if (!uid) throw new HttpError(409, "The deposit is missing its customer account.");
+  const amount = Number(deposit.data.amount);
+  if (!Number.isFinite(amount) || amount <= 0 || amount > 10000000) {
+    throw new HttpError(409, "The deposit amount is invalid.");
+  }
+
+  const walletPath = "wallets/" + uid;
+  const wallet = await firestoreGet(env, docResource(env, walletPath));
+  const currency = String(deposit.data.currency || wallet?.data?.currency || "NGN");
+  if (wallet && String(wallet.data.currency || "NGN") !== currency) {
+    throw new HttpError(409, "The deposit currency does not match the customer's wallet.");
+  }
+  const currentBalance = Number(wallet?.data?.balance || 0);
+  if (!Number.isFinite(currentBalance) || currentBalance < 0) {
+    throw new HttpError(409, "The customer wallet balance is invalid.");
+  }
+  const newBalance = Number((currentBalance + amount).toFixed(2));
+  const amountMinor = Math.round(amount * 100);
+  const balanceMinor = Math.round(newBalance * 100);
+  const now = new Date().toISOString();
+  const ledgerPath = "wallet_transactions/deposit_" + depositId;
+  const emailJobPath = "customer_email_jobs/deposit_" + depositId;
+
+  const writes = [
+    updateWrite(env, depositPath, {
+      status: "confirmed",
+      reviewed_by: identity.uid,
+      reviewed_at: now,
+      updated_at: now,
+    }, deposit.updateTime),
+    wallet
+      ? updateWrite(env, walletPath, { balance: newBalance, updated_at: now }, wallet.updateTime)
+      : createWrite(env, walletPath, { user_id: uid, balance: newBalance, currency, updated_at: now }),
+    createWrite(env, ledgerPath, {
+      user_id: uid,
+      transaction_type: "deposit",
+      amount,
+      amount_minor: amountMinor,
+      currency,
+      status: "completed",
+      source_id: depositId,
+      description: "Admin-confirmed BukzEx wallet deposit",
+      created_at: now,
+    }),
+    createWrite(env, emailJobPath, {
+      user_id: uid,
+      job_type: "deposit_confirmation",
+      service_name: "Wallet deposit",
+      amount_minor: amountMinor,
+      currency,
+      minor_unit: 2,
+      balance_minor: balanceMinor,
+      reference: String(deposit.data.payment_reference || depositId),
+      send_after: now,
+      status: "pending",
+      attempt_count: 0,
+      created_at: now,
+      updated_at: now,
+    }),
+  ];
+
+  await firestoreCommit(env, writes);
+  return {
+    deposit_id: depositId,
+    status: "confirmed",
+    balance: newBalance,
+    email_queued: true,
+    duplicate: false,
+    message: "Deposit confirmed and the customer's BukzEx wallet was credited. A confirmation email has been queued.",
+  };
+}
+
+async function submitBukzExCustomerReview(request, env) {
+  const identity = await verifyFirebaseToken(request, env);
+  const body = await request.json().catch(() => null);
+  const orderId = String(body?.order_id || "").trim();
+  const rating = Number(body?.rating);
+  const feedback = String(body?.feedback || "").trim();
+  const publishConsent = body?.publish_consent === true;
+
+  if (!orderId || orderId.length > 160 || orderId.includes("/")) {
+    throw new HttpError(400, "Choose a valid purchase to review.");
+  }
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    throw new HttpError(400, "Choose a rating from 1 to 5 stars.");
+  }
+  if (feedback.length < 3 || feedback.length > 2000) {
+    throw new HttpError(400, "Feedback must contain between 3 and 2,000 characters.");
+  }
+
+  const order = await firestoreGet(env, docResource(env, "orders/" + orderId));
+  if (!order || order.data.user_id !== identity.uid) {
+    throw new HttpError(404, "Your BukzEx purchase could not be found.");
+  }
+  if (String(order.data.payment_status || "").toLowerCase() !== "paid") {
+    throw new HttpError(409, "Only paid purchases can be reviewed.");
+  }
+  const createdAt = Date.parse(String(order.data.created_at || ""));
+  if (!Number.isFinite(createdAt) || Date.now() - createdAt < 48 * 60 * 60 * 1000) {
+    throw new HttpError(409, "You can rate this purchase 48 hours after it was made.");
+  }
+  const reviewId = identity.uid + "_" + orderId;
+  const reviewPath = "customer_reviews/" + reviewId;
+  const existing = await firestoreGet(env, docResource(env, reviewPath));
+  if (existing) throw new HttpError(409, "You have already reviewed this purchase.");
+
+  const now = new Date().toISOString();
+  const review = {
+    user_id: identity.uid,
+    order_id: orderId,
+    service_name: String(order.data.service_name || order.data.service_key || "BukzEx service"),
+    rating,
+    feedback,
+    publish_consent: publishConsent,
+    status: "pending",
+    reviewed_by: null,
+    reviewed_at: null,
+    created_at: now,
+    updated_at: now,
+  };
+  await firestoreCommit(env, [createWrite(env, reviewPath, review)]);
+  return { review_id: reviewId, status: "pending", message: "Thank you. Your review has been submitted for moderation." };
+}
+
+
+async function getBukzExCustomerReviewStatus(request, env, url) {
+  const identity = await verifyFirebaseToken(request, env);
+  const orderId = String(url.searchParams.get("order_id") || "").trim();
+  if (!orderId || orderId.length > 160 || orderId.includes("/")) {
+    throw new HttpError(400, "Choose a valid purchase.");
+  }
+  const reviewId = identity.uid + "_" + orderId;
+  const review = await firestoreGet(env, docResource(env, "customer_reviews/" + reviewId));
+  if (!review || review.data.user_id !== identity.uid) {
+    return { reviewed: false, status: null };
+  }
+  return { reviewed: true, status: String(review.data.status || "pending") };
+}
+
+async function listBukzExPublicReviews(env) {
+  const rows = await firestoreQuery(env, {
+    from: [{ collectionId: "customer_reviews" }],
+    where: {
+      fieldFilter: {
+        field: { fieldPath: "status" },
+        op: "EQUAL",
+        value: encodeValue("approved"),
+      },
+    },
+    orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }],
+    limit: 50,
+  });
+  return rows
+    .filter((row) => Number(row.data.rating) >= 4 && row.data.publish_consent === true)
+    .slice(0, 8)
+    .map((row) => ({
+      service_name: String(row.data.service_name || "BukzEx service"),
+      rating: Number(row.data.rating),
+      feedback: String(row.data.feedback || ""),
+      created_at: String(row.data.created_at || ""),
+      verified: true,
+    }));
+}
+
+async function listBukzExAdminReviews(request, env) {
+  await requireAdminIdentity(request, env);
+  const rows = await firestoreQuery(env, {
+    from: [{ collectionId: "customer_reviews" }],
+    orderBy: [{ field: { fieldPath: "created_at" }, direction: "DESCENDING" }],
+    limit: 100,
+  });
+  return rows.map((row) => ({
+    key: row.path.split("/").pop(),
+    service_name: row.data.service_name,
+    rating: Number(row.data.rating),
+    feedback: row.data.feedback,
+    publish_consent: row.data.publish_consent === true,
+    status: row.data.status || "pending",
+    created_at: row.data.created_at,
+  }));
+}
+
+async function moderateBukzExReview(request, env) {
+  const identity = await requireAdminIdentity(request, env);
+  const body = await request.json().catch(() => null);
+  const reviewId = String(body?.review_id || "").trim();
+  const status = String(body?.status || "").trim();
+  if (!reviewId || reviewId.length > 300 || reviewId.includes("/")
+    || !["approved", "rejected"].includes(status)) {
+    throw new HttpError(400, "Choose a valid review and moderation action.");
+  }
+  const path = "customer_reviews/" + reviewId;
+  const review = await firestoreGet(env, docResource(env, path));
+  if (!review) throw new HttpError(404, "Review not found.");
+  const now = new Date().toISOString();
+  await firestoreCommit(env, [updateWrite(env, path, {
+    status,
+    admin_note: String(body?.note || "").trim().slice(0, 1000) || null,
+    reviewed_by: identity.uid,
+    reviewed_at: now,
+    updated_at: now,
+  }, review.updateTime)]);
+  return { review_id: reviewId, status, message: "BukzEx review moderation saved." };
+}
+
+async function markBukzExEmailJob(env, path, status, updateTime, errorMessage = null) {
+  const now = new Date().toISOString();
+  await firestoreCommit(env, [updateWrite(env, path, {
+    status,
+    ...(status === "sent" ? { sent_at: now } : {}),
+    ...(errorMessage ? { last_error: String(errorMessage).slice(0, 1500) } : { last_error: null }),
+    updated_at: now,
+  }, updateTime)]);
+}
+
+async function processBukzExCustomerEmailJobs(env) {
+  const summary = { claimed: 0, sent: 0, failed: 0, skipped: 0, error: null };
+  if (!env.BUKZEX_RESEND_API_KEY || !env.BUKZEX_FROM_EMAIL) {
+    summary.error = "BUKZEX_RESEND_API_KEY and BUKZEX_FROM_EMAIL must be configured for BukzEx.";
+    return summary;
+  }
+
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const staleBefore = new Date(now.getTime() - 15 * 60 * 1000).toISOString();
+  const candidateRows = [];
+  for (const status of ["pending", "failed", "sending"]) {
+    const rows = await firestoreQuery(env, {
+      from: [{ collectionId: "customer_email_jobs" }],
+      where: {
+        fieldFilter: {
+          field: { fieldPath: "status" },
+          op: "EQUAL",
+          value: encodeValue(status),
+        },
+      },
+      orderBy: [{ field: { fieldPath: "send_after" }, direction: "ASCENDING" }],
+      limit: 50,
+    });
+    candidateRows.push(...rows);
+  }
+
+  const candidates = candidateRows
+    .filter((row) => {
+      const job = row.data;
+      if (Number(job.attempt_count || 0) >= 5) return false;
+      if (String(job.send_after || "") > nowIso) return false;
+      if (job.status === "sending" && String(job.last_attempt_at || "") > staleBefore) return false;
+      return ["pending", "failed", "sending"].includes(String(job.status || ""));
+    })
+    .sort((a, b) => String(a.data.send_after || "").localeCompare(String(b.data.send_after || "")))
+    .slice(0, 25);
+
+  for (const row of candidates) {
+    const jobPath = row.path;
+    const job = row.data;
+    const attemptCount = Number(job.attempt_count || 0) + 1;
+    const claimTime = new Date().toISOString();
+
+    try {
+      await firestoreCommit(env, [updateWrite(env, jobPath, {
+        status: "sending",
+        attempt_count: attemptCount,
+        last_attempt_at: claimTime,
+        updated_at: claimTime,
+      }, row.updateTime)]);
+    } catch {
+      continue;
+    }
+    summary.claimed += 1;
+
+    try {
+      const claimed = await firestoreGet(env, docResource(env, jobPath));
+      if (!claimed) throw new Error("The BukzEx email job disappeared after being claimed.");
+
+      if (job.job_type === "service_check_in") {
+        const order = await firestoreGet(env, docResource(env, "orders/" + String(job.order_id || "")));
+        const payment = String(order?.data?.payment_status || "").toLowerCase();
+        if (!order || payment !== "paid") {
+          await markBukzExEmailJob(env, jobPath, "skipped", claimed.updateTime);
+          summary.skipped += 1;
+          continue;
+        }
+      }
+
+      const profile = await firestoreGet(env, docResource(env, "profiles/" + String(job.user_id || "")));
+      const email = String(profile?.data?.email || "").trim().toLowerCase();
+      if (!email || !email.includes("@")) throw new Error("The customer profile has no valid email address.");
+
+      const { subject, html } = buildBukzExEmail(job);
+      await sendBukzExEmail(env, email, subject, html, "bukzex-email-" + jobPath.replaceAll("/", "-"));
+      const latest = await firestoreGet(env, docResource(env, jobPath));
+      if (latest) await markBukzExEmailJob(env, jobPath, "sent", latest.updateTime);
+      summary.sent += 1;
+    } catch (error) {
+      summary.failed += 1;
+      const latest = await firestoreGet(env, docResource(env, jobPath)).catch(() => null);
+      if (latest) {
+        await markBukzExEmailJob(
+          env,
+          jobPath,
+          "failed",
+          latest.updateTime,
+          error instanceof Error ? error.message : "Unknown BukzEx email delivery error.",
+        ).catch((markError) => console.error("BukzEx email job status update failed:", markError));
+      }
+      console.error("BukzEx customer email delivery failed:", {
+        jobPath,
+        jobType: job.job_type,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+  return summary;
+}
+
 export default {
+
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil(
+      processBukzExCustomerEmailJobs(env).then((summary) => {
+        console.log("BukzEx scheduled customer email run:", summary);
+      }).catch((error) => {
+        console.error("BukzEx scheduled customer email run failed:", error);
+      }),
+    );
+  },
+
   async fetch(request, env) {
     const cors = corsHeaders(request, env);
     const origin = request.headers.get("Origin") || "";
@@ -1891,6 +2379,57 @@ export default {
         return json({ success: false, error: { message: error instanceof HttpError ? error.message : "Crypto webhook failed." } }, status, cors);
       }
     }
+
+    if (request.method === "GET" && url.pathname === "/api/reviews/status") {
+      try {
+        return json({ success: true, data: await getBukzExCustomerReviewStatus(request, env, url) }, 200, cors);
+      } catch (error) {
+        const status = error instanceof HttpError ? error.status : 500;
+        return json({ success: false, error: { message: error instanceof HttpError ? error.message : "BukzEx review status could not be loaded." } }, status, cors);
+      }
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/reviews") {
+      try {
+        return json({ success: true, data: { reviews: await listBukzExPublicReviews(env) } }, 200, cors);
+      } catch (error) {
+        const status = error instanceof HttpError ? error.status : 500;
+        return json({ success: false, error: { message: error instanceof HttpError ? error.message : "BukzEx reviews could not be loaded." } }, status, cors);
+      }
+    }
+    if (request.method === "POST" && url.pathname === "/api/reviews") {
+      try {
+        return json({ success: true, data: await submitBukzExCustomerReview(request, env) }, 201, cors);
+      } catch (error) {
+        const status = error instanceof HttpError ? error.status : 500;
+        return json({ success: false, error: { message: error instanceof HttpError ? error.message : "BukzEx review could not be submitted." } }, status, cors);
+      }
+    }
+    if (request.method === "GET" && url.pathname === "/api/admin/reviews") {
+      try {
+        return json({ success: true, data: { reviews: await listBukzExAdminReviews(request, env) } }, 200, cors);
+      } catch (error) {
+        const status = error instanceof HttpError ? error.status : 500;
+        return json({ success: false, error: { message: error instanceof HttpError ? error.message : "BukzEx admin reviews could not be loaded." } }, status, cors);
+      }
+    }
+    if (request.method === "POST" && url.pathname === "/api/admin/reviews/moderate") {
+      try {
+        return json({ success: true, data: await moderateBukzExReview(request, env) }, 200, cors);
+      } catch (error) {
+        const status = error instanceof HttpError ? error.status : 500;
+        return json({ success: false, error: { message: error instanceof HttpError ? error.message : "BukzEx review moderation failed." } }, status, cors);
+      }
+    }
+    if (request.method === "POST" && url.pathname === "/api/admin/deposits/confirm") {
+      try {
+        return json({ success: true, data: await adminConfirmDeposit(request, env) }, 200, cors);
+      } catch (error) {
+        const status = error instanceof HttpError ? error.status : 500;
+        return json({ success: false, error: { message: error instanceof HttpError ? error.message : "BukzEx could not safely confirm this deposit." } }, status, cors);
+      }
+    }
+
     if (request.method === "POST" && url.pathname === "/api/admin/wallet-credit") {
       try {
         return json({ success: true, data: await adminWalletCredit(request, env) }, 200, cors);

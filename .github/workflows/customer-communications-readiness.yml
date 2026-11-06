@@ -1,0 +1,30 @@
+name: Customer communications readiness - BukzEx
+
+on:
+  push:
+    branches:
+      - feature/bukzex-customer-emails-reviews
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Lint new customer review components
+        run: >
+          npx eslint
+          src/components/CustomerReviewCard.jsx
+          src/components/CustomerReviewsShowcase.jsx
+          src/pages/admin/AdminReviews.jsx
+      - name: Vite production build
+        run: npm run build
+      - name: Parse BukzEx Worker
+        run: node --check bukzex-shadex-catalog-worker/src/index.js

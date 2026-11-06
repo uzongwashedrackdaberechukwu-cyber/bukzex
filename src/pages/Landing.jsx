@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import Brand from "../components/Brand";
 import WhatsAppSupport from "../components/WhatsAppSupport";
+import CustomerReviewsShowcase from "../components/CustomerReviewsShowcase";
 
 const services = [
   {
@@ -377,6 +378,7 @@ export default function Landing() {
             ))}
           </div>
         </section>
+        <CustomerReviewsShowcase />
         <section className="sf-faq bx-wrap" id="faq">
           <div>
             <span className="sf-eyebrow">BEFORE YOUR NEXT MOVE</span>
