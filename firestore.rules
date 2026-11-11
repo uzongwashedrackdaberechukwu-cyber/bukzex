@@ -83,7 +83,9 @@ service cloud.firestore {
         && request.resource.data.payment_reference is string
         && request.resource.data.payment_reference.size() > 0;
 
-      allow update: if isAdmin();
+      // Deposit confirmation and wallet credit must go through the BukzEx
+      // Worker so the wallet ledger and confirmation email job are atomic.
+      allow update: if false;
       allow delete: if false;
     }
 
@@ -115,6 +117,16 @@ service cloud.firestore {
           && (!('payment_status' in resource.data)
             || resource.data.payment_status in ['unpaid', 'failed', 'rejected'])
         );
+    }
+
+    // BukzEx customer reviews and email jobs are accessed only through the
+    // authenticated BukzEx API Worker using its own service account.
+    match /customer_reviews/{reviewId} {
+      allow read, write: if false;
+    }
+
+    match /customer_email_jobs/{jobId} {
+      allow read, write: if false;
     }
 
     match /crypto_requests/{requestId} {

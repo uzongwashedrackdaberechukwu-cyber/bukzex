@@ -4,12 +4,17 @@
   "main": "src/index.js",
   "compatibility_date": "2026-10-01",
   "workers_dev": true,
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
   "keep_vars": true,
   "secrets": {
     "required": [
       "SHADEX_API_KEY",
       "FIREBASE_SERVICE_ACCOUNT_JSON",
-      "SHADEX_CRYPTO_WEBHOOK_SECRET"
+      "SHADEX_CRYPTO_WEBHOOK_SECRET",
+      "BUKZEX_RESEND_API_KEY",
+      "BUKZEX_FROM_EMAIL"
     ]
   },
   "vars": {

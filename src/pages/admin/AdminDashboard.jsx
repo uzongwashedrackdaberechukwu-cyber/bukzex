@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   AlertCircle,
   ArrowUpRight,
+  MessageSquareText,
 } from "lucide-react";
 
 import { useNavigate } from "react-router-dom";
@@ -37,6 +38,7 @@ import AdminServices from "./AdminServices";
 import AdminTransactions from "./AdminTransactions";
 import AdminCrypto from "./AdminCrypto";
 import AdminSettings from "./AdminSettings";
+import AdminReviews from "./AdminReviews";
 
 
 const navigation = [
@@ -59,6 +61,11 @@ const navigation = [
     id: "orders",
     label: "Orders",
     icon: ShoppingBag,
+  },
+  {
+    id: "reviews",
+    label: "Reviews",
+    icon: MessageSquareText,
   },
   {
     id: "services",
@@ -675,6 +682,10 @@ export default function AdminDashboard() {
 
           {activeSection === "orders" && (
             <AdminOrders />
+          )}
+
+          {activeSection === "reviews" && (
+            <AdminReviews />
           )}
 
           {activeSection === "services" && (
