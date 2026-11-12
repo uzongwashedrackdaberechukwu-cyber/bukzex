@@ -17,6 +17,7 @@ import {
 } from "../../bukzex-shadex-catalog-worker/src/public-catalogue.js";
 import ServiceBrandMark from "../components/ServiceBrandMark";
 import { getShadexCatalogue } from "../services/shadexCatalog";
+import { friendlyErrorMessage } from "../lib/customer-errors";
 
 import { activeNgnPrice } from "../../bukzex-shadex-catalog-worker/src/ngn-pricing.js";
 
@@ -309,10 +310,7 @@ export default function ShadexCataloguePanel({
       })
       .catch((err) => {
         if (live)
-          setError(
-            err?.message ||
-              "This catalogue is temporarily unavailable. Please try again shortly.",
-          );
+          setError(friendlyErrorMessage(err, "This catalogue is temporarily unavailable. Please try again shortly."));
       })
       .finally(() => {
         if (live) setLoading(false);

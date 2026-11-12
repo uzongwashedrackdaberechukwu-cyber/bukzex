@@ -22,6 +22,7 @@ import ServiceBrandMark from "../components/ServiceBrandMark";
 import CustomerWorkspaceNav from "../components/CustomerWorkspaceNav";
 import { socialDisplayStatus, socialTargetError } from "../../bukzex-shadex-catalog-worker/src/social-boost.js";
 import "../components/SocialBoostCheckout.css";
+import { friendlyErrorMessage, purchaseErrorMessage } from "../lib/customer-errors";
 
 const orderStatus = (order) => order?.service_key === "social" ? socialDisplayStatus(order) : order?.status || "pending";
 
@@ -330,10 +331,7 @@ export default function CustomerOrders() {
             ""
           ).trim();
 
-          setError(
-            exactMessage ||
-            `${rejectedRefreshes.length} supplier status update${rejectedRefreshes.length === 1 ? "" : "s"} could not be confirmed. Your order records and wallet history are preserved.`
-          );
+          setError(purchaseErrorMessage(exactMessage, "We couldn't refresh some order updates. Your Purchases and wallet history are preserved. Please try again later."));
         }
         result = await getCustomerOrders();
         data = Array.isArray(result) ? result : result?.orders || result?.data || [];
@@ -341,10 +339,7 @@ export default function CustomerOrders() {
 
       setOrders(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(
-        err?.message ||
-          "Unable to load your orders."
-      );
+      setError(friendlyErrorMessage(err, "We couldn’t load your purchases. Please try again."));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -365,7 +360,7 @@ export default function CustomerOrders() {
       await deleteMyUnpaidOrder(orderId);
       setOrders((current) => current.filter((item) => String(item.id || item.orderId) !== String(orderId)));
     } catch (err) {
-      setError(err?.message || "Unable to delete this unpaid request.");
+      setError(friendlyErrorMessage(err, "Unable to delete this unpaid request. Please try again."));
     } finally {
       setDeletingId("");
     }

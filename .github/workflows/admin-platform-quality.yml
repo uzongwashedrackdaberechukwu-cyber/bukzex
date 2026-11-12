@@ -31,5 +31,8 @@ jobs:
       - name: Lint application
         run: npx eslint src/pages/admin/AdminCustomers.jsx src/pages/admin/AdminDeposits.jsx src/pages/admin/AdminOrders.jsx src/pages/admin/AdminTransactions.jsx src/pages/admin/AdminSettings.jsx src/components/admin/AdminPagination.jsx src/services/auth.js
 
+      - name: Test customer-facing error messages
+        run: node --test tests/customer-errors.test.mjs
+
       - name: Build frontend
         run: npm run build

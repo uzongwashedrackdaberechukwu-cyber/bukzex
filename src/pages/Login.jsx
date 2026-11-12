@@ -4,6 +4,7 @@ import { reload, sendEmailVerification, signOut } from "firebase/auth";
 import { auth } from "../lib/firebase";
 import WhatsAppSupport from "../components/WhatsAppSupport";
 import { loginUser, requestPasswordReset } from "../services/auth";
+import { authErrorMessage } from "../lib/customer-errors";
 
 import {
   Eye,
@@ -22,7 +23,7 @@ export default function Login() {
   const [showPassword, setShowPassword] =
     useState(false);
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => String(location.state?.email || ""));
   const [password, setPassword] = useState("");
 
   const [error, setError] = useState("");
@@ -45,7 +46,12 @@ export default function Login() {
       await requestPasswordReset(email);
       setResetNotice("If an account uses that email, a password reset link has been sent.");
     } catch (err) {
-      setError(err?.message || "Unable to send a reset link.");
+      // Do not reveal whether a registered email exists.
+      if (["auth/user-not-found", "auth/invalid-credential"].includes(err?.code)) {
+        setResetNotice("If an account uses that email, a password reset link has been sent.");
+      } else {
+        setError(authErrorMessage(err, "reset"));
+      }
     } finally {
       setResetLoading(false);
     }
@@ -102,10 +108,7 @@ export default function Login() {
         });
       }
     } catch (err) {
-      setError(
-        err?.message ||
-          "Unable to sign in."
-      );
+      setError(authErrorMessage(err, "login"));
     } finally {
       setLoading(false);
     }

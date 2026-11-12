@@ -9,6 +9,7 @@ import {
   submitCryptoWithdrawal,
 } from "../services/api";
 import CustomerWorkspaceNav from "../components/CustomerWorkspaceNav";
+import { friendlyErrorMessage } from "../lib/customer-errors";
 
 const banks = [
   "Access Bank", "Ecobank Nigeria", "Fidelity Bank", "First Bank of Nigeria",
@@ -49,7 +50,7 @@ export default function CryptoWallet() {
       setActivity(nextActivity);
       setBalance(Number(wallet?.balance || 0));
     } catch (err) {
-      setError(err?.message || "Crypto information could not be loaded.");
+      setError(friendlyErrorMessage(err, "Crypto information could not be loaded. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -79,11 +80,11 @@ export default function CryptoWallet() {
         route_id: route.id, amount_usd: amount, transaction_hash: hash.trim(),
         idempotency_key: depositKey,
       });
-      setMessage(result?.message || "Deposit submitted for review.");
+      setMessage(friendlyErrorMessage(result?.message, "Deposit submitted for review."));
       setAmount(""); setHash(""); setDepositKey(makeKey());
       await refresh();
     } catch (err) {
-      setError(err?.message || "Deposit could not be submitted.");
+      setError(friendlyErrorMessage(err, "Deposit could not be submitted. Check your activity before trying again."));
     } finally {
       setBusy(false);
     }
@@ -99,12 +100,12 @@ export default function CryptoWallet() {
         bank_name: bank, account_name: accountName.trim(),
         account_number: accountNumber, idempotency_key: withdrawKey,
       });
-      setMessage(result?.message || "Withdrawal submitted for processing.");
+      setMessage(friendlyErrorMessage(result?.message, "Withdrawal submitted for processing."));
       setWithdrawOpen(false); setWithdrawAmount(""); setBank(""); setAccountName("");
       setAccountNumber(""); setWithdrawKey(makeKey());
       await refresh();
     } catch (err) {
-      setError(err?.message || "Withdrawal could not be submitted.");
+      setError(friendlyErrorMessage(err, "Withdrawal could not be submitted. Check your activity before trying again."));
     } finally {
       setBusy(false);
     }

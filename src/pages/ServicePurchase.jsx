@@ -23,6 +23,7 @@ import SocialBoostCheckout from "../components/SocialBoostCheckout";
 import { socialTargetError, socialDisplayStatus } from "../../bukzex-shadex-catalog-worker/src/social-boost.js";
 
 import { getWalletBalance, purchaseShadexService } from "../services/api";
+import { friendlyErrorMessage, purchaseErrorMessage, isConfirmedWalletRefund } from "../lib/customer-errors";
 import { getEmailVerificationDomains, getVtuCatalogue } from "../services/shadexCatalog";
 import ShadexCataloguePanel from "./ShadexCataloguePanel";
 import WhatsAppSupport from "../components/WhatsAppSupport";
@@ -277,7 +278,7 @@ export default function ServicePurchase() {
         if (!rows.length) setEmailDomainsError("No email types are available for this service right now.");
       })
       .catch((err) => {
-        if (active) setEmailDomainsError(err?.message || "Email types could not be loaded.");
+        if (active) setEmailDomainsError(friendlyErrorMessage(err, "Email types could not be loaded. Please try again."));
       })
       .finally(() => {
         if (active) setEmailDomainsLoading(false);
@@ -469,28 +470,29 @@ export default function ServicePurchase() {
 
       if (terminalFailure) {
         if (refunded) sessionStorage.removeItem(requestStorageKey);
-        setError(result?.message || (refunded
-          ? "The supplier could not complete this order. Your BukzEx wallet has been refunded."
-          : "This order needs a supplier outcome review. Do not place another order for the same service until BukzEx Customer Care confirms the payment outcome."));
+        setError(refunded
+          ? "This order couldn't be completed. Your BukzEx wallet has been refunded. Check Purchases for details."
+          : purchaseErrorMessage(result?.message, "This order needs a payment review. Check Purchases or contact Customer Care before paying again."));
         return;
       }
 
       if (completed) {
-        setSuccess(result?.message || "Your purchase is ready in My Purchases.");
+        setSuccess(friendlyErrorMessage(result?.message, "Your purchase is ready in Purchases."));
         sessionStorage.removeItem(requestStorageKey);
         sessionStorage.removeItem(`bukzex:selected:${serviceId}`);
       } else {
         // Keep the same idempotency key while the supplier outcome is uncertain.
         // Retrying with a new key could charge the customer twice.
-        setSuccess(result?.message || "Your order has been received and is awaiting supplier confirmation. Your wallet payment remains reserved; do not pay again. Track progress in My Purchases.");
+        setSuccess(friendlyErrorMessage(result?.message, "Your order has been received and is awaiting confirmation. Check Purchases before trying again to avoid another payment."));
       }
       window.setTimeout(() => navigate("/customer/orders"), completed ? 900 : 1400);
     } catch (err) {
-      const message = String(err?.message || "").toLowerCase();
-      if (message.includes("wallet has been refunded") || message.includes("payment reference was already used")) {
+      // A new reference is safe only after a confirmed refund; an uncertain
+      // supplier response must keep the original idempotency key.
+      if (isConfirmedWalletRefund(err)) {
         sessionStorage.removeItem(requestStorageKey);
       }
-      setError(err?.message || "We couldn’t complete this purchase. Check Purchases before trying again, or contact BukzEx Customer Care.");
+      setError(purchaseErrorMessage(err));
     } finally {
       setSubmitting(false);
     }

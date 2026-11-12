@@ -4,6 +4,7 @@ import { sendEmailVerification, signOut } from "firebase/auth";
 import { auth } from "../lib/firebase";
 import WhatsAppSupport from "../components/WhatsAppSupport";
 import { registerUser } from "../services/auth";
+import { authErrorMessage } from "../lib/customer-errors";
 import {
   Eye,
   EyeOff,
@@ -35,6 +36,7 @@ export default function Signup() {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [legalNotice, setLegalNotice] = useState("");
   const [success, setSuccess] = useState("");
+  const [existingAccount, setExistingAccount] = useState(false);
 
   return (
     <main className="signup-page">
@@ -151,6 +153,7 @@ export default function Signup() {
             event.preventDefault();
             setError("");
             setSuccess("");
+            setExistingAccount(false);
 
             if (
               !firstName.trim() ||
@@ -161,6 +164,11 @@ export default function Signup() {
               !confirmPassword
             ) {
               setError("Please complete all required fields.");
+              return;
+            }
+
+            if (password.length < 8) {
+              setError("Choose a password with at least 8 characters.");
               return;
             }
 
@@ -193,10 +201,17 @@ export default function Signup() {
 
               if (needsConfirmation) {
                 if (firebaseUser && !firebaseUser.emailVerified && !result?.needsEmailConfirmation) {
-                  await sendEmailVerification(firebaseUser, {
-                    url: window.location.origin + "/login?emailVerified=1",
-                    handleCodeInApp: false,
-                  });
+                  try {
+                    await sendEmailVerification(firebaseUser, {
+                      url: window.location.origin + "/login?emailVerified=1",
+                      handleCodeInApp: false,
+                    });
+                  } catch {
+                    await signOut(auth);
+                    setExistingAccount(true);
+                    setError("Your account was created, but we couldn't send the verification email. Please sign in to request another link.");
+                    return;
+                  }
                 }
                 if (firebaseUser) await signOut(auth);
                 setSuccess(`We sent a verification link to ${email.trim()}. Open that email and confirm your address before signing in.`);
@@ -205,14 +220,28 @@ export default function Signup() {
 
               navigate("/customer", { replace: true });
             } catch (err) {
-              setError(err.message);
+              setExistingAccount(err?.code === "auth/email-already-in-use");
+              setError(authErrorMessage(err, "signup"));
             } finally {
               setLoading(false);
             }
           }}
         >
 
-            {error && <div className="signup-error" role="alert" aria-live="assertive">{error}</div>}
+            {error && (
+              <div className="signup-error" role="alert" aria-live="assertive">
+                <span>{error}</span>
+                {existingAccount && (
+                  <button
+                    type="button"
+                    className="signup-recovery-link"
+                    onClick={() => navigate("/login", { state: { email: email.trim().toLowerCase() } })}
+                  >
+                    Sign in or reset your password
+                  </button>
+                )}
+              </div>
+            )}
             {success && <div className="signup-success" role="status" aria-live="polite">{success}</div>}
 
             {/* NAME ROW */}

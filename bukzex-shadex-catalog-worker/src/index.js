@@ -467,11 +467,11 @@ async function submitSavedPurchaseToShadex(env, uid, orderId, requestRow) {
   let result;
   try {
     result = await callShadex(env, path, "POST", idempotencyKey, providerBody);
-  } catch (error) {
-    const reason = String(error?.message || "network request failed").slice(0, 180);
+  } catch {
+    // Preserve the saved checkout reference; never expose transport details.
     throw new HttpError(
       503,
-      `BukzEx could not reach the ShadexGoLtd order endpoint: ${reason}. No refund or second charge was applied.`
+      "We couldn't confirm this order right now. Check Purchases or contact Customer Care before trying again."
     );
   }
 
@@ -482,15 +482,14 @@ async function submitSavedPurchaseToShadex(env, uid, orderId, requestRow) {
     // Confirmed customer/request failures are safe to refund.
     if ([400, 401, 402, 403, 422].includes(supplierStatus)) {
       await refundOnce(env, uid, idempotencyKey, message);
-      throw new HttpError(422, `ShadexGoLtd returned HTTP ${supplierStatus}: ${message} Your BukzEx wallet has been refunded.`);
+      throw new HttpError(422, "We couldn\u0027t complete this order. Your BukzEx wallet has been refunded. Check Purchases for details.");
     }
 
-    // 409 can represent an idempotency conflict/replay, so do not refund.
-    // 404/5xx may be routing/provider failures. Surface the exact response
-    // instead of silently leaving the customer stuck on "processing".
+    // An uncertain supplier response must not be described as refunded.
+    // Preserve the original order reference to protect against double charges.
     throw new HttpError(
       supplierStatus >= 400 ? supplierStatus : 503,
-      `ShadexGoLtd returned HTTP ${supplierStatus || "unknown"}: ${message} No refund or second charge was applied.`
+      "We couldn't confirm this purchase yet. Check Purchases or contact Customer Care before trying again to avoid another charge."
     );
   }
 

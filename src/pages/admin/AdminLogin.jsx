@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 
 import { loginAdmin } from "../../services/adminAuth";
+import { authErrorMessage } from "../../lib/customer-errors";
 
 
 export default function AdminLogin() {
@@ -35,9 +36,7 @@ export default function AdminLogin() {
 
       navigate("/admin", { replace: true });
     } catch (err) {
-      setError(
-        err?.message || "Unable to sign in."
-      );
+      setError(authErrorMessage(err, "login"));
     } finally {
       setLoading(false);
     }

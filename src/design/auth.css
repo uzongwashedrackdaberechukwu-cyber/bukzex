@@ -595,3 +595,23 @@
     gap: 18px;
   }
 }
+
+/* Account recovery links are clearly visible beneath sign-up errors. */
+.signup-recovery-link {
+  display: block;
+  width: fit-content;
+  margin-top: .65rem;
+  padding: .2rem 0;
+  border: 0;
+  background: transparent;
+  color: #f0d38b;
+  font: inherit;
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.signup-recovery-link:focus-visible {
+  outline: 2px solid #f0d38b;
+  outline-offset: 3px;
+}
