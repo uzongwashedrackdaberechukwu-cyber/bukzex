@@ -7,6 +7,7 @@ import {
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getSession, updateSession } from "../services/auth";
+import { friendlyErrorMessage } from "../lib/customer-errors";
 import WhatsAppSupport from "../components/WhatsAppSupport";
 import CustomerWorkspaceNav from "../components/CustomerWorkspaceNav";
 
@@ -28,7 +29,7 @@ export default function CustomerProfile() {
       .then((user) => {
         if (user) setProfile(user);
       })
-      .catch((err) => setError(err.message || "Unable to load your profile."));
+      .catch((err) => setError(friendlyErrorMessage(err, "Unable to load your profile.")));
   }, []);
 
   function handleChange(event) {
@@ -52,7 +53,7 @@ export default function CustomerProfile() {
       setProfile(updated);
       setMessage("Your profile has been updated.");
     } catch (err) {
-      setError(err.message || "Unable to save your profile.");
+      setError(friendlyErrorMessage(err, "Unable to save your profile."));
     } finally {
       setSaving(false);
     }

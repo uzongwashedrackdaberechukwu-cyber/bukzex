@@ -45,6 +45,41 @@ async function isAdmin(uid) {
   return adminDoc.exists();
 }
 
+// Complete a verified account's missing profile or empty wallet after a
+// partially successful registration. Never overwrite an existing wallet or
+// change an administrator's account.
+async function finishIncompleteCustomerSetup(user) {
+  if (!user.emailVerified || (await isAdmin(user.uid))) return;
+
+  const profileRef = doc(db, "profiles", user.uid);
+  const profileSnap = await getDoc(profileRef);
+  if (!profileSnap.exists()) {
+    const parts = String(user.displayName || "").trim().split(/\s+/).filter(Boolean);
+    await setDoc(profileRef, {
+      id: user.uid,
+      email: String(user.email || "").toLowerCase(),
+      first_name: parts[0] || "",
+      last_name: parts.slice(1).join(" "),
+      phone: "",
+      notifications_enabled: true,
+      role: "customer",
+      created_at: serverTimestamp(),
+      updated_at: serverTimestamp(),
+    });
+  }
+
+  const walletRef = doc(db, "wallets", user.uid);
+  const walletSnap = await getDoc(walletRef);
+  if (!walletSnap.exists()) {
+    await setDoc(walletRef, {
+      user_id: user.uid,
+      balance: 0,
+      currency: "NGN",
+      updated_at: serverTimestamp(),
+    });
+  }
+}
+
 export async function getSession() {
   // Wait until Firebase has restored its saved browser session before
   // deciding that the user is signed out after a page refresh.
@@ -138,7 +173,13 @@ export async function registerUser(user) {
 
 export async function loginUser(email, password) {
   await authPersistenceReady;
-  await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
+  const credential = await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
+  // Allow the login page to resend email verification even if the prior
+  // sign-up created an auth account before its profile could be saved.
+  if (!credential.user.emailVerified) {
+    return { role: "customer", emailVerified: false };
+  }
+  await finishIncompleteCustomerSetup(credential.user);
   return getSession();
 }
 

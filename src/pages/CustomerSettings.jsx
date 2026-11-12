@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { getSession, updateSession } from "../services/auth";
+import { friendlyErrorMessage } from "../lib/customer-errors";
 import CustomerWorkspaceNav from "../components/CustomerWorkspaceNav";
 import WhatsAppSupport from "../components/WhatsAppSupport";
 
@@ -21,7 +22,7 @@ export default function CustomerSettings() {
   useEffect(() => {
     getSession()
       .then((profile) => setNotifications(profile?.notificationsEnabled ?? true))
-      .catch((err) => setError(err.message || "Unable to load settings."));
+      .catch((err) => setError(friendlyErrorMessage(err, "Unable to load settings.")));
   }, []);
 
   async function handleSave() {
@@ -32,7 +33,7 @@ export default function CustomerSettings() {
       await updateSession({ notificationsEnabled: notifications });
       setMessage("Settings saved.");
     } catch (err) {
-      setError(err.message || "Unable to save settings.");
+      setError(friendlyErrorMessage(err, "Unable to save settings."));
     } finally {
       setSaving(false);
     }

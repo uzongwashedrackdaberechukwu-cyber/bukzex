@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, ArrowRight, LockKeyhole } from "lucide-react";
 import { updatePassword } from "../services/auth";
+import { authErrorMessage } from "../lib/customer-errors";
 import WhatsAppSupport from "../components/WhatsAppSupport";
 
 export default function ResetPassword() {
@@ -34,7 +35,7 @@ export default function ResetPassword() {
       setMessage("Your password has been updated. You can sign in now.");
       setTimeout(() => navigate("/login", { replace: true }), 1500);
     } catch (err) {
-      setError(err.message || "The reset link is invalid or expired. Request a new link.");
+      setError(authErrorMessage(err, "changePassword"));
     } finally {
       setLoading(false);
     }
